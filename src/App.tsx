@@ -19,17 +19,10 @@ import MarketSection from './components/market/MarketSection';
 
 type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'account' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'supplierInventory';
 
-interface PendingNegotiation {
-  batchId: string;
-  supplierPhone: string;
-  quantity: number;
-}
-
 function App() {
   const { session, loading, register, login, updateProfile, activateRole, logout } = useSession();
   const [modal, setModal] = useState<ModalView>('none');
   const pendingAfterAuth = useRef<ModalView | null>(null);
-  const pendingNegotiation = useRef<PendingNegotiation | null>(null);
   const dashboardRefresh = useRef<(() => void) | null>(null);
   const [authError, setAuthError] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -78,13 +71,9 @@ function App() {
       await activateRole('buyer');
     }
 
-    if (pendingNegotiation.current) {
-      setModal('buyerDeals');
-    } else {
-      const next = pendingAfterAuth.current;
-      pendingAfterAuth.current = null;
-      setModal(next && next !== 'none' ? next : 'none');
-    }
+    const next = pendingAfterAuth.current;
+    pendingAfterAuth.current = null;
+    setModal(next && next !== 'none' ? next : 'none');
   };
 
   const handleLoginComplete = async (phone: string, pin: string) => {
@@ -101,13 +90,9 @@ function App() {
       await activateRole('buyer');
     }
 
-    if (pendingNegotiation.current) {
-      setModal('buyerDeals');
-    } else {
-      const next = pendingAfterAuth.current;
-      pendingAfterAuth.current = null;
-      setModal(next && next !== 'none' ? next : 'none');
-    }
+    const next = pendingAfterAuth.current;
+    pendingAfterAuth.current = null;
+    setModal(next && next !== 'none' ? next : 'none');
   };
 
   const handleInlineRegister = async (data: { phone: string; name: string; userType: 'company' | 'individual'; pin: string }) => {
@@ -173,12 +158,6 @@ function App() {
                   isAuthenticated={!!session}
                   onShowAuth={() => openAuth('none')}
                   onDetailSheetChange={setIsDetailSheetOpen}
-                  onNavigateToDeals={() => setModal('buyerDeals')}
-                  buyerPhone={session?.profile.phone || ''}
-                  onStartNegotiation={(data) => {
-                    pendingNegotiation.current = data;
-                    openAuth('none');
-                  }}
                 />
               </div>
             )}
@@ -221,12 +200,6 @@ function App() {
                 isAuthenticated={!!session}
                 onShowAuth={() => openAuth('none')}
                 onDetailSheetChange={setIsDetailSheetOpen}
-                onNavigateToDeals={() => setModal('buyerDeals')}
-                buyerPhone={session?.profile.phone || ''}
-                onStartNegotiation={(data) => {
-                  pendingNegotiation.current = data;
-                  openAuth('none');
-                }}
               />
               {!isDetailSheetOpen && (
                 <BottomNavigation onAddInventory={openInventory} onCreateOrder={openOrder} />
@@ -302,12 +275,7 @@ function App() {
           phone={session.profile.phone}
           onClose={() => {
             setModal('none');
-            pendingNegotiation.current = null;
             dashboardRefresh.current?.();
-          }}
-          pendingNegotiation={pendingNegotiation.current}
-          onNegotiationComplete={() => {
-            pendingNegotiation.current = null;
           }}
         />
       )}

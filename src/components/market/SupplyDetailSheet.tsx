@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { X, MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff, Heart, Handshake, CheckCircle2, Loader2 } from 'lucide-react';
-import { useCreateDeal } from '../../hooks/useCreateDeal';
+import { X, MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff, Heart } from 'lucide-react';
 
 interface SupplyCard {
   id: string;
@@ -72,19 +71,12 @@ interface Props {
   card: SupplyCard;
   onClose: () => void;
   isAuthenticated: boolean;
-  onShowAuthPrompt: (quantity: number) => void;
-  onNavigateToDeals?: () => void;
-  buyerPhone: string;
+  onShowAuthPrompt: () => void;
 }
 
-export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onShowAuthPrompt, onNavigateToDeals, buyerPhone }: Props) {
-  const { createDeal, loading: creatingDeal } = useCreateDeal();
+export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onShowAuthPrompt }: Props) {
   const [imgIndex, setImgIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
-  const [requestedQuantity, setRequestedQuantity] = useState(card.available_quantity);
-  const [dealCreated, setDealCreated] = useState(false);
-  const [dealId, setDealId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const q = QUALITY_COLORS[card.quality] || QUALITY_COLORS.C;
   const cond = CONDITION_MAP[card.pallet_condition] || CONDITION_MAP.used;
@@ -93,30 +85,9 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
   const goNext = () => setImgIndex((i) => (i + 1) % card.image_urls.length);
   const goPrev = () => setImgIndex((i) => (i - 1 + card.image_urls.length) % card.image_urls.length);
 
-  const handleNegotiate = async () => {
-    if (!isAuthenticated) {
-      onShowAuthPrompt(requestedQuantity);
-      return;
-    }
-
-    setError(null);
-    const result = await createDeal({
-      batchId: card.id,
-      buyerPhone,
-      quantity: requestedQuantity,
-    });
-
-    if (result.success && result.dealId) {
-      setDealCreated(true);
-      setDealId(result.dealId);
-    } else {
-      setError(result.error || 'فشل إنشاء الصفقة');
-    }
-  };
-
   const handleFavorite = () => {
     if (!isAuthenticated) {
-      onShowAuthPrompt(requestedQuantity);
+      onShowAuthPrompt();
     } else {
       setIsFavorited(!isFavorited);
     }
@@ -309,140 +280,21 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
                 <p className="text-[13px] text-[#3a5a6a] leading-relaxed">{card.description}</p>
               </div>
             )}
-
-            <div className="rounded-2xl p-4 text-right" style={{ background: '#f0f9f4', border: '1.5px solid rgba(21,128,61,0.15)' }}>
-              <label className="text-[12px] font-bold text-[#15803d] mb-2 block">الكمية المطلوبة</label>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setRequestedQuantity(Math.max(1, requestedQuantity - 10))}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black transition-all active:scale-90"
-                  style={{ background: 'linear-gradient(135deg, #15803d, #22c55e)' }}
-                >
-                  -
-                </button>
-                <input
-                  type="number"
-                  value={requestedQuantity}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value) || 1;
-                    setRequestedQuantity(Math.min(card.available_quantity, Math.max(1, val)));
-                  }}
-                  className="flex-1 text-center text-[18px] font-black text-[#15803d] px-3 py-2.5 rounded-xl border-none outline-none"
-                  style={{ background: 'white' }}
-                  min={1}
-                  max={card.available_quantity}
-                />
-                <button
-                  onClick={() => setRequestedQuantity(Math.min(card.available_quantity, requestedQuantity + 10))}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black transition-all active:scale-90"
-                  style={{ background: 'linear-gradient(135deg, #15803d, #22c55e)' }}
-                >
-                  +
-                </button>
-              </div>
-              <p className="text-[11px] text-green-600/60 mt-2 text-center">
-                الحد الأقصى: {card.available_quantity.toLocaleString()} طبلية
-              </p>
-            </div>
           </div>
         </div>
 
-        <div className="flex-shrink-0 px-5 pb-6 pt-3 space-y-2.5" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-          {error && (
-            <div
-              className="rounded-2xl p-3 text-center text-[13px] font-semibold"
-              style={{ background: '#fee2e2', color: '#b91c1c' }}
-            >
-              {error}
-            </div>
-          )}
-
-          {dealCreated ? (
-            <div className="space-y-3">
-              <div
-                className="rounded-2xl p-4 flex items-center gap-3"
-                style={{ background: '#dcfce7', border: '1.5px solid rgba(34,197,94,0.3)' }}
-              >
-                <div className="flex-1 text-right">
-                  <p className="text-[14px] font-black text-[#15803d] mb-1">تم إنشاء الصفقة بنجاح!</p>
-                  <p className="text-[11px] text-[#166534]">يمكنك متابعة الصفقة من صفقاتي</p>
-                  {dealId && (
-                    <p className="text-[10px] font-mono font-bold text-[#166534]/60 mt-1">#{dealId.slice(0, 8)}</p>
-                  )}
-                </div>
-                <CheckCircle2 className="w-8 h-8 text-[#15803d] flex-shrink-0" />
-              </div>
-              <button
-                onClick={() => {
-                  if (onNavigateToDeals) {
-                    onNavigateToDeals();
-                    onClose();
-                  }
-                }}
-                className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[15px] font-black text-white transition-all active:scale-[0.98]"
-                style={{
-                  background: 'linear-gradient(135deg, #0f2535, #1a4a5e)',
-                  boxShadow: '0 6px 20px rgba(15,37,53,0.3)',
-                }}
-              >
-                <Handshake className="w-5 h-5" />
-                اذهب إلى صفقاتي
-              </button>
-            </div>
-          ) : (
-            <div className="flex gap-2.5">
-              <button
-                onClick={handleFavorite}
-                disabled={creatingDeal}
-                className="flex-shrink-0 w-14 h-14 flex items-center justify-center rounded-2xl transition-all active:scale-95"
-                style={{
-                  background: isFavorited ? 'linear-gradient(135deg, #DC2626, #EF4444)' : 'white',
-                  border: isFavorited ? 'none' : '1.5px solid rgba(0,0,0,0.1)',
-                  boxShadow: isFavorited ? '0 4px 16px rgba(220,38,38,0.3)' : '0 2px 8px rgba(0,0,0,0.08)',
-                  cursor: creatingDeal ? 'not-allowed' : 'pointer',
-                  opacity: creatingDeal ? 0.5 : 1,
-                }}
-              >
-                <Heart
-                  className={`w-5 h-5 transition-all ${isFavorited ? 'fill-white text-white scale-110' : 'text-[#7a9aab]'}`}
-                />
-              </button>
-              <button
-                onClick={handleNegotiate}
-                disabled={creatingDeal}
-                className="flex-1 relative overflow-hidden group"
-              >
-                <div
-                  className="absolute inset-0 transition-transform duration-300 group-active:scale-95"
-                  style={{
-                    background: creatingDeal ? '#9ca3af' : 'linear-gradient(135deg, #15803d, #22c55e)',
-                    boxShadow: '0 4px 16px rgba(34,197,94,0.35)',
-                  }}
-                />
-                <div
-                  className="absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity duration-200"
-                  style={{ background: 'linear-gradient(135deg, #166534, #16a34a)' }}
-                />
-                <div className="relative flex items-center justify-center gap-2.5 py-4 rounded-2xl">
-                  {creatingDeal ? (
-                    <>
-                      <Loader2 className="w-5 h-5 text-white animate-spin" />
-                      <span className="text-[14px] font-black text-white">جاري الإنشاء...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Handshake className="w-5 h-5 text-white" strokeWidth={2.5} />
-                      <span className="text-[14px] font-black text-white">تفاوض الآن</span>
-                      <div
-                        className="absolute left-3 w-2 h-2 rounded-full animate-pulse"
-                        style={{ background: '#dcfce7', boxShadow: '0 0 8px #22c55e' }}
-                      />
-                    </>
-                  )}
-                </div>
-              </button>
-            </div>
-          )}
+        <div className="flex-shrink-0 px-5 pb-6 pt-3" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+          <button
+            onClick={handleFavorite}
+            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[15px] font-black text-white transition-all active:scale-95"
+            style={{
+              background: isFavorited ? 'linear-gradient(135deg, #DC2626, #EF4444)' : 'linear-gradient(135deg, #15803d, #22c55e)',
+              boxShadow: isFavorited ? '0 6px 20px rgba(220,38,38,0.3)' : '0 6px 20px rgba(34,197,94,0.3)',
+            }}
+          >
+            <Heart className={`w-5 h-5 ${isFavorited ? 'fill-white' : ''}`} />
+            {isFavorited ? 'تمت الإضافة للمفضلة' : 'إضافة للمفضلة'}
+          </button>
         </div>
       </div>
     </div>

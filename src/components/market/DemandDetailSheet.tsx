@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, MapPin, Package, Star, ShoppingBag, Heart, Handshake } from 'lucide-react';
+import { X, MapPin, Package, Star, ShoppingBag, Heart } from 'lucide-react';
 
 interface DemandCard {
   id: string;
@@ -46,10 +46,6 @@ export default function DemandDetailSheet({ card, onClose, isAuthenticated, onSh
     { active: card.accept_close_city, label: 'يقبل مدينة قريبة', bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
     { active: card.accept_partial_delivery, label: 'يقبل توريد جزئي', bg: '#FFF7ED', color: '#b45309', border: '#FED7AA' },
   ].filter((f) => f.active);
-
-  const handleNegotiate = () => {
-    onShowAuthPrompt();
-  };
 
   const handleFavorite = () => {
     if (!isAuthenticated) {
@@ -174,45 +170,18 @@ export default function DemandDetailSheet({ card, onClose, isAuthenticated, onSh
           </div>
         </div>
 
-        <div className="flex-shrink-0 px-5 pb-6 pt-3 space-y-2.5" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-          <div className="flex gap-2.5">
-            <button
-              onClick={handleFavorite}
-              className="flex-shrink-0 w-14 h-14 flex items-center justify-center rounded-2xl transition-all active:scale-95"
-              style={{
-                background: isFavorited ? 'linear-gradient(135deg, #DC2626, #EF4444)' : 'white',
-                border: isFavorited ? 'none' : '1.5px solid rgba(0,0,0,0.1)',
-                boxShadow: isFavorited ? '0 4px 16px rgba(220,38,38,0.3)' : '0 2px 8px rgba(0,0,0,0.08)',
-              }}
-            >
-              <Heart
-                className={`w-5 h-5 transition-all ${isFavorited ? 'fill-white text-white scale-110' : 'text-[#7a9aab]'}`}
-              />
-            </button>
-            <button
-              onClick={handleNegotiate}
-              className="flex-1 relative overflow-hidden group"
-            >
-              <div
-                className="absolute inset-0 transition-transform duration-300 group-active:scale-95"
-                style={{ background: 'linear-gradient(135deg, #B45309, #D97706)', boxShadow: '0 4px 16px rgba(217,119,6,0.35)' }}
-              />
-              <div
-                className="absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity duration-200"
-                style={{ background: 'linear-gradient(135deg, #92400e, #b45309)' }}
-              />
-              <div className="relative flex items-center justify-center gap-2.5 py-4 rounded-2xl">
-                <div className="flex items-center gap-2">
-                  <Handshake className="w-5 h-5 text-white" strokeWidth={2.5} />
-                  <span className="text-[14px] font-black text-white">تفاوض الآن</span>
-                </div>
-                <div
-                  className="absolute left-3 w-2 h-2 rounded-full animate-pulse"
-                  style={{ background: '#fef9c3', boxShadow: '0 0 8px #fbbf24' }}
-                />
-              </div>
-            </button>
-          </div>
+        <div className="flex-shrink-0 px-5 pb-6 pt-3" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+          <button
+            onClick={handleFavorite}
+            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[15px] font-black text-white transition-all active:scale-95"
+            style={{
+              background: isFavorited ? 'linear-gradient(135deg, #DC2626, #EF4444)' : 'linear-gradient(135deg, #B45309, #D97706)',
+              boxShadow: isFavorited ? '0 6px 20px rgba(220,38,38,0.3)' : '0 6px 20px rgba(217,119,6,0.3)',
+            }}
+          >
+            <Heart className={`w-5 h-5 ${isFavorited ? 'fill-white' : ''}`} />
+            {isFavorited ? 'تمت الإضافة للمفضلة' : 'إضافة للمفضلة'}
+          </button>
         </div>
       </div>
     </div>

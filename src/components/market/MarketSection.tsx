@@ -560,21 +560,12 @@ function TabSlider({
   );
 }
 
-interface PendingNegotiation {
-  batchId: string;
-  supplierPhone: string;
-  quantity: number;
-}
-
 interface Props {
   onCreateOrder: () => void;
   onAddInventory: () => void;
   isAuthenticated: boolean;
   onShowAuth: () => void;
   onDetailSheetChange?: (isOpen: boolean) => void;
-  onNavigateToDeals?: () => void;
-  buyerPhone: string;
-  onStartNegotiation?: (data: PendingNegotiation) => void;
 }
 
 export default function MarketSection({
@@ -583,9 +574,6 @@ export default function MarketSection({
   isAuthenticated,
   onShowAuth,
   onDetailSheetChange,
-  onNavigateToDeals,
-  buyerPhone,
-  onStartNegotiation,
 }: Props) {
   const [tab, setTab] = useState<TabKind>('all');
   const [palletFilter, setPalletFilter] = useState('all');
@@ -819,18 +807,7 @@ export default function MarketSection({
         card={selectedSupply}
         onClose={() => setSelectedSupply(null)}
         isAuthenticated={isAuthenticated}
-        onNavigateToDeals={onNavigateToDeals}
-        buyerPhone={buyerPhone}
-        onShowAuthPrompt={(quantity) => {
-          if (onStartNegotiation) {
-            onStartNegotiation({
-              batchId: selectedSupply.id,
-              supplierPhone: selectedSupply.phone,
-              quantity,
-            });
-          }
-          setShowAuthPrompt(true);
-        }}
+        onShowAuthPrompt={() => setShowAuthPrompt(true)}
       />
     )}
 
@@ -839,9 +816,7 @@ export default function MarketSection({
         card={selectedDemand}
         onClose={() => setSelectedDemand(null)}
         isAuthenticated={isAuthenticated}
-        onShowAuthPrompt={() => {
-          setShowAuthPrompt(true);
-        }}
+        onShowAuthPrompt={() => setShowAuthPrompt(true)}
       />
     )}
 

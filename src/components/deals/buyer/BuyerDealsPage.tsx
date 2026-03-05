@@ -6,21 +6,12 @@ import { DEAL_STATUS_CONFIG } from '../../../types/deal';
 import type { Deal } from '../../../types/deal';
 import { ActionToast } from '../../shared/ActionToast';
 import type { ToastConfig } from '../../shared/ActionToast';
-import { useCreateDeal } from '../../../hooks/useCreateDeal';
 
 type Tab = 'awaiting' | 'active' | 'ended';
-
-interface PendingNegotiation {
-  batchId: string;
-  supplierPhone: string;
-  quantity: number;
-}
 
 interface Props {
   phone: string;
   onClose: () => void;
-  pendingNegotiation?: PendingNegotiation | null;
-  onNegotiationComplete?: () => void;
 }
 
 function buildWhatsAppLink(phone: string, senderRole: 'supplier' | 'buyer', deal: Deal): string {
@@ -332,7 +323,7 @@ function EmptyState({ tab }: { tab: Tab }) {
   );
 }
 
-export default function BuyerDealsPage({ phone, onClose, pendingNegotiation, onNegotiationComplete }: Props) {
+export default function BuyerDealsPage({ phone, onClose }: Props) {
   const {
     loading, actionLoading,
     awaitingDeals, activeDeals, endedDeals,
@@ -340,40 +331,8 @@ export default function BuyerDealsPage({ phone, onClose, pendingNegotiation, onN
     refresh,
   } = useBuyerDeals(phone);
 
-  const { createDeal } = useCreateDeal();
   const [activeTab, setActiveTab] = useState<Tab>('awaiting');
   const [toast, setToast] = useState<ToastConfig | null>(null);
-  const [isCreatingPendingDeal, setIsCreatingPendingDeal] = useState(false);
-
-  useEffect(() => {
-    if (pendingNegotiation && !isCreatingPendingDeal) {
-      setIsCreatingPendingDeal(true);
-      (async () => {
-        const result = await createDeal({
-          batchId: pendingNegotiation.batchId,
-          buyerPhone: phone,
-          quantity: pendingNegotiation.quantity,
-        });
-
-        if (result.success) {
-          setToast({
-            title: 'تم إنشاء الصفقة بنجاح!',
-            message: 'الصفقة الآن بانتظار موافقة المورد',
-            variant: 'success',
-          });
-          onNegotiationComplete?.();
-          await refresh();
-        } else {
-          setToast({
-            title: 'فشل إنشاء الصفقة',
-            message: result.error || 'حدث خطأ أثناء إنشاء الصفقة',
-            variant: 'error',
-          });
-        }
-        setIsCreatingPendingDeal(false);
-      })();
-    }
-  }, [pendingNegotiation, phone, createDeal, onNegotiationComplete, refresh, isCreatingPendingDeal]);
 
   const handleConfirmPurchase = async (dealId: string) => {
     const result = await confirmPurchase(dealId);
