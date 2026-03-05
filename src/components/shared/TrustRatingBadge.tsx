@@ -80,21 +80,20 @@ export default function TrustRatingBadge({ rating, size = 'sm', showLabel = true
     );
   }
 
-  const padding = size === 'lg' ? 'px-2.5 py-1' : size === 'md' ? 'px-2 py-0.5' : 'px-1.5 py-0.5';
-  const textSize = size === 'lg' ? 'text-[11px]' : size === 'md' ? 'text-[10px]' : 'text-[9px]';
-  const iconSize = size === 'lg' ? 'w-3.5 h-3.5' : size === 'md' ? 'w-3 h-3' : 'w-2.5 h-2.5';
+  const starSize = size === 'lg' ? 'w-3.5 h-3.5' : size === 'md' ? 'w-3 h-3' : 'w-2.5 h-2.5';
 
   return (
-    <div
-      className={`flex items-center gap-1 ${padding} rounded-full border`}
-      style={{ background: config.bg, borderColor: config.border }}
-    >
-      <Icon className={iconSize} style={{ color: config.color }} />
-      {showLabel && (
-        <span className={`${textSize} font-bold`} style={{ color: config.color }}>
-          {config.label}
-        </span>
-      )}
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star
+          key={i}
+          className={starSize}
+          style={{
+            color: i <= clampedRating ? config.color : '#d1d5db',
+            fill: i <= clampedRating ? config.color : 'none',
+          }}
+        />
+      ))}
     </div>
   );
 }
