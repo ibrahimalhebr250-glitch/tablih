@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff, Heart } from 'lucide-react';
+import { X, MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff, Heart, MessageCircle } from 'lucide-react';
 
 interface SupplyCard {
   id: string;
@@ -91,6 +91,42 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
     } else {
       setIsFavorited(!isFavorited);
     }
+  };
+
+  const buildWhatsAppLink = () => {
+    const cleanPhone = card.phone.replace(/^0/, '966').replace('+', '');
+    const platformFee = 0.25;
+
+    const message = [
+      'السلام عليكم',
+      '',
+      'لديكم عرض في منصة *طبليتي*',
+      '',
+      `النوع: ${card.pallet_type}`,
+      `المقاس: ${card.size}`,
+      `الجودة: درجة ${card.quality}`,
+      `الحالة: ${cond.label}`,
+      `الكمية المتاحة: ${card.available_quantity.toLocaleString('ar-SA')} طبلية`,
+      `السعر: ${card.price_per_pallet.toLocaleString('ar-SA')} ر.س / طبلية`,
+      `المدينة: ${card.city}`,
+      '',
+      'أرجو الرد لإكمال المشترى معكم',
+      '',
+      `*ملاحظة:* رسوم المنصة ${platformFee} ر.س للطبلية الواحدة`,
+      '',
+      'شكراً لتعاملكم مع منصة طبليتي',
+    ].join('\n');
+
+    return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+  };
+
+  const handleWhatsAppClick = () => {
+    if (!isAuthenticated) {
+      onShowAuthPrompt();
+      return;
+    }
+    const link = buildWhatsAppLink();
+    window.open(link, '_blank');
   };
 
   return (
@@ -283,16 +319,43 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
           </div>
         </div>
 
-        <div className="flex-shrink-0 px-5 pb-6 pt-3" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+        <div className="flex-shrink-0 px-5 pb-6 pt-3 space-y-2.5" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+          <button
+            onClick={handleWhatsAppClick}
+            className="w-full relative overflow-hidden group"
+          >
+            <div
+              className="absolute inset-0 transition-transform duration-300 group-active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, #25D366, #128C7E)',
+                boxShadow: '0 6px 20px rgba(37,211,102,0.35)',
+              }}
+            />
+            <div
+              className="absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity duration-200"
+              style={{ background: 'linear-gradient(135deg, #20BA5A, #0F7A66)' }}
+            />
+            <div className="relative flex items-center justify-center gap-2.5 py-4 rounded-2xl">
+              <MessageCircle className="w-5 h-5 text-white" strokeWidth={2.5} />
+              <span className="text-[15px] font-black text-white">تواصل عبر واتساب</span>
+              <div
+                className="absolute left-3 w-2 h-2 rounded-full animate-pulse"
+                style={{ background: '#dcfce7', boxShadow: '0 0 8px #22c55e' }}
+              />
+            </div>
+          </button>
+
           <button
             onClick={handleFavorite}
-            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[15px] font-black text-white transition-all active:scale-95"
+            className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-[14px] font-bold transition-all active:scale-95"
             style={{
-              background: isFavorited ? 'linear-gradient(135deg, #DC2626, #EF4444)' : 'linear-gradient(135deg, #15803d, #22c55e)',
-              boxShadow: isFavorited ? '0 6px 20px rgba(220,38,38,0.3)' : '0 6px 20px rgba(34,197,94,0.3)',
+              background: isFavorited ? 'linear-gradient(135deg, #DC2626, #EF4444)' : 'white',
+              color: isFavorited ? 'white' : '#1a4a5e',
+              border: isFavorited ? 'none' : '1.5px solid rgba(0,0,0,0.1)',
+              boxShadow: isFavorited ? '0 4px 16px rgba(220,38,38,0.3)' : '0 2px 8px rgba(0,0,0,0.08)',
             }}
           >
-            <Heart className={`w-5 h-5 ${isFavorited ? 'fill-white' : ''}`} />
+            <Heart className={`w-4.5 h-4.5 ${isFavorited ? 'fill-white' : ''}`} />
             {isFavorited ? 'تمت الإضافة للمفضلة' : 'إضافة للمفضلة'}
           </button>
         </div>
