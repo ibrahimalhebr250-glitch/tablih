@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff, Heart, MessageCircle } from 'lucide-react';
+import TrustRatingBadge from '../shared/TrustRatingBadge';
 
 interface SupplyCard {
   id: string;
@@ -14,6 +15,7 @@ interface SupplyCard {
   description: string;
   image_urls: string[];
   created_at: string;
+  trust_rating?: number;
 }
 
 const QUALITY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
@@ -305,6 +307,8 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
               <span className="text-[13px] font-bold text-[#1a3a4a]">{card.city}</span>
               <MapPin className="w-4 h-4 text-green-500/60" />
             </div>
+
+            <TrustRatingBadge rating={card.trust_rating ?? 3} size="md" showLabel={true} variant="detailed" />
 
             {card.description && (
               <div className="rounded-2xl p-3.5 text-right" style={{ background: '#f5f9fc', border: '1px solid rgba(0,0,0,0.04)' }}>

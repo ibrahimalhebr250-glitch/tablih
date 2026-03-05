@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, MapPin, Package, Star, ShoppingBag, Heart } from 'lucide-react';
+import TrustRatingBadge from '../shared/TrustRatingBadge';
 
 interface DemandCard {
   id: string;
@@ -12,6 +13,7 @@ interface DemandCard {
   accept_close_city: boolean;
   accept_partial_delivery: boolean;
   created_at: string;
+  trust_rating?: number;
 }
 
 const QUALITY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
@@ -140,6 +142,8 @@ export default function DemandDetailSheet({ card, onClose, isAuthenticated, onSh
                 <span className="text-[14px] font-bold text-[#1a3a4a]">{card.size} سم</span>
               </div>
             )}
+
+            <TrustRatingBadge rating={card.trust_rating ?? 3} size="md" showLabel={true} variant="detailed" />
 
             {flexItems.length > 0 && (
               <div className="rounded-2xl p-3.5 text-right" style={{ background: '#FFF7ED', border: '1px solid rgba(217,119,6,0.1)' }}>

@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import SupplyDetailSheet from './SupplyDetailSheet';
 import DemandDetailSheet from './DemandDetailSheet';
 import AuthPromptSheet from './AuthPromptSheet';
+import TrustRatingBadge from '../shared/TrustRatingBadge';
 
 type TabKind = 'all' | 'supply' | 'demand';
 
@@ -25,11 +26,13 @@ export interface SupplyCard {
   description: string;
   image_urls: string[];
   created_at: string;
+  trust_rating?: number;
 }
 
 export interface DemandCard {
   id: string;
   kind: 'demand';
+  phone: string;
   pallet_type: string;
   size: string;
   quality: string;
@@ -39,6 +42,7 @@ export interface DemandCard {
   accept_close_city: boolean;
   accept_partial_delivery: boolean;
   created_at: string;
+  trust_rating?: number;
 }
 
 type MarketCard = SupplyCard | DemandCard;
@@ -142,13 +146,16 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
 
         <div className="flex-1 min-w-0 flex flex-col justify-between p-3">
           <div>
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <span
-                className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
-                style={{ background: 'rgba(21,128,61,0.08)', color: '#15803d', border: '1px solid rgba(21,128,61,0.15)' }}
-              >
-                عرض
-              </span>
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span
+                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                  style={{ background: 'rgba(21,128,61,0.08)', color: '#15803d', border: '1px solid rgba(21,128,61,0.15)' }}
+                >
+                  عرض
+                </span>
+                <TrustRatingBadge rating={card.trust_rating ?? 3} size="sm" showLabel={false} />
+              </div>
               <p className="text-[15px] font-black text-[#1a3a4a] leading-tight truncate">{card.pallet_type}</p>
             </div>
 
@@ -239,13 +246,16 @@ function DemandCardItem({ card, onClick }: { card: DemandCard; onClick: () => vo
 
         <div className="flex-1 min-w-0 flex flex-col justify-between p-3">
           <div>
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <span
-                className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
-                style={{ background: 'rgba(217,119,6,0.08)', color: '#b45309', border: '1px solid rgba(217,119,6,0.15)' }}
-              >
-                طلب
-              </span>
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span
+                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                  style={{ background: 'rgba(217,119,6,0.08)', color: '#b45309', border: '1px solid rgba(217,119,6,0.15)' }}
+                >
+                  طلب
+                </span>
+                <TrustRatingBadge rating={card.trust_rating ?? 3} size="sm" showLabel={false} />
+              </div>
               <p className="text-[15px] font-black text-[#1a3a4a] leading-tight truncate">{card.pallet_type}</p>
             </div>
 
@@ -595,14 +605,14 @@ export default function MarketSection({
     const [supplyRes, demandRes] = await Promise.all([
       supabase
         .from('inventory_batches')
-        .select('id, phone, pallet_type, size, quality, pallet_condition, available_quantity, price_per_pallet, city, description, created_at, inventory_images(url, is_primary, sort_order)')
+        .select('id, phone, pallet_type, size, quality, pallet_condition, available_quantity, price_per_pallet, city, description, created_at, inventory_images(url, is_primary, sort_order), platform_users!inventory_batches_phone_fkey(trust_rating)')
         .eq('status', 'active')
         .gt('available_quantity', 0)
         .order('created_at', { ascending: false })
         .limit(30),
       supabase
         .from('orders')
-        .select('id, pallet_type, size, quality, quantity, city, accept_close_quality, accept_close_city, accept_partial_delivery, created_at')
+        .select('id, phone, pallet_type, size, quality, quantity, city, accept_close_quality, accept_close_city, accept_partial_delivery, created_at, platform_users!orders_phone_fkey(trust_rating)')
         .in('status', ['pending', 'unmatched'])
         .order('created_at', { ascending: false })
         .limit(30),
@@ -625,12 +635,14 @@ export default function MarketSection({
         description: b.description || '',
         image_urls: sorted.map((i: any) => i.url),
         created_at: b.created_at,
+        trust_rating: b.platform_users?.trust_rating ?? 3,
       };
     });
 
     const demand: DemandCard[] = (demandRes.data || []).map((o: any) => ({
       id: o.id,
       kind: 'demand',
+      phone: o.phone || '',
       pallet_type: o.pallet_type,
       size: o.size,
       quality: o.quality,
@@ -640,6 +652,7 @@ export default function MarketSection({
       accept_close_city: o.accept_close_city,
       accept_partial_delivery: o.accept_partial_delivery,
       created_at: o.created_at,
+      trust_rating: o.platform_users?.trust_rating ?? 3,
     }));
 
     setItems([...supply, ...demand]);
