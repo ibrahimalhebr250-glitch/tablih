@@ -147,15 +147,12 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
         <div className="flex-1 min-w-0 flex flex-col justify-between p-3">
           <div>
             <div className="flex items-start justify-between gap-2 mb-1.5">
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span
-                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                  style={{ background: 'rgba(21,128,61,0.08)', color: '#15803d', border: '1px solid rgba(21,128,61,0.15)' }}
-                >
-                  عرض
-                </span>
-                <TrustRatingBadge rating={card.trust_rating ?? 3} size="sm" showLabel={false} />
-              </div>
+              <span
+                className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                style={{ background: 'rgba(21,128,61,0.08)', color: '#15803d', border: '1px solid rgba(21,128,61,0.15)' }}
+              >
+                عرض
+              </span>
               <p className="text-[15px] font-black text-[#1a3a4a] leading-tight truncate">{card.pallet_type}</p>
             </div>
 
@@ -187,18 +184,21 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
           </div>
 
           <div className="flex items-center justify-between mt-2.5 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className="text-[9px] text-[#a0b5c0]">{timeAgo(card.created_at)}</span>
               {card.price_per_pallet > 0 && (
-                <div className="flex items-baseline gap-0.5 mr-1.5">
+                <div className="flex items-baseline gap-0.5">
                   <span className="text-[13px] font-black text-[#15803d]">{card.price_per_pallet}</span>
                   <span className="text-[8px] text-[#15803d]/60 font-semibold">ر.س</span>
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg" style={{ background: '#f0f9f4' }}>
-              <span className="text-[12px] font-black text-[#15803d]">{card.available_quantity.toLocaleString()}</span>
-              <Package className="w-3 h-3 text-green-500/70" />
+            <div className="flex items-center gap-2">
+              <TrustRatingBadge rating={card.trust_rating ?? 3} size="sm" showLabel={false} />
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg" style={{ background: '#f0f9f4' }}>
+                <span className="text-[12px] font-black text-[#15803d]">{card.available_quantity.toLocaleString()}</span>
+                <Package className="w-3 h-3 text-green-500/70" />
+              </div>
             </div>
           </div>
         </div>
@@ -247,15 +247,12 @@ function DemandCardItem({ card, onClick }: { card: DemandCard; onClick: () => vo
         <div className="flex-1 min-w-0 flex flex-col justify-between p-3">
           <div>
             <div className="flex items-start justify-between gap-2 mb-1.5">
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span
-                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                  style={{ background: 'rgba(217,119,6,0.08)', color: '#b45309', border: '1px solid rgba(217,119,6,0.15)' }}
-                >
-                  طلب
-                </span>
-                <TrustRatingBadge rating={card.trust_rating ?? 3} size="sm" showLabel={false} />
-              </div>
+              <span
+                className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                style={{ background: 'rgba(217,119,6,0.08)', color: '#b45309', border: '1px solid rgba(217,119,6,0.15)' }}
+              >
+                طلب
+              </span>
               <p className="text-[15px] font-black text-[#1a3a4a] leading-tight truncate">{card.pallet_type}</p>
             </div>
 
@@ -280,16 +277,25 @@ function DemandCardItem({ card, onClick }: { card: DemandCard; onClick: () => vo
           </div>
 
           <div className="flex items-center justify-between mt-2.5 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
-            <span className="text-[9px] text-[#a0b5c0]">{timeAgo(card.created_at)}</span>
-            {flexCount > 0 && (
-              <span
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1"
-                style={{ background: '#FFF7ED', color: '#b45309', border: '1px solid #FED7AA' }}
-              >
-                <Star className="w-2.5 h-2.5" />
-                {flexCount} مرونة
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] text-[#a0b5c0]">{timeAgo(card.created_at)}</span>
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg" style={{ background: '#fff7ed' }}>
+                <span className="text-[12px] font-black text-[#b45309]">{card.quantity.toLocaleString()}</span>
+                <Package className="w-3 h-3 text-amber-500/70" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <TrustRatingBadge rating={card.trust_rating ?? 3} size="sm" showLabel={false} />
+              {flexCount > 0 && (
+                <span
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1"
+                  style={{ background: '#FFF7ED', color: '#b45309', border: '1px solid #FED7AA' }}
+                >
+                  <Star className="w-2.5 h-2.5" />
+                  {flexCount} مرونة
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
