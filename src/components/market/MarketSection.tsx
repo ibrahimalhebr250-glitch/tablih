@@ -605,18 +605,29 @@ export default function MarketSection({
     const [supplyRes, demandRes] = await Promise.all([
       supabase
         .from('inventory_batches')
-        .select('id, phone, pallet_type, size, quality, pallet_condition, available_quantity, price_per_pallet, city, description, created_at, inventory_images(url, is_primary, sort_order), platform_users!inventory_batches_phone_fkey(trust_rating)')
+        .select('id, phone, pallet_type, size, quality, pallet_condition, available_quantity, price_per_pallet, city, description, created_at, inventory_images(url, is_primary, sort_order)')
         .eq('status', 'active')
         .gt('available_quantity', 0)
         .order('created_at', { ascending: false })
         .limit(30),
       supabase
         .from('orders')
-        .select('id, phone, pallet_type, size, quality, quantity, city, accept_close_quality, accept_close_city, accept_partial_delivery, created_at, platform_users!orders_phone_fkey(trust_rating)')
+        .select('id, phone, pallet_type, size, quality, quantity, city, accept_close_quality, accept_close_city, accept_partial_delivery, created_at')
         .in('status', ['pending', 'unmatched'])
         .order('created_at', { ascending: false })
         .limit(30),
     ]);
+
+    const supplyPhones = [...new Set((supplyRes.data || []).map((b: any) => b.phone).filter(Boolean))];
+    const demandPhones = [...new Set((demandRes.data || []).map((o: any) => o.phone).filter(Boolean))];
+    const allPhones = [...new Set([...supplyPhones, ...demandPhones])];
+
+    const { data: usersData } = await supabase
+      .from('platform_users')
+      .select('phone, trust_rating')
+      .in('phone', allPhones);
+
+    const userRatings = new Map((usersData || []).map((u: any) => [u.phone, u.trust_rating]));
 
     const supply: SupplyCard[] = (supplyRes.data || []).map((b: any) => {
       const imgs: any[] = b.inventory_images || [];
@@ -635,7 +646,7 @@ export default function MarketSection({
         description: b.description || '',
         image_urls: sorted.map((i: any) => i.url),
         created_at: b.created_at,
-        trust_rating: b.platform_users?.trust_rating ?? 3,
+        trust_rating: userRatings.get(b.phone) ?? 3,
       };
     });
 
@@ -652,7 +663,7 @@ export default function MarketSection({
       accept_close_city: o.accept_close_city,
       accept_partial_delivery: o.accept_partial_delivery,
       created_at: o.created_at,
-      trust_rating: o.platform_users?.trust_rating ?? 3,
+      trust_rating: userRatings.get(o.phone) ?? 3,
     }));
 
     setItems([...supply, ...demand]);
