@@ -121,10 +121,6 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
   };
 
   const handleWhatsAppClick = () => {
-    if (!isAuthenticated) {
-      onShowAuthPrompt();
-      return;
-    }
     const link = buildWhatsAppLink();
     window.open(link, '_blank');
   };
