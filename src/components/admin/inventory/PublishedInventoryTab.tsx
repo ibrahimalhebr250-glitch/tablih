@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Package, Search, Filter, Eye, Edit2, Pause, Play, Trash2, CheckCircle, XCircle, MapPin, Phone, Calendar } from 'lucide-react';
+import { Package, Search, Filter, Eye, CreditCard as Edit2, Pause, Play, Trash2, CheckCircle, XCircle, MapPin, Phone, Calendar } from 'lucide-react';
 import { useAdminInventory } from '../../../hooks/useAdminInventory';
 import { useInventorySettings } from '../../../hooks/useInventorySettings';
 
