@@ -4,12 +4,14 @@ import { supabase } from '../../../lib/supabase';
 
 interface PendingRating {
   id: string;
-  deal_id: string;
+  deal_id: string | null;
   deal_ref: string;
   rater_phone: string;
   rated_phone: string;
   rating: number;
   comment: string | null;
+  rating_type: string;
+  item_type: string;
   created_at: string;
 }
 
@@ -111,8 +113,19 @@ export default function RatingsSection() {
                     <Clock className="w-5 h-5 text-amber-700" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-gray-900">تقييم معلق</p>
-                    <p className="text-xs text-gray-600 font-mono">{rating.deal_ref}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-gray-900">
+                        {rating.rating_type === 'deal' ? 'تقييم صفقة' : 'تقييم زائر'}
+                      </p>
+                      {rating.rating_type === 'visitor' && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold">
+                          {rating.item_type === 'supply' ? 'عرض' : 'طلب'}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-600 font-mono">
+                      {rating.deal_ref || `${rating.item_type}-${rating.id.slice(0, 8)}`}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-gray-500">

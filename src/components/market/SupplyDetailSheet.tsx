@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { X, MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff, Heart, MessageCircle } from 'lucide-react';
+import { X, MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff, Heart, MessageCircle, Star } from 'lucide-react';
 import TrustRatingBadge from '../shared/TrustRatingBadge';
+import VisitorRatingDialog from './VisitorRatingDialog';
 
 interface SupplyCard {
   id: string;
@@ -79,6 +80,7 @@ interface Props {
 export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onShowAuthPrompt }: Props) {
   const [imgIndex, setImgIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
+  const [showRatingDialog, setShowRatingDialog] = useState(false);
 
   const q = QUALITY_COLORS[card.quality] || QUALITY_COLORS.C;
   const cond = CONDITION_MAP[card.pallet_condition] || CONDITION_MAP.used;
@@ -346,6 +348,14 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
           </button>
 
           <button
+            onClick={() => setShowRatingDialog(true)}
+            className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-[14px] font-bold transition-all active:scale-95 bg-amber-50 border-2 border-amber-200 text-amber-700 hover:bg-amber-100"
+          >
+            <Star className="w-4.5 h-4.5" />
+            تقييم هذا العرض
+          </button>
+
+          <button
             onClick={handleFavorite}
             className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-[14px] font-bold transition-all active:scale-95"
             style={{
@@ -360,6 +370,20 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
           </button>
         </div>
       </div>
+
+      {showRatingDialog && (
+        <VisitorRatingDialog
+          isOpen={showRatingDialog}
+          onClose={() => setShowRatingDialog(false)}
+          ratedUserPhone={card.phone}
+          ratedUserName="المورد"
+          itemType="supply"
+          itemId={card.id}
+          onRatingSubmitted={() => {
+            setShowRatingDialog(false);
+          }}
+        />
+      )}
     </div>
   );
 }

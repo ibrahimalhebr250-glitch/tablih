@@ -27,8 +27,11 @@ interface Props {
 
 export default function RatingsSection({ userPhone }: Props) {
   const [summary, setSummary] = useState<RatingsSummary | null>(null);
+  const [visitorSummary, setVisitorSummary] = useState<RatingsSummary | null>(null);
   const [ratings, setRatings] = useState<Rating[]>([]);
+  const [visitorRatings, setVisitorRatings] = useState<Rating[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'deal' | 'visitor'>('deal');
 
   useEffect(() => {
     fetchRatings();
@@ -46,16 +49,37 @@ export default function RatingsSection({ userPhone }: Props) {
       if (summaryError) throw summaryError;
       setSummary(summaryData);
 
+      const { data: visitorSummaryData, error: visitorSummaryError } = await supabase.rpc(
+        'get_visitor_ratings_summary',
+        { p_user_phone: userPhone }
+      );
+
+      if (visitorSummaryError) throw visitorSummaryError;
+      setVisitorSummary(visitorSummaryData);
+
       const { data: ratingsData, error: ratingsError } = await supabase
         .from('user_ratings')
         .select('*')
         .eq('rated_phone', userPhone)
+        .eq('rating_type', 'deal')
         .eq('is_confirmed', true)
         .order('created_at', { ascending: false })
         .limit(10);
 
       if (ratingsError) throw ratingsError;
       setRatings(ratingsData || []);
+
+      const { data: visitorRatingsData, error: visitorRatingsError } = await supabase
+        .from('user_ratings')
+        .select('*')
+        .eq('rated_phone', userPhone)
+        .eq('rating_type', 'visitor')
+        .eq('is_confirmed', true)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (visitorRatingsError) throw visitorRatingsError;
+      setVisitorRatings(visitorRatingsData || []);
     } catch (error) {
       console.error('Error fetching ratings:', error);
     } finally {
@@ -74,17 +98,46 @@ export default function RatingsSection({ userPhone }: Props) {
     );
   }
 
-  if (!summary) {
+  if (!summary || !visitorSummary) {
     return null;
   }
 
-  const avgRating = summary.average_rating || 0;
-  const confirmedCount = summary.confirmed_ratings || 0;
+  const currentSummary = activeTab === 'deal' ? summary : visitorSummary;
+  const currentRatings = activeTab === 'deal' ? ratings : visitorRatings;
+  const avgRating = currentSummary.average_rating || 0;
+  const confirmedCount = currentSummary.confirmed_ratings || 0;
 
   return (
     <div className="space-y-4">
+      <div className="bg-white rounded-2xl p-4 border border-gray-200">
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setActiveTab('deal')}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+              activeTab === 'deal'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            تقييمات الصفقات ({summary.confirmed_ratings})
+          </button>
+          <button
+            onClick={() => setActiveTab('visitor')}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+              activeTab === 'visitor'
+                ? 'bg-amber-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            تقييمات الزوار ({visitorSummary.confirmed_ratings})
+          </button>
+        </div>
+      </div>
+
       <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200/50">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">التقييمات</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-4">
+          {activeTab === 'deal' ? 'تقييمات الصفقات' : 'تقييمات الزوار'}
+        </h3>
 
         <div className="flex items-center gap-6 mb-6">
           <div className="text-center">
@@ -111,7 +164,7 @@ export default function RatingsSection({ userPhone }: Props) {
           {confirmedCount > 0 && (
             <div className="flex-1 space-y-2">
               {[5, 4, 3, 2, 1].map((rating) => {
-                const count = summary.rating_breakdown[rating] || 0;
+                const count = currentSummary.rating_breakdown[rating] || 0;
                 const percentage = confirmedCount > 0 ? (count / confirmedCount) * 100 : 0;
                 return (
                   <div key={rating} className="flex items-center gap-2 text-xs">
@@ -133,21 +186,21 @@ export default function RatingsSection({ userPhone }: Props) {
           )}
         </div>
 
-        {summary.pending_ratings > 0 && (
+        {currentSummary.pending_ratings > 0 && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center gap-2">
             <Clock className="w-4 h-4 text-blue-600" />
             <p className="text-sm text-blue-800">
-              {summary.pending_ratings} {summary.pending_ratings === 1 ? 'تقييم' : 'تقييمات'} في انتظار مراجعة الإدارة
+              {currentSummary.pending_ratings} {currentSummary.pending_ratings === 1 ? 'تقييم' : 'تقييمات'} في انتظار مراجعة الإدارة
             </p>
           </div>
         )}
       </div>
 
-      {ratings.length > 0 && (
+      {currentRatings.length > 0 && (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h4 className="text-md font-bold text-gray-900 mb-4">آخر التقييمات</h4>
           <div className="space-y-3">
-            {ratings.map((rating) => (
+            {currentRatings.map((rating) => (
               <div
                 key={rating.id}
                 className="bg-gray-50 rounded-xl p-4 border border-gray-100"

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { X, MapPin, Package, Star, ShoppingBag, Heart } from 'lucide-react';
 import TrustRatingBadge from '../shared/TrustRatingBadge';
+import VisitorRatingDialog from './VisitorRatingDialog';
 
 interface DemandCard {
   id: string;
+  phone: string;
   pallet_type: string;
   size: string;
   quality: string;
@@ -42,6 +44,7 @@ interface Props {
 
 export default function DemandDetailSheet({ card, onClose, isAuthenticated, onShowAuthPrompt }: Props) {
   const [isFavorited, setIsFavorited] = useState(false);
+  const [showRatingDialog, setShowRatingDialog] = useState(false);
   const q = QUALITY_COLORS[card.quality] || QUALITY_COLORS.C;
   const flexItems = [
     { active: card.accept_close_quality, label: 'يقبل جودة قريبة', bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
@@ -174,7 +177,15 @@ export default function DemandDetailSheet({ card, onClose, isAuthenticated, onSh
           </div>
         </div>
 
-        <div className="flex-shrink-0 px-5 pb-6 pt-3" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+        <div className="flex-shrink-0 px-5 pb-6 pt-3 space-y-3" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+          <button
+            onClick={() => setShowRatingDialog(true)}
+            className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-[14px] font-bold transition-all active:scale-95 bg-amber-50 border-2 border-amber-200 text-amber-700 hover:bg-amber-100"
+          >
+            <Star className="w-4.5 h-4.5" />
+            تقييم هذا الطلب
+          </button>
+
           <button
             onClick={handleFavorite}
             className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[15px] font-black text-white transition-all active:scale-95"
@@ -188,6 +199,20 @@ export default function DemandDetailSheet({ card, onClose, isAuthenticated, onSh
           </button>
         </div>
       </div>
+
+      {showRatingDialog && (
+        <VisitorRatingDialog
+          isOpen={showRatingDialog}
+          onClose={() => setShowRatingDialog(false)}
+          ratedUserPhone={card.phone}
+          ratedUserName="المشتري"
+          itemType="demand"
+          itemId={card.id}
+          onRatingSubmitted={() => {
+            setShowRatingDialog(false);
+          }}
+        />
+      )}
     </div>
   );
 }
