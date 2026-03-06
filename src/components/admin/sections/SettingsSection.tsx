@@ -5,6 +5,7 @@ import { getPlatformFee, updatePlatformFee } from '../../../hooks/useFinance';
 import { usePlatformSettings } from '../../../hooks/usePlatformSettings';
 import type { PlatformSettings } from '../../../hooks/usePlatformSettings';
 import { useEffect } from 'react';
+import { getAdminEmail } from '../../../utils/adminAuth';
 
 const feePresets = [0, 0.25, 0.50, 1.00, 1.50, 2.00];
 
@@ -71,20 +72,43 @@ function GeneralSettings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loadingFee, setLoadingFee] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getPlatformFee().then(v => { setFee(v); setLoadingFee(false); });
   }, []);
 
   const handleSaveFee = async () => {
+    const adminEmail = getAdminEmail();
+    if (!adminEmail) {
+      setError('غير مصرح لك بهذا الإجراء');
+      return;
+    }
+
     setSaving(true);
-    const ok = await updatePlatformFee(fee);
+    setError(null);
+    const result = await updatePlatformFee(fee, adminEmail);
     setSaving(false);
-    if (ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
+
+    if (result.success) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } else {
+      setError(result.error || 'فشل حفظ العمولة');
+    }
   };
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="bg-[#fef2f2] border border-[#fecaca] rounded-xl p-4 flex items-start justify-between" dir="rtl">
+          <p className="text-[13px] text-[#dc2626] font-semibold">{error}</p>
+          <button onClick={() => setError(null)} className="text-[#dc2626] hover:text-[#991b1b]">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+          </button>
+        </div>
+      )}
+
       <Card title="عمولة المنصة">
         <div className="py-3 space-y-3">
           <p className="text-[11px] text-[#7a9aab] leading-relaxed">

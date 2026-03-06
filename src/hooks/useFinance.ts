@@ -352,18 +352,29 @@ export async function settleCommission(
   return { success: true };
 }
 
-export async function updatePlatformFee(fee: number): Promise<boolean> {
-  const { error } = await supabase
-    .from('admin_settings')
-    .update({ platform_fee_per_unit: fee, updated_at: new Date().toISOString() })
-    .not('id', 'is', null);
-  return !error;
+export async function updatePlatformFee(fee: number, adminEmail: string): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('admin_update_platform_fee', {
+    p_admin_email: adminEmail,
+    p_new_fee: fee
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  if (data && !data.success) {
+    return { success: false, error: data.error };
+  }
+
+  return { success: true };
 }
 
 export async function getPlatformFee(): Promise<number> {
-  const { data } = await supabase
-    .from('admin_settings')
-    .select('platform_fee_per_unit')
-    .maybeSingle();
-  return Number(data?.platform_fee_per_unit) || 1;
+  const { data, error } = await supabase.rpc('get_platform_fee');
+
+  if (error || !data) {
+    return 1.0;
+  }
+
+  return Number(data) || 1.0;
 }
