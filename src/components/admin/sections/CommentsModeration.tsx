@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
-import {
-  Flag, Trash2, Check, X, MessageSquare, AlertCircle, RefreshCw, Edit2, Eye,
-  Search, TrendingUp, BarChart3, ChevronLeft, ChevronRight, RotateCcw
-} from 'lucide-react';
+import { Flag, Trash2, Check, X, MessageSquare, AlertCircle, RefreshCw, CreditCard as Edit2, Eye, Search, TrendingUp, BarChart3, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 
 interface Comment {
   comment_id: string;

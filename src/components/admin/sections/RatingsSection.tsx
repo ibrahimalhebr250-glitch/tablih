@@ -1,9 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  Star, Check, X, Calendar, MessageSquare, Clock, CheckCircle, XCircle,
-  RefreshCw, Edit2, Trash2, Eye, Filter, Search, TrendingUp, BarChart3,
-  ChevronLeft, ChevronRight, Users
-} from 'lucide-react';
+import { Star, Check, X, Calendar, MessageSquare, Clock, CheckCircle, XCircle, RefreshCw, CreditCard as Edit2, Trash2, Eye, Filter, Search, TrendingUp, BarChart3, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 interface Rating {
