@@ -203,7 +203,7 @@ export default function Step2QuantityCity({
           {/* Price display + buttons */}
           <div className="flex items-center justify-between gap-3 mb-5">
             <button
-              onPointerDown={() => startPriceHold(-priceStep)}
+              onPointerDown={() => startPriceHold(-1)}
               onPointerUp={stopPriceHold}
               onPointerLeave={stopPriceHold}
               onPointerCancel={stopPriceHold}
@@ -218,7 +218,7 @@ export default function Step2QuantityCity({
               <span className="text-[11px] text-[#a0b5c0] mt-1 block">ريال / طبلية</span>
             </div>
             <button
-              onPointerDown={() => startPriceHold(priceStep)}
+              onPointerDown={() => startPriceHold(1)}
               onPointerUp={stopPriceHold}
               onPointerLeave={stopPriceHold}
               onPointerCancel={stopPriceHold}
@@ -243,7 +243,7 @@ export default function Step2QuantityCity({
               type="range"
               min={minPrice}
               max={maxPrice}
-              step={priceStep}
+              step={1}
               value={pricePerPallet}
               onChange={(e) => onSetPrice(Number(e.target.value))}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer touch-none"
