@@ -71,7 +71,7 @@ export default function VisitorRatingDialog({
         setSuccess(false);
         setRating(0);
         setComment('');
-      }, 2000);
+      }, 1500);
     } catch (err: any) {
       setError(err.message || 'حدث خطأ أثناء إضافة التقييم');
     } finally {
@@ -109,8 +109,8 @@ export default function VisitorRatingDialog({
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
-            <p className="text-lg font-bold text-gray-900 mb-2">تم إضافة التقييم بنجاح</p>
-            <p className="text-sm text-gray-600">سيظهر التقييم بعد مراجعة الإدارة</p>
+            <p className="text-lg font-bold text-gray-900 mb-2">تم إضافة التقييم بنجاح!</p>
+            <p className="text-sm text-gray-600">يظهر تقييمك الآن في صفحة {itemLabel}</p>
           </div>
         ) : (
           <>
