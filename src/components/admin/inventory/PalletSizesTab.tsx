@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, Eye, EyeOff, Ruler } from 'lucide-react';
+import { Plus, CreditCard as Edit2, Trash2, Eye, EyeOff, Ruler } from 'lucide-react';
 import { useInventorySettings } from '../../../hooks/useInventorySettings';
 import { useAdminInventory } from '../../../hooks/useAdminInventory';
 
