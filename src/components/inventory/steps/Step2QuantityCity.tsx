@@ -65,12 +65,12 @@ export default function Step2QuantityCity({
   const startPriceHold = useCallback((delta: number) => {
     stopPriceHold();
     const newPrice = Math.max(minPrice, Math.min(maxPrice, priceValueRef.current + delta));
-    onSetPrice(Math.floor(newPrice / priceStep) * priceStep);
+    onSetPrice(newPrice);
     priceHoldRef.current = setInterval(() => {
       const newPrice = Math.max(minPrice, Math.min(maxPrice, priceValueRef.current + delta));
-      onSetPrice(Math.floor(newPrice / priceStep) * priceStep);
+      onSetPrice(newPrice);
     }, 100);
-  }, [minPrice, maxPrice, priceStep, onSetPrice, stopPriceHold]);
+  }, [minPrice, maxPrice, onSetPrice, stopPriceHold]);
 
   const sliderPercent = ((pricePerPallet - minPrice) / (maxPrice - minPrice)) * 100;
 
@@ -201,18 +201,19 @@ export default function Step2QuantityCity({
           </div>
 
           {/* Price display + buttons */}
-          <div className="flex items-center justify-between gap-3 mb-5">
+          <div className="flex items-center justify-between gap-3 mb-4">
             <button
               onPointerDown={() => startPriceHold(-1)}
               onPointerUp={stopPriceHold}
               onPointerLeave={stopPriceHold}
               onPointerCancel={stopPriceHold}
-              className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center active:scale-90 transition-transform select-none touch-none"
+              disabled={pricePerPallet <= minPrice}
+              className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center active:scale-90 transition-all select-none touch-none disabled:opacity-40 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             >
               <Minus className="w-5 h-5 text-[#2c5f7c]" strokeWidth={2.5} />
             </button>
             <div className="flex-1 text-center select-none">
-              <div className="text-[32px] font-bold text-[#1a4a5e] leading-none tabular-nums">
+              <div className="text-[36px] font-bold text-[#1a4a5e] leading-none tabular-nums animate-in fade-in duration-200">
                 {pricePerPallet > 0 ? pricePerPallet.toLocaleString('ar-SA') : '٠'}
               </div>
               <span className="text-[11px] text-[#a0b5c0] mt-1 block">ريال / طبلية</span>
@@ -222,22 +223,63 @@ export default function Step2QuantityCity({
               onPointerUp={stopPriceHold}
               onPointerLeave={stopPriceHold}
               onPointerCancel={stopPriceHold}
-              className="w-12 h-12 rounded-full bg-[#1a4a5e] flex items-center justify-center active:scale-90 transition-transform shadow-md select-none touch-none"
+              disabled={pricePerPallet >= maxPrice}
+              className="w-12 h-12 rounded-full bg-gradient-to-br from-[#1a4a5e] to-[#2c7a9c] flex items-center justify-center active:scale-90 transition-all shadow-md select-none touch-none disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg"
             >
               <Plus className="w-5 h-5 text-white" strokeWidth={2.5} />
             </button>
           </div>
 
-          {/* Slider */}
+          {/* Quick increment buttons */}
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <button
+              onClick={() => onSetPrice(Math.max(minPrice, pricePerPallet - 10))}
+              disabled={pricePerPallet <= minPrice}
+              className="px-3 py-1 rounded-full bg-gray-50 border border-gray-200 text-[11px] font-semibold text-[#2c5f7c] active:scale-95 transition-all select-none disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
+            >
+              -10
+            </button>
+            <button
+              onClick={() => onSetPrice(Math.max(minPrice, pricePerPallet - 5))}
+              disabled={pricePerPallet <= minPrice}
+              className="px-3 py-1 rounded-full bg-gray-50 border border-gray-200 text-[11px] font-semibold text-[#2c5f7c] active:scale-95 transition-all select-none disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
+            >
+              -5
+            </button>
+            <span className="text-[10px] text-[#a0b5c0] px-2">قفزة سريعة</span>
+            <button
+              onClick={() => onSetPrice(Math.min(maxPrice, pricePerPallet + 5))}
+              disabled={pricePerPallet >= maxPrice}
+              className="px-3 py-1 rounded-full bg-[#1a4a5e] text-white text-[11px] font-semibold active:scale-95 transition-all select-none disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#2c5f7c]"
+            >
+              +5
+            </button>
+            <button
+              onClick={() => onSetPrice(Math.min(maxPrice, pricePerPallet + 10))}
+              disabled={pricePerPallet >= maxPrice}
+              className="px-3 py-1 rounded-full bg-[#1a4a5e] text-white text-[11px] font-semibold active:scale-95 transition-all select-none disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#2c5f7c]"
+            >
+              +10
+            </button>
+          </div>
+
+          {/* Slider with min/max labels */}
           <div className="relative mb-4 px-1">
-            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="flex justify-between text-[9px] text-[#a0b5c0] mb-1 px-1">
+              <span>{minPrice}</span>
+              <span>{maxPrice}</span>
+            </div>
+            <div className="h-3 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-full rounded-full transition-all duration-75"
+                className="h-full rounded-full transition-all duration-150 relative"
                 style={{
                   width: `${sliderPercent}%`,
-                  background: 'linear-gradient(90deg, #1a4a5e, #2c7a9c)',
+                  background: 'linear-gradient(90deg, #1a4a5e 0%, #2c7a9c 50%, #3b9ac9 100%)',
+                  boxShadow: '0 2px 8px rgba(26, 74, 94, 0.3)',
                 }}
-              />
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white opacity-20" />
+              </div>
             </div>
             <input
               type="range"
@@ -247,12 +289,14 @@ export default function Step2QuantityCity({
               value={pricePerPallet}
               onChange={(e) => onSetPrice(Number(e.target.value))}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer touch-none"
-              style={{ WebkitAppearance: 'none', margin: 0 }}
+              style={{ WebkitAppearance: 'none', margin: 0, top: '16px' }}
             />
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-white border-[3px] border-[#1a4a5e] rounded-full shadow-md pointer-events-none transition-all duration-75"
-              style={{ left: `calc(${sliderPercent}% - 12px)` }}
-            />
+              className="absolute top-1/2 -translate-y-1/2 w-7 h-7 bg-white border-[3px] border-[#1a4a5e] rounded-full shadow-lg pointer-events-none transition-all duration-150 flex items-center justify-center"
+              style={{ left: `calc(${sliderPercent}% - 14px)`, top: 'calc(50% + 8px)' }}
+            >
+              <div className="w-2 h-2 bg-[#1a4a5e] rounded-full" />
+            </div>
           </div>
 
           {/* Price presets */}
@@ -261,16 +305,28 @@ export default function Step2QuantityCity({
               <button
                 key={p}
                 onClick={() => onSetPrice(p)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all select-none ${
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all select-none active:scale-95 ${
                   pricePerPallet === p
-                    ? 'bg-[#1a4a5e] text-white shadow-sm'
-                    : 'bg-gray-100 text-[#2c5f7c] active:scale-95'
+                    ? 'bg-gradient-to-br from-[#1a4a5e] to-[#2c7a9c] text-white shadow-md scale-105'
+                    : 'bg-gray-100 text-[#2c5f7c] hover:bg-gray-200 hover:shadow-sm border border-gray-200'
                 }`}
               >
-                {p === 0 ? 'تفاوض' : p.toLocaleString('ar-SA')}
+                {p === 0 ? 'تفاوض' : `${p.toLocaleString('ar-SA')} ر.س`}
               </button>
             ))}
           </div>
+
+          {/* Current selection indicator */}
+          {pricePerPallet > 0 && (
+            <div className="mt-4 text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#e8f4f8] to-[#d0e5f2] rounded-full">
+                <DollarSign className="w-4 h-4 text-[#1a4a5e]" />
+                <span className="text-[12px] font-semibold text-[#1a4a5e]">
+                  السعر المختار: {pricePerPallet.toLocaleString('ar-SA')} ريال
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
