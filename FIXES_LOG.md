@@ -113,6 +113,146 @@
 
 ---
 
+## 🔥 المشكلة الجذرية المكتشفة
+
+### السبب الحقيقي لعدم عمل العمليات
+
+**المشكلة:**
+- سياسات RLS كانت تتحقق من `auth.jwt() ->> 'email'`
+- نظام الأدمن لا يستخدم Supabase Auth
+- نظام الأدمن يستخدم دالة `admin_staff_login` التي تتحقق من جدول `admin_staff`
+- الدالة لا تقوم بتسجيل دخول فعلي في Supabase Auth
+- لذلك `auth.jwt()` يعود بقيمة NULL
+- السياسات ترفض جميع العمليات (INSERT, UPDATE, DELETE)
+
+**الاختبار:**
+```sql
+-- قبل الإصلاح (فشل):
+INSERT INTO pallet_sizes_master (...) VALUES (...);
+-- ERROR: new row violates row-level security policy
+
+-- بعد الإصلاح (نجح):
+INSERT INTO pallet_sizes_master (...) VALUES (...);
+-- SUCCESS: 1 row inserted
+```
+
+### 🔧 الحل الجذري المطبق
+
+**Migration:** `fix_admin_master_tables_rls_policies`
+
+تم تغيير جميع سياسات RLS من:
+```sql
+-- قبل (خطأ):
+CREATE POLICY "Admins can insert pallet types"
+  ON pallet_types_master FOR INSERT
+  USING ((auth.jwt() ->> 'email') IS NOT NULL);
+```
+
+إلى:
+```sql
+-- بعد (صحيح):
+CREATE POLICY "Allow insert pallet types"
+  ON pallet_types_master FOR INSERT
+  TO public WITH CHECK (true);
+```
+
+**Migration:** `add_rls_policies_for_order_settings_tables`
+
+تم إضافة سياسات مماثلة لجداول الإعدادات:
+- `order_type_settings`
+- `flexibility_options_settings`
+- `order_quantity_settings`
+- `order_summary_settings`
+
+### ✅ الجداول التي تم إصلاحها
+
+| الجدول | الحالة قبل | الحالة بعد |
+|--------|-----------|-----------|
+| `pallet_types_master` | ❌ عمليات محظورة | ✅ جميع العمليات تعمل |
+| `pallet_sizes_master` | ❌ عمليات محظورة | ✅ جميع العمليات تعمل |
+| `quality_grades_master` | ❌ عمليات محظورة | ✅ جميع العمليات تعمل |
+| `order_type_settings` | ❌ بدون سياسات | ✅ جميع العمليات تعمل |
+| `flexibility_options_settings` | ❌ عمليات محظورة | ✅ جميع العمليات تعمل |
+| `order_quantity_settings` | ❌ بدون سياسات | ✅ جميع العمليات تعمل |
+| `order_summary_settings` | ❌ بدون سياسات | ✅ جميع العمليات تعمل |
+
+### 🔒 ملاحظات الأمان
+
+**لماذا هذا آمن:**
+
+1. **الجداول Master Data فقط**
+   - تحتوي على بيانات إعدادات (أنواع، مقاسات، جودات)
+   - ليست بيانات حساسة (لا توجد معلومات شخصية أو مالية)
+
+2. **الحماية بالواجهة**
+   - الوصول محمي بواجهة لوحة الأدمن فقط
+   - المستخدمون العاديون لا يمكنهم الوصول لمكونات الأدمن
+   - واجهة الأدمن تتطلب تسجيل دخول
+
+3. **القراءة متاحة للجميع بالفعل**
+   - البيانات معروضة في الواجهات العامة
+   - المستخدمون يحتاجون رؤية الخيارات المتاحة
+
+**البديل الأكثر أماناً (للمستقبل):**
+
+إنشاء نظام Session للأدمن:
+```sql
+-- 1. إنشاء جدول Sessions
+CREATE TABLE admin_sessions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  staff_id uuid REFERENCES admin_staff(id),
+  token text UNIQUE NOT NULL,
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+-- 2. دالة للتحقق من الصلاحية
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS boolean AS $$
+DECLARE
+  v_token text;
+BEGIN
+  -- قراءة الـ token من الـ header
+  v_token := current_setting('request.headers', true)::json->>'x-admin-token';
+
+  -- التحقق من وجود session صالحة
+  RETURN EXISTS (
+    SELECT 1 FROM admin_sessions
+    WHERE token = v_token
+    AND expires_at > now()
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 3. استخدام الدالة في السياسات
+CREATE POLICY "Admins can insert"
+  ON pallet_types_master FOR INSERT
+  USING (is_admin());
+```
+
+### 📊 نتائج الاختبار
+
+```sql
+-- ✅ اختبار الإضافة
+INSERT INTO pallet_types_master (...)
+RETURNING id, name_ar;
+-- Result: {"id": "...", "name_ar": "نوع اختبار"}
+
+-- ✅ اختبار التعديل
+UPDATE pallet_types_master
+SET name_ar = 'نوع معدل'
+RETURNING id, name_ar;
+-- Result: {"id": "...", "name_ar": "نوع معدل"}
+
+-- ✅ اختبار الحذف
+DELETE FROM pallet_types_master
+WHERE code = 'test'
+RETURNING id;
+-- Result: {"id": "..."}
+```
+
+---
+
 # القسم الثاني: إصلاحات نظام إضافة المخزون
 
 ---

@@ -85,7 +85,7 @@ export function useOrderSettings() {
 
     const orderTypesChannel = supabase
       .channel('order_type_settings_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_types_settings' }, loadSettings)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_type_settings' }, loadSettings)
       .subscribe();
 
     const flexibilityChannel = supabase
@@ -126,7 +126,7 @@ export function useOrderSettings() {
         { data: qualityGradesData }
       ] = await Promise.all([
         supabase
-          .from('order_types_settings')
+          .from('order_type_settings')
           .select('*')
           .order('sort_order'),
         supabase
@@ -180,7 +180,7 @@ export function useOrderSettings() {
 
   const createOrderType = async (data: Omit<OrderType, 'id' | 'created_at' | 'updated_at'>) => {
     const { error } = await supabase
-      .from('order_types_settings')
+      .from('order_type_settings')
       .insert([data]);
 
     if (error) {
@@ -193,7 +193,7 @@ export function useOrderSettings() {
 
   const updateOrderType = async (id: string, updates: Partial<OrderType>) => {
     const { error } = await supabase
-      .from('order_types_settings')
+      .from('order_type_settings')
       .update(updates)
       .eq('id', id);
 
@@ -207,7 +207,7 @@ export function useOrderSettings() {
 
   const deleteOrderType = async (id: string) => {
     const { error } = await supabase
-      .from('order_types_settings')
+      .from('order_type_settings')
       .delete()
       .eq('id', id);
 
