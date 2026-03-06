@@ -14,7 +14,7 @@ export default function CitySelector({ cities, selected, onSelect }: Props) {
   const [search, setSearch] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = cities.filter((c) => c.name_ar.includes(search));
+  const filtered = cities.filter((c) => c.name.includes(search));
 
   useEffect(() => {
     if (open && inputRef.current) {
@@ -88,16 +88,16 @@ export default function CitySelector({ cities, selected, onSelect }: Props) {
                 <button
                   key={city.id}
                   onClick={() => {
-                    onSelect(city.name_ar);
+                    onSelect(city.name);
                     setOpen(false);
                     setSearch('');
                   }}
                   className={`w-full flex items-center justify-between py-3.5 border-b border-gray-50 text-right ${
-                    selected === city.name_ar ? 'text-[#2196F3]' : 'text-[#1a4a5e]'
+                    selected === city.name ? 'text-[#2196F3]' : 'text-[#1a4a5e]'
                   }`}
                 >
-                  <span className="text-[13px] font-bold">{city.name_ar}</span>
-                  {selected === city.name_ar && (
+                  <span className="text-[13px] font-bold">{city.name}</span>
+                  {selected === city.name && (
                     <div className="w-5 h-5 bg-[#2196F3] rounded-full flex items-center justify-center">
                       <svg viewBox="0 0 10 10" className="w-3 h-3" fill="none">
                         <path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" />

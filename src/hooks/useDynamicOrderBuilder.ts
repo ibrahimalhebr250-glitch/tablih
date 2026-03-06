@@ -49,9 +49,8 @@ export interface DynamicQualityGrade {
 
 export interface DynamicCity {
   id: string;
-  name_ar: string;
-  name_en: string;
-  is_active: boolean;
+  name: string;
+  status: string;
 }
 
 export interface FlexibilityOption {
@@ -129,8 +128,8 @@ export function useDynamicOrderBuilder() {
         supabase
           .from('cities')
           .select('*')
-          .eq('is_active', true)
-          .order('name_ar'),
+          .eq('status', 'active')
+          .order('name'),
         supabase
           .from('flexibility_options_settings')
           .select('*')

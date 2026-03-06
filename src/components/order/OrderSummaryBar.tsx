@@ -1,5 +1,4 @@
 import type { OrderFormData } from '../../types/order';
-import { PALLET_QUALITY_LABELS } from '../../types/order';
 import { ArrowLeft } from 'lucide-react';
 
 interface Props {
@@ -12,7 +11,7 @@ export default function OrderSummaryBar({ form, isComplete, onSubmit }: Props) {
   const fields = [
     form.palletType,
     form.size,
-    form.quality ? `Grade ${form.quality} – ${PALLET_QUALITY_LABELS[form.quality].ar}` : null,
+    form.quality ? `Grade ${form.quality}` : null,
     form.quantity ? `${form.quantity.toLocaleString('ar-SA')} طبلية` : null,
     form.city,
   ].filter(Boolean) as string[];

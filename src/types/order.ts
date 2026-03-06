@@ -1,38 +1,7 @@
-export type PalletType = 'خشبية' | 'بلاستيكية' | 'إعادة تدوير';
-export type PalletSize = '120×100' | '110×110' | '120×80' | '80×60' | 'أخرى';
-export type PalletQuality = 'A' | 'B' | 'C' | 'Scrap';
+export type PalletType = string;
+export type PalletSize = string;
+export type PalletQuality = string;
 
-export const PALLET_QUALITY_LABELS: Record<PalletQuality, { ar: string; desc: string }> = {
-  A: { ar: 'ممتازة', desc: 'طبليات جديدة أو كالجديدة' },
-  B: { ar: 'جيدة', desc: 'استخدام متوسط بحالة جيدة' },
-  C: { ar: 'استخدام خفيف', desc: 'مناسبة للنقل الداخلي' },
-  Scrap: { ar: 'إعادة تدوير', desc: 'للكسر أو إعادة التصنيع' },
-};
-
-export const SAUDI_CITIES = [
-  'الرياض',
-  'جدة',
-  'مكة المكرمة',
-  'المدينة المنورة',
-  'الدمام',
-  'الخبر',
-  'الأحساء',
-  'تبوك',
-  'بريدة',
-  'خميس مشيط',
-  'الطائف',
-  'ينبع',
-  'الجبيل',
-  'حائل',
-  'نجران',
-  'ابها',
-  'القصيم',
-  'القطيف',
-  'الخرج',
-  'المجمعة',
-];
-
-export const QUICK_QUANTITIES = [500, 1000, 2000, 5000];
 
 export interface OrderFormData {
   palletType: PalletType | null;
