@@ -235,6 +235,19 @@ export function useOrderSettings() {
     return { success: true };
   };
 
+  const createFlexibilityOption = async (data: Omit<FlexibilityOption, 'id' | 'created_at' | 'updated_at' | 'matching_rule'>) => {
+    const { error } = await supabase
+      .from('flexibility_options_settings')
+      .insert([{ ...data, matching_rule: {} }]);
+
+    if (error) {
+      console.error('Error creating flexibility option:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  };
+
   const updateFlexibilityOption = async (id: string, updates: Partial<FlexibilityOption>) => {
     const { error } = await supabase
       .from('flexibility_options_settings')
@@ -279,6 +292,7 @@ export function useOrderSettings() {
     updateOrderType,
     deleteOrderType,
     updateQuantitySettings,
+    createFlexibilityOption,
     updateFlexibilityOption,
     updateSummarySettings,
     refresh: loadSettings
