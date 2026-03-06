@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Star, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
 
 interface Props {
   isOpen: boolean;
@@ -72,8 +73,14 @@ export default function RatingDialog({
   const displayRating = hoveredRating || rating;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-bold text-gray-900">تقييم {userType === 'supplier' ? 'المورد' : 'المشتري'}</h3>
@@ -176,5 +183,3 @@ export default function RatingDialog({
     </div>
   );
 }
-
-import { supabase } from '../../../lib/supabase';
