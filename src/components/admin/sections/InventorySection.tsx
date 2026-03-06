@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Package, Settings, Layers, Award, Clipboard, Activity } from 'lucide-react';
 import type { InventoryTab } from '../../../types/admin';
+import PublishedInventoryTab from '../inventory/PublishedInventoryTab';
+import SettingsTab from '../inventory/SettingsTab';
+import PalletTypesTab from '../inventory/PalletTypesTab';
 
 interface Props {
   adminEmail: string;
@@ -68,15 +71,7 @@ export default function InventorySection({ adminEmail }: Props) {
       {/* Content */}
       <div className="flex-1 overflow-auto bg-slate-50">
         <div className="p-6">
-          {activeTab === 'published' && (
-            <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
-              <Package className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">المخزونات المنشورة</h3>
-              <p className="text-slate-600">
-                عرض وإدارة جميع المخزونات النشطة في السوق
-              </p>
-            </div>
-          )}
+          {activeTab === 'published' && <PublishedInventoryTab adminEmail={adminEmail} />}
           {activeTab === 'drafts' && (
             <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
               <Clipboard className="w-12 h-12 text-slate-400 mx-auto mb-3" />
@@ -86,24 +81,8 @@ export default function InventorySection({ adminEmail }: Props) {
               </p>
             </div>
           )}
-          {activeTab === 'settings' && (
-            <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
-              <Settings className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">الإعدادات العامة</h3>
-              <p className="text-slate-600">
-                التحكم في حدود الكميات، الأسعار، الصور، والوصف
-              </p>
-            </div>
-          )}
-          {activeTab === 'types' && (
-            <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
-              <Package className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">أنواع الطبليات</h3>
-              <p className="text-slate-600">
-                إضافة وتعديل أنواع الطبليات (خشبية، بلاستيكية، معدنية)
-              </p>
-            </div>
-          )}
+          {activeTab === 'settings' && <SettingsTab adminEmail={adminEmail} />}
+          {activeTab === 'types' && <PalletTypesTab adminEmail={adminEmail} />}
           {activeTab === 'sizes' && (
             <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
               <Layers className="w-12 h-12 text-slate-400 mx-auto mb-3" />
