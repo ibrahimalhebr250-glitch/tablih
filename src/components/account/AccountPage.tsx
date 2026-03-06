@@ -13,6 +13,7 @@ import type { PalletQuality } from '../../types/inventory';
 import { useDashboard } from '../../hooks/useDashboard';
 import { supabase } from '../../lib/supabase';
 import { getTrustConfig } from '../shared/TrustRatingBadge';
+import RatingsSection from './RatingsSection';
 
 interface Props {
   session: AppSession;
@@ -303,7 +304,7 @@ function EditableField({
   );
 }
 
-type TabView = 'home' | 'profile';
+type TabView = 'home' | 'profile' | 'ratings';
 
 export default function AccountPage({ session, freshLogin = false, onClose, onLogout, onUpdateProfile, onOpenSupplierDeals, onOpenBuyerDeals, onOpenSupplierInventory, onExplore }: Props) {
   const [activeTab, setActiveTab] = useState<TabView>('home');
@@ -521,6 +522,19 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
               <Settings className="w-3.5 h-3.5" />
               الإعدادات
               {activeTab === 'profile' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-t-full" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('ratings')}
+              className="flex items-center gap-1.5 px-4 py-2.5 text-[12px] font-bold transition-all relative"
+              style={{
+                color: activeTab === 'ratings' ? '#fff' : 'rgba(255,255,255,0.45)',
+              }}
+            >
+              <Star className="w-3.5 h-3.5" />
+              التقييمات
+              {activeTab === 'ratings' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-t-full" />
               )}
             </button>
@@ -997,6 +1011,11 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
                 </button>
               </div>
             </>
+          )}
+
+          {/* ── RATINGS TAB ── */}
+          {activeTab === 'ratings' && (
+            <RatingsSection userPhone={session.profile.phone} />
           )}
         </div>
       </div>

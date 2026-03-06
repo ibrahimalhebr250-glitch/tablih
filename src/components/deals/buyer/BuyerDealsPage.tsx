@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, ShoppingBag, RefreshCw, Bell, Package, CheckCircle, MessageCircle, CreditCard, Truck, Clock, Loader2, ShieldCheck } from 'lucide-react';
+import { ArrowRight, ShoppingBag, RefreshCw, Bell, Package, CheckCircle, MessageCircle, CreditCard, Truck, Clock, Loader2, ShieldCheck, Star } from 'lucide-react';
 import { useBuyerDeals } from '../../../hooks/useBuyerDeals';
 import type { SupplierInfo } from '../../../hooks/useBuyerDeals';
 import { DEAL_STATUS_CONFIG } from '../../../types/deal';
 import type { Deal } from '../../../types/deal';
 import { ActionToast } from '../../shared/ActionToast';
 import type { ToastConfig } from '../../shared/ActionToast';
+import RatingDialog from '../shared/RatingDialog';
 
 type Tab = 'awaiting' | 'active' | 'ended';
 
@@ -172,7 +173,7 @@ function ActiveDealCard({ deal, supplierInfo }: { deal: Deal; supplierInfo: Supp
   );
 }
 
-function EndedDealCard({ deal, supplierInfo }: { deal: Deal; supplierInfo: SupplierInfo | null }) {
+function EndedDealCard({ deal, supplierInfo, onRate }: { deal: Deal; supplierInfo: SupplierInfo | null; onRate: () => void }) {
   const cfg = DEAL_STATUS_CONFIG[deal.status];
   const isCompleted = deal.status === 'completed';
   const unitPrice = deal.buyer_price ?? (deal.final_price + (deal.platform_fee_per_pallet ?? 1));
@@ -241,7 +242,14 @@ function EndedDealCard({ deal, supplierInfo }: { deal: Deal; supplierInfo: Suppl
         )}
 
         {isCompleted && (
-          <div className="border-t border-[#f0f6fa] pt-3">
+          <div className="border-t border-[#f0f6fa] pt-3 space-y-2">
+            <button
+              onClick={onRate}
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-[12px] font-bold text-white active:scale-[0.97] transition-transform bg-amber-500 hover:bg-amber-600"
+            >
+              <Star className="w-3.5 h-3.5" />
+              <span>تقييم المورد</span>
+            </button>
             <a
               href={buildWhatsAppLink(deal.supplier_phone, 'buyer', deal)}
               target="_blank"
@@ -250,7 +258,7 @@ function EndedDealCard({ deal, supplierInfo }: { deal: Deal; supplierInfo: Suppl
               style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 3px 10px rgba(37,211,102,0.3)' }}
             >
               <MessageCircle className="w-3.5 h-3.5" />
-              <span>تواصل مع المورد عبر واتساب</span>
+              <span>تواصل مع المورد</span>
             </a>
           </div>
         )}
@@ -333,6 +341,7 @@ export default function BuyerDealsPage({ phone, onClose }: Props) {
 
   const [activeTab, setActiveTab] = useState<Tab>('awaiting');
   const [toast, setToast] = useState<ToastConfig | null>(null);
+  const [ratingDialog, setRatingDialog] = useState<{ dealId: string; supplierPhone: string; supplierName: string } | null>(null);
 
   const handleConfirmPurchase = async (dealId: string) => {
     const result = await confirmPurchase(dealId);
@@ -344,6 +353,19 @@ export default function BuyerDealsPage({ phone, onClose }: Props) {
       });
       setActiveTab('active');
     }
+  };
+
+  const handleOpenRating = (deal: Deal, supplierInfo: SupplierInfo | null) => {
+    const supplierName = supplierInfo?.company_name || supplierInfo?.display_name || 'المورد';
+    setRatingDialog({
+      dealId: deal.id,
+      supplierPhone: deal.supplier_phone,
+      supplierName,
+    });
+  };
+
+  const handleRatingSubmitted = () => {
+    refresh();
   };
 
   const counts = { awaiting: awaitingDeals.length, active: activeDeals.length, ended: endedDeals.length };
@@ -487,6 +509,7 @@ export default function BuyerDealsPage({ phone, onClose }: Props) {
                     key={deal.id}
                     deal={deal}
                     supplierInfo={getSupplierInfo(deal.supplier_phone)}
+                    onRate={() => handleOpenRating(deal, getSupplierInfo(deal.supplier_phone))}
                   />
                 ))}
               </div>
@@ -495,6 +518,17 @@ export default function BuyerDealsPage({ phone, onClose }: Props) {
         </div>
       </div>
     </div>
+    {ratingDialog && (
+      <RatingDialog
+        isOpen={true}
+        onClose={() => setRatingDialog(null)}
+        dealId={ratingDialog.dealId}
+        ratedUserPhone={ratingDialog.supplierPhone}
+        ratedUserName={ratingDialog.supplierName}
+        userType="supplier"
+        onRatingSubmitted={handleRatingSubmitted}
+      />
+    )}
     </>
   );
 }

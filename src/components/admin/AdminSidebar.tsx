@@ -1,4 +1,4 @@
-import { LayoutDashboard, TrendingUp, Handshake, DollarSign, Users, Settings, X } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Handshake, DollarSign, Users, Star, Settings, X } from 'lucide-react';
 import type { AdminSection } from '../../types/admin';
 
 interface Props {
@@ -13,6 +13,7 @@ const navItems: { id: AdminSection; label: string; icon: typeof LayoutDashboard 
   { id: 'deals', label: 'الصفقات', icon: Handshake },
   { id: 'finance', label: 'المالية', icon: DollarSign },
   { id: 'users', label: 'المستخدمون', icon: Users },
+  { id: 'ratings', label: 'التقييمات', icon: Star },
   { id: 'settings', label: 'الإعدادات', icon: Settings },
 ];
 

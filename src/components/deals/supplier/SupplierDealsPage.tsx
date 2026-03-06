@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ArrowRight, Handshake, RefreshCw, Bell, Package, CheckCircle, MapPin, Layers, Hash, Banknote, CheckSquare, Square, Receipt, MessageCircle, Truck, XCircle, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Handshake, RefreshCw, Bell, Package, CheckCircle, MapPin, Layers, Hash, Banknote, CheckSquare, Square, Receipt, MessageCircle, Truck, XCircle, AlertTriangle, Star } from 'lucide-react';
 import { useSupplierDeals } from '../../../hooks/useSupplierDeals';
 import { DEAL_STATUS_CONFIG } from '../../../types/deal';
 import type { Deal } from '../../../types/deal';
 import { ActionToast } from '../../shared/ActionToast';
 import type { ToastConfig } from '../../shared/ActionToast';
+import RatingDialog from '../shared/RatingDialog';
 
 type Tab = 'new' | 'reserved' | 'delivery' | 'ended';
 
@@ -394,7 +395,7 @@ function InDeliveryCard({ deal, onConfirmDelivery, onFailDelivery, loading }: {
   );
 }
 
-function EndedDealCard({ deal }: { deal: Deal }) {
+function EndedDealCard({ deal, onRate }: { deal: Deal; onRate: () => void }) {
   const cfg = DEAL_STATUS_CONFIG[deal.status];
   const isCompleted = deal.status === 'completed';
   const feePerPallet = deal.platform_fee_per_pallet ?? 1;
@@ -468,7 +469,14 @@ function EndedDealCard({ deal }: { deal: Deal }) {
         )}
 
         {isCompleted && (
-          <div className="border-t border-[#f0f6fa] pt-3">
+          <div className="border-t border-[#f0f6fa] pt-3 space-y-2">
+            <button
+              onClick={onRate}
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-[12px] font-bold text-white active:scale-[0.97] transition-transform bg-amber-500 hover:bg-amber-600"
+            >
+              <Star className="w-3.5 h-3.5" />
+              <span>تقييم المشتري</span>
+            </button>
             <a
               href={buildWhatsAppLink(deal.buyer_phone, 'supplier', deal)}
               target="_blank"
@@ -477,7 +485,7 @@ function EndedDealCard({ deal }: { deal: Deal }) {
               style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 3px 10px rgba(37,211,102,0.3)' }}
             >
               <MessageCircle className="w-3.5 h-3.5" />
-              <span>تواصل مع المشتري عبر واتساب</span>
+              <span>تواصل مع المشتري</span>
             </a>
           </div>
         )}
@@ -518,6 +526,7 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [failingDeal, setFailingDeal] = useState<Deal | null>(null);
   const [toast, setToast] = useState<ToastConfig | null>(null);
+  const [ratingDialog, setRatingDialog] = useState<{ dealId: string; buyerPhone: string; buyerName: string } | null>(null);
 
   const counts = {
     new: newRequests.length,
@@ -580,6 +589,18 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
       });
       setActiveTab('ended');
     }
+  };
+
+  const handleOpenRating = (deal: Deal) => {
+    setRatingDialog({
+      dealId: deal.id,
+      buyerPhone: deal.buyer_phone,
+      buyerName: 'المشتري',
+    });
+  };
+
+  const handleRatingSubmitted = () => {
+    refresh();
   };
 
   return (
@@ -732,13 +753,30 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
           ) : (
             endedDeals.length === 0 ? <EmptyState tab="ended" /> : (
               <div className="space-y-2">
-                {endedDeals.map(deal => <EndedDealCard key={deal.id} deal={deal} />)}
+                {endedDeals.map(deal => (
+                  <EndedDealCard
+                    key={deal.id}
+                    deal={deal}
+                    onRate={() => handleOpenRating(deal)}
+                  />
+                ))}
               </div>
             )
           )}
         </div>
       </div>
     </div>
+    {ratingDialog && (
+      <RatingDialog
+        isOpen={true}
+        onClose={() => setRatingDialog(null)}
+        dealId={ratingDialog.dealId}
+        ratedUserPhone={ratingDialog.buyerPhone}
+        ratedUserName={ratingDialog.buyerName}
+        userType="buyer"
+        onRatingSubmitted={handleRatingSubmitted}
+      />
+    )}
     </>
   );
 }

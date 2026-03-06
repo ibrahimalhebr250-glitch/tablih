@@ -5,6 +5,7 @@ import MarketSection from './sections/MarketSection';
 import DealsSection from './sections/DealsSection';
 import FinanceSection from './sections/FinanceSection';
 import UsersSection from './sections/UsersSection';
+import RatingsSection from './sections/RatingsSection';
 import SettingsSection from './sections/SettingsSection';
 import type { AdminSection } from '../../types/admin';
 
@@ -31,6 +32,11 @@ export default function AdminPanel({ onClose }: Props) {
         {section === 'deals'     && <DealsSection />}
         {section === 'finance'   && <FinanceSection />}
         {section === 'users'     && <UsersSection />}
+        {section === 'ratings'   && (
+          <div className="p-6 max-w-7xl mx-auto">
+            <RatingsSection />
+          </div>
+        )}
         {section === 'settings'  && <SettingsSection />}
       </div>
     </div>
