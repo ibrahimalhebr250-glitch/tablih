@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSession } from './hooks/useSession';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
@@ -140,7 +140,7 @@ function App() {
             onOpenAccount={() => { session ? setModal('account') : openAuth('none'); }}
             onCreateOrder={openOrder}
             onAddInventory={openInventory}
-            onOpenAdmin={() => setModal('admin')}
+            onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
           />
         </div>
 
@@ -182,7 +182,7 @@ function App() {
           <DesktopRightPanel
             session={session}
             onLogin={() => openAuth('none')}
-            onOpenAdmin={() => setModal('admin')}
+            onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
           />
         </div>
       </div>
@@ -192,7 +192,7 @@ function App() {
         <Header
           session={session}
           onOpenAccount={() => { session ? setModal('account') : openAuth('none'); }}
-          onOpenAdmin={() => setModal('admin')}
+          onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
         />
         <div className="overflow-y-auto" style={{ height: 'calc(100vh - 57px)' }}>
           {session ? (
