@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Star, X, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { validateComment } from '../../../utils/profanityFilter';
 
 interface Props {
   isOpen: boolean;
@@ -34,6 +35,14 @@ export default function RatingDialog({
     if (rating === 0) {
       setError('الرجاء اختيار تقييم');
       return;
+    }
+
+    if (comment.trim()) {
+      const validation = validateComment(comment.trim());
+      if (!validation.isValid) {
+        setError(validation.reason || 'التعليق غير صالح');
+        return;
+      }
     }
 
     setIsSubmitting(true);

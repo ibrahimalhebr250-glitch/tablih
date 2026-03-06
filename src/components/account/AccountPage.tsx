@@ -14,6 +14,7 @@ import { useDashboard } from '../../hooks/useDashboard';
 import { supabase } from '../../lib/supabase';
 import { getTrustConfig } from '../shared/TrustRatingBadge';
 import RatingsSection from './RatingsSection';
+import { CommentsSection } from '../shared/CommentsSection';
 
 interface Props {
   session: AppSession;
@@ -1015,7 +1016,10 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
 
           {/* ── RATINGS TAB ── */}
           {activeTab === 'ratings' && (
-            <RatingsSection userPhone={session.profile.phone} />
+            <>
+              <RatingsSection userPhone={session.profile.phone} />
+              <CommentsSection userPhone={session.profile.phone} maxComments={10} />
+            </>
           )}
         </div>
       </div>

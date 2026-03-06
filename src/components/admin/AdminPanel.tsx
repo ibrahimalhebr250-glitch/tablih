@@ -6,6 +6,7 @@ import DealsSection from './sections/DealsSection';
 import FinanceSection from './sections/FinanceSection';
 import UsersSection from './sections/UsersSection';
 import RatingsSection from './sections/RatingsSection';
+import { CommentsModeration } from './sections/CommentsModeration';
 import SettingsSection from './sections/SettingsSection';
 import type { AdminSection } from '../../types/admin';
 
@@ -35,6 +36,11 @@ export default function AdminPanel({ onClose }: Props) {
         {section === 'ratings'   && (
           <div className="p-6 max-w-7xl mx-auto">
             <RatingsSection />
+          </div>
+        )}
+        {section === 'comments'  && (
+          <div className="p-6 max-w-7xl mx-auto">
+            <CommentsModeration />
           </div>
         )}
         {section === 'settings'  && <SettingsSection />}
