@@ -4,10 +4,15 @@ import { supabase } from '../../../lib/supabase';
 
 interface QualityGrade {
   id: string;
-  name: string;
-  description?: string;
-  color: string;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  description_ar?: string;
+  description_en?: string;
+  color_hex: string;
+  badge_color: string;
   bg_color: string;
+  border_color: string;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -15,11 +20,11 @@ interface QualityGrade {
 }
 
 const colorOptions = [
-  { label: 'أخضر (A)', color: '#27AE60', bg: '#E8F8F0' },
-  { label: 'أزرق (B)', color: '#2196F3', bg: '#EBF5FF' },
-  { label: 'برتقالي (C)', color: '#F59E0B', bg: '#FFFBEB' },
-  { label: 'رمادي (Scrap)', color: '#6B7280', bg: '#F3F4F6' },
-  { label: 'أحمر', color: '#EF4444', bg: '#FEF2F2' },
+  { label: 'أخضر (A)', color: '#27AE60', badge: '#27AE60', bg: '#E8F8F0', border: '#27AE60' },
+  { label: 'أزرق (B)', color: '#2196F3', badge: '#2196F3', bg: '#EBF5FF', border: '#2196F3' },
+  { label: 'برتقالي (C)', color: '#F59E0B', badge: '#F59E0B', bg: '#FFFBEB', border: '#F59E0B' },
+  { label: 'رمادي (Scrap)', color: '#6B7280', badge: '#6B7280', bg: '#F3F4F6', border: '#D1D5DB' },
+  { label: 'أحمر', color: '#EF4444', badge: '#EF4444', bg: '#FEF2F2', border: '#EF4444' },
 ];
 
 export default function QualityGradesManagementTab() {
@@ -28,10 +33,15 @@ export default function QualityGradesManagementTab() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingGrade, setEditingGrade] = useState<QualityGrade | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    color: '#2196F3',
+    code: '',
+    name_ar: '',
+    name_en: '',
+    description_ar: '',
+    description_en: '',
+    color_hex: '#2196F3',
+    badge_color: '#2196F3',
     bg_color: '#EBF5FF',
+    border_color: '#2196F3',
     is_active: true
   });
 
@@ -63,10 +73,14 @@ export default function QualityGradesManagementTab() {
         const { error } = await supabase
           .from('quality_grades_master')
           .update({
-            name: formData.name,
-            description: formData.description || null,
-            color: formData.color,
+            name_ar: formData.name_ar,
+            name_en: formData.name_en,
+            description_ar: formData.description_ar || null,
+            description_en: formData.description_en || null,
+            color_hex: formData.color_hex,
+            badge_color: formData.badge_color,
             bg_color: formData.bg_color,
+            border_color: formData.border_color,
             is_active: formData.is_active,
             updated_at: new Date().toISOString()
           })
@@ -78,10 +92,15 @@ export default function QualityGradesManagementTab() {
         const { error } = await supabase
           .from('quality_grades_master')
           .insert([{
-            name: formData.name,
-            description: formData.description || null,
-            color: formData.color,
+            code: formData.code,
+            name_ar: formData.name_ar,
+            name_en: formData.name_en,
+            description_ar: formData.description_ar || null,
+            description_en: formData.description_en || null,
+            color_hex: formData.color_hex,
+            badge_color: formData.badge_color,
             bg_color: formData.bg_color,
+            border_color: formData.border_color,
             is_active: formData.is_active,
             sort_order: maxOrder + 1
           }]);
@@ -91,7 +110,18 @@ export default function QualityGradesManagementTab() {
 
       setShowDialog(false);
       setEditingGrade(null);
-      setFormData({ name: '', description: '', color: '#2196F3', bg_color: '#EBF5FF', is_active: true });
+      setFormData({
+        code: '',
+        name_ar: '',
+        name_en: '',
+        description_ar: '',
+        description_en: '',
+        color_hex: '#2196F3',
+        badge_color: '#2196F3',
+        bg_color: '#EBF5FF',
+        border_color: '#2196F3',
+        is_active: true
+      });
       loadGrades();
     } catch (err) {
       console.error('Error saving quality grade:', err);
@@ -102,10 +132,15 @@ export default function QualityGradesManagementTab() {
   const handleEdit = (grade: QualityGrade) => {
     setEditingGrade(grade);
     setFormData({
-      name: grade.name,
-      description: grade.description || '',
-      color: grade.color,
+      code: grade.code,
+      name_ar: grade.name_ar,
+      name_en: grade.name_en,
+      description_ar: grade.description_ar || '',
+      description_en: grade.description_en || '',
+      color_hex: grade.color_hex,
+      badge_color: grade.badge_color,
       bg_color: grade.bg_color,
+      border_color: grade.border_color,
       is_active: grade.is_active
     });
     setShowDialog(true);
@@ -160,7 +195,18 @@ export default function QualityGradesManagementTab() {
         <button
           onClick={() => {
             setEditingGrade(null);
-            setFormData({ name: '', description: '', color: '#2196F3', bg_color: '#EBF5FF', is_active: true });
+            setFormData({
+              code: '',
+              name_ar: '',
+              name_en: '',
+              description_ar: '',
+              description_en: '',
+              color_hex: '#2196F3',
+              badge_color: '#2196F3',
+              bg_color: '#EBF5FF',
+              border_color: '#2196F3',
+              is_active: true
+            });
             setShowDialog(true);
           }}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -190,10 +236,13 @@ export default function QualityGradesManagementTab() {
                   <GripVertical className="w-4 h-4 text-gray-400" />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm font-medium text-gray-900">{grade.name}</span>
+                  <div>
+                    <span className="text-sm font-medium text-gray-900">{grade.name_ar}</span>
+                    <span className="text-xs text-gray-400 block">{grade.code}</span>
+                  </div>
                 </td>
                 <td className="px-6 py-4">
-                  <span className="text-sm text-gray-500">{grade.description || '-'}</span>
+                  <span className="text-sm text-gray-500">{grade.description_ar || '-'}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
@@ -203,7 +252,7 @@ export default function QualityGradesManagementTab() {
                     />
                     <div
                       className="w-6 h-6 rounded border border-gray-200"
-                      style={{ backgroundColor: grade.color }}
+                      style={{ backgroundColor: grade.color_hex }}
                     />
                   </div>
                 </td>
@@ -256,24 +305,57 @@ export default function QualityGradesManagementTab() {
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">الاسم</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">الكود (بالإنجليزية)</label>
                 <input
                   type="text"
                   required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="مثال: ممتازة"
+                  placeholder="A"
+                  disabled={!!editingGrade}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">الوصف (اختياري)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">الاسم بالعربية</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name_ar}
+                  onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="ممتازة"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">الاسم بالإنجليزية</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name_en}
+                  onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Excellent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">الوصف بالعربية (اختياري)</label>
                 <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  value={formData.description_ar}
+                  onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   rows={2}
                   placeholder="وصف قصير للجودة"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">الوصف بالإنجليزية (اختياري)</label>
+                <textarea
+                  value={formData.description_en}
+                  onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  rows={2}
+                  placeholder="Short description"
                 />
               </div>
               <div>
@@ -283,9 +365,15 @@ export default function QualityGradesManagementTab() {
                     <button
                       key={option.color}
                       type="button"
-                      onClick={() => setFormData({ ...formData, color: option.color, bg_color: option.bg })}
+                      onClick={() => setFormData({
+                        ...formData,
+                        color_hex: option.color,
+                        badge_color: option.badge,
+                        bg_color: option.bg,
+                        border_color: option.border
+                      })}
                       className={`flex items-center gap-2 p-2 rounded-lg border-2 ${
-                        formData.color === option.color ? 'border-blue-500' : 'border-gray-200'
+                        formData.color_hex === option.color ? 'border-blue-500' : 'border-gray-200'
                       }`}
                     >
                       <div

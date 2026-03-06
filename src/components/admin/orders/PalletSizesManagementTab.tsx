@@ -4,9 +4,14 @@ import { supabase } from '../../../lib/supabase';
 
 interface PalletSize {
   id: string;
-  label: string;
-  width_cm: number;
-  length_cm: number;
+  pallet_type_code: string;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  length_cm: string;
+  width_cm: string;
+  height_cm?: string;
+  max_load_kg?: string;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -18,15 +23,22 @@ export default function PalletSizesManagementTab() {
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editingSize, setEditingSize] = useState<PalletSize | null>(null);
+  const [palletTypes, setPalletTypes] = useState<Array<{code: string; name_ar: string}>>([]);
   const [formData, setFormData] = useState({
-    label: '',
-    width_cm: 0,
-    length_cm: 0,
+    pallet_type_code: '',
+    code: '',
+    name_ar: '',
+    name_en: '',
+    width_cm: '',
+    length_cm: '',
+    height_cm: '',
+    max_load_kg: '',
     is_active: true
   });
 
   useEffect(() => {
     loadSizes();
+    loadPalletTypes();
   }, []);
 
   const loadSizes = async () => {
@@ -46,6 +58,21 @@ export default function PalletSizesManagementTab() {
     }
   };
 
+  const loadPalletTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('pallet_types_master')
+        .select('code, name_ar')
+        .eq('is_active', true)
+        .order('sort_order');
+
+      if (error) throw error;
+      setPalletTypes(data || []);
+    } catch (err) {
+      console.error('Error loading pallet types:', err);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -53,9 +80,13 @@ export default function PalletSizesManagementTab() {
         const { error } = await supabase
           .from('pallet_sizes_master')
           .update({
-            label: formData.label,
+            pallet_type_code: formData.pallet_type_code,
+            name_ar: formData.name_ar,
+            name_en: formData.name_en,
             width_cm: formData.width_cm,
             length_cm: formData.length_cm,
+            height_cm: formData.height_cm || null,
+            max_load_kg: formData.max_load_kg || null,
             is_active: formData.is_active,
             updated_at: new Date().toISOString()
           })
@@ -67,9 +98,14 @@ export default function PalletSizesManagementTab() {
         const { error } = await supabase
           .from('pallet_sizes_master')
           .insert([{
-            label: formData.label,
+            pallet_type_code: formData.pallet_type_code,
+            code: formData.code,
+            name_ar: formData.name_ar,
+            name_en: formData.name_en,
             width_cm: formData.width_cm,
             length_cm: formData.length_cm,
+            height_cm: formData.height_cm || null,
+            max_load_kg: formData.max_load_kg || null,
             is_active: formData.is_active,
             sort_order: maxOrder + 1
           }]);
@@ -79,7 +115,17 @@ export default function PalletSizesManagementTab() {
 
       setShowDialog(false);
       setEditingSize(null);
-      setFormData({ label: '', width_cm: 0, length_cm: 0, is_active: true });
+      setFormData({
+        pallet_type_code: '',
+        code: '',
+        name_ar: '',
+        name_en: '',
+        width_cm: '',
+        length_cm: '',
+        height_cm: '',
+        max_load_kg: '',
+        is_active: true
+      });
       loadSizes();
     } catch (err) {
       console.error('Error saving pallet size:', err);
@@ -90,9 +136,14 @@ export default function PalletSizesManagementTab() {
   const handleEdit = (size: PalletSize) => {
     setEditingSize(size);
     setFormData({
-      label: size.label,
+      pallet_type_code: size.pallet_type_code,
+      code: size.code,
+      name_ar: size.name_ar,
+      name_en: size.name_en,
       width_cm: size.width_cm,
       length_cm: size.length_cm,
+      height_cm: size.height_cm || '',
+      max_load_kg: size.max_load_kg || '',
       is_active: size.is_active
     });
     setShowDialog(true);
@@ -147,7 +198,17 @@ export default function PalletSizesManagementTab() {
         <button
           onClick={() => {
             setEditingSize(null);
-            setFormData({ label: '', width_cm: 0, length_cm: 0, is_active: true });
+            setFormData({
+              pallet_type_code: '',
+              code: '',
+              name_ar: '',
+              name_en: '',
+              width_cm: '',
+              length_cm: '',
+              height_cm: '',
+              max_load_kg: '',
+              is_active: true
+            });
             setShowDialog(true);
           }}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -161,11 +222,11 @@ export default function PalletSizesManagementTab() {
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المقاس</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الطول (سم)</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">العرض (سم)</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">نوع الطبلية</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الاسم</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الأبعاد</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحمولة</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحالة</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">تاريخ الإنشاء</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الإجراءات</th>
             </tr>
           </thead>
@@ -173,13 +234,16 @@ export default function PalletSizesManagementTab() {
             {sizes.map((size) => (
               <tr key={size.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm font-medium text-gray-900">{size.label}</span>
+                  <span className="text-sm text-gray-500">{size.pallet_type_code}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm text-gray-500">{size.length_cm} سم</span>
+                  <span className="text-sm font-medium text-gray-900">{size.name_ar}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm text-gray-500">{size.width_cm} سم</span>
+                  <span className="text-sm text-gray-500">{size.length_cm}×{size.width_cm} سم</span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="text-sm text-gray-500">{size.max_load_kg ? `${size.max_load_kg} كجم` : '-'}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -187,9 +251,6 @@ export default function PalletSizesManagementTab() {
                   }`}>
                     {size.is_active ? 'نشط' : 'مخفي'}
                   </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(size.created_at).toLocaleDateString('ar-SA')}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <div className="flex items-center gap-2">
@@ -230,37 +291,96 @@ export default function PalletSizesManagementTab() {
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">التسمية</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">نوع الطبلية</label>
+                <select
+                  required
+                  value={formData.pallet_type_code}
+                  onChange={(e) => setFormData({ ...formData, pallet_type_code: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">اختر نوع الطبلية</option>
+                  {palletTypes.map((type) => (
+                    <option key={type.code} value={type.code}>{type.name_ar}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">الكود (بالإنجليزية)</label>
                 <input
                   type="text"
                   required
-                  value={formData.label}
-                  onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toLowerCase() })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="مثال: 120×100"
+                  placeholder="مثال: 120x100"
+                  disabled={!!editingSize}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">الاسم بالعربية</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name_ar}
+                  onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="مثال: 120×100 سم"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">الاسم بالإنجليزية</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name_en}
+                  onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Example: 120×100 cm"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">الطول (سم)</label>
                   <input
-                    type="number"
+                    type="text"
                     required
-                    min="1"
                     value={formData.length_cm}
-                    onChange={(e) => setFormData({ ...formData, length_cm: parseInt(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, length_cm: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="120"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">العرض (سم)</label>
                   <input
-                    type="number"
+                    type="text"
                     required
-                    min="1"
                     value={formData.width_cm}
-                    onChange={(e) => setFormData({ ...formData, width_cm: parseInt(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, width_cm: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="100"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">الارتفاع (سم) - اختياري</label>
+                  <input
+                    type="text"
+                    value={formData.height_cm}
+                    onChange={(e) => setFormData({ ...formData, height_cm: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="15"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">الحمولة القصوى (كجم)</label>
+                  <input
+                    type="text"
+                    value={formData.max_load_kg}
+                    onChange={(e) => setFormData({ ...formData, max_load_kg: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="1500"
                   />
                 </div>
               </div>
