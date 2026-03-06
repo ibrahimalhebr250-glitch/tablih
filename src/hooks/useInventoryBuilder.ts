@@ -99,7 +99,12 @@ export function useInventoryBuilder(initialPhone?: string, prefill?: PrefillData
   };
 
   const nextStep = useCallback(() => {
-    setWizardStep((s) => (s < 4 ? ((s + 1) as InventoryWizardStep) : s));
+    setWizardStep((s) => {
+      if (s >= 4) return s;
+      const next = (s + 1) as InventoryWizardStep;
+      console.log(`Moving from step ${s} to step ${next}`);
+      return next;
+    });
   }, []);
 
   const prevStep = useCallback(() => {

@@ -341,56 +341,76 @@ export default function InventoryBuilder({
   );
 
   const renderWizardContent = () => {
-    switch (builder.wizardStep) {
-      case 1:
-        return (
-          <DynamicStep1PalletInfo
-            palletType={builder.form.palletType}
-            size={builder.form.size}
-            quality={builder.form.quality}
-            condition={builder.form.condition}
-            onSetType={builder.setPalletType}
-            onSetSize={builder.setSize}
-            onSetQuality={builder.setQuality}
-            onSetCondition={builder.setCondition}
-          />
-        );
-      case 2:
-        return (
-          <Step2QuantityCity
-            quantity={builder.form.quantity}
-            city={builder.form.city}
-            pricePerPallet={builder.form.pricePerPallet}
-            minQuantity={invSettings.min_quantity}
-            maxQuantity={invSettings.max_quantity}
-            onSetQuantity={builder.setQuantity}
-            onSetCity={builder.setCity}
-            onSetPrice={builder.setPricePerPallet}
-          />
-        );
-      case 3: {
-        return (
-          <Step3ImagesDescription
-            description={builder.form.description}
-            onSetDescription={builder.setDescription}
-            images={uploadedImages}
-            onSetImages={setUploadedImages}
-            batchId={builder.batchId ?? undefined}
-            imagesEnabled={imgSettings.enabled}
-            maxImages={imgSettings.max_images}
-            maxSizeMb={imgSettings.max_size_mb}
-            allowedFormats={imgSettings.allowed_formats}
-          />
-        );
+    try {
+      switch (builder.wizardStep) {
+        case 1:
+          return (
+            <DynamicStep1PalletInfo
+              palletType={builder.form.palletType}
+              size={builder.form.size}
+              quality={builder.form.quality}
+              condition={builder.form.condition}
+              onSetType={builder.setPalletType}
+              onSetSize={builder.setSize}
+              onSetQuality={builder.setQuality}
+              onSetCondition={builder.setCondition}
+            />
+          );
+        case 2:
+          return (
+            <Step2QuantityCity
+              quantity={builder.form.quantity}
+              city={builder.form.city}
+              pricePerPallet={builder.form.pricePerPallet}
+              minQuantity={invSettings.min_quantity}
+              maxQuantity={invSettings.max_quantity}
+              onSetQuantity={builder.setQuantity}
+              onSetCity={builder.setCity}
+              onSetPrice={builder.setPricePerPallet}
+            />
+          );
+        case 3: {
+          return (
+            <Step3ImagesDescription
+              description={builder.form.description}
+              onSetDescription={builder.setDescription}
+              images={uploadedImages}
+              onSetImages={setUploadedImages}
+              batchId={builder.batchId ?? undefined}
+              imagesEnabled={imgSettings.enabled}
+              maxImages={imgSettings.max_images}
+              maxSizeMb={imgSettings.max_size_mb}
+              allowedFormats={imgSettings.allowed_formats}
+            />
+          );
+        }
+        case 4:
+          return (
+            <Step4PreviewPublish
+              form={builder.form}
+              images={uploadedImages}
+              approvalMode={invSettings.approval_mode}
+            />
+          );
+        default:
+          return null;
       }
-      case 4:
-        return (
-          <Step4PreviewPublish
-            form={builder.form}
-            images={uploadedImages}
-            approvalMode={invSettings.approval_mode}
-          />
-        );
+    } catch (error) {
+      console.error('Error rendering wizard step:', error);
+      return (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <p className="text-red-600 text-[14px] font-bold mb-2">حدث خطأ</p>
+            <p className="text-[12px] text-gray-600">{error instanceof Error ? error.message : 'خطأ غير معروف'}</p>
+            <button
+              onClick={() => builder.setWizardStep(1)}
+              className="mt-4 px-4 py-2 bg-[#1a4a5e] text-white rounded-lg text-[13px]"
+            >
+              العودة للبداية
+            </button>
+          </div>
+        </div>
+      );
     }
   };
 

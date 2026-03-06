@@ -29,17 +29,6 @@ export default function Step2QuantityCity({
   const priceStep = settings?.price_step ?? 5;
   const allowNegotiation = settings?.allow_negotiation ?? true;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#1a4a5e] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-[13px] text-[#a0b5c0]">جاري التحميل...</p>
-        </div>
-      </div>
-    );
-  }
-
   const PRICE_PRESETS = allowNegotiation
     ? [0, 10, 25, 50, 75, 100, 150, 200, 300, 500].filter(p => p >= minPrice && p <= maxPrice)
     : [10, 25, 50, 75, 100, 150, 200, 300, 500].filter(p => p >= minPrice && p <= maxPrice);
