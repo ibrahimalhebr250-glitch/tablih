@@ -31,6 +31,15 @@ export default function VisitorRatingDialog({
 
   if (!isOpen) return null;
 
+  const getVisitorId = () => {
+    let visitorId = localStorage.getItem('visitor_id');
+    if (!visitorId) {
+      visitorId = `visitor_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+      localStorage.setItem('visitor_id', visitorId);
+    }
+    return visitorId;
+  };
+
   const handleSubmit = async () => {
     if (rating === 0) {
       setError('الرجاء اختيار تقييم');
@@ -50,7 +59,7 @@ export default function VisitorRatingDialog({
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
-      const visitorPhone = sessionData?.session?.user?.phone;
+      const visitorPhone = sessionData?.session?.user?.phone || getVisitorId();
 
       const { data, error: rpcError } = await supabase.rpc('create_visitor_rating', {
         p_rated_phone: ratedUserPhone,
@@ -58,7 +67,7 @@ export default function VisitorRatingDialog({
         p_item_id: itemId,
         p_rating: rating,
         p_comment: comment.trim() || null,
-        p_visitor_phone: visitorPhone || `visitor_${Date.now()}`,
+        p_visitor_phone: visitorPhone,
       });
 
       if (rpcError) throw rpcError;
