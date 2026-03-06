@@ -12,12 +12,13 @@ import LoginPage from './components/account/LoginPage';
 import SupplierDealsPage from './components/deals/supplier/SupplierDealsPage';
 import BuyerDealsPage from './components/deals/buyer/BuyerDealsPage';
 import AdminPanel from './components/admin/AdminPanel';
+import AdminLoginSheet, { type AdminStaffData } from './components/admin/AdminLoginSheet';
 import SupplierInventory from './components/inventory/SupplierInventory';
 import DesktopSidebar from './components/desktop/DesktopSidebar';
 import DesktopRightPanel from './components/desktop/DesktopRightPanel';
 import MarketSection from './components/market/MarketSection';
 
-type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'account' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'supplierInventory';
+type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'account' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory';
 
 function App() {
   const { session, loading, register, login, updateProfile, activateRole, logout } = useSession();
@@ -29,6 +30,18 @@ function App() {
   const [freshLogin, setFreshLogin] = useState(false);
   const pendingSession = useRef<import('./types/session').AppSession | null>(null);
   const [isDetailSheetOpen, setIsDetailSheetOpen] = useState(false);
+  const [adminStaff, setAdminStaff] = useState<AdminStaffData | null>(null);
+
+  useEffect(() => {
+    const storedAdminData = sessionStorage.getItem('adminStaffData');
+    if (storedAdminData) {
+      try {
+        setAdminStaff(JSON.parse(storedAdminData));
+      } catch (e) {
+        sessionStorage.removeItem('adminStaffData');
+      }
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -280,8 +293,26 @@ function App() {
         />
       )}
 
-      {modal === 'admin' && (
-        <AdminPanel onClose={() => setModal('none')} />
+      {modal === 'adminLogin' && (
+        <AdminLoginSheet
+          onClose={() => setModal('none')}
+          onSuccess={(staffData) => {
+            setAdminStaff(staffData);
+            sessionStorage.setItem('adminStaffData', JSON.stringify(staffData));
+            setModal('admin');
+          }}
+        />
+      )}
+
+      {modal === 'admin' && adminStaff && (
+        <AdminPanel
+          adminStaff={adminStaff}
+          onClose={() => {
+            setModal('none');
+            setAdminStaff(null);
+            sessionStorage.removeItem('adminStaffData');
+          }}
+        />
       )}
 
       {modal === 'supplierInventory' && session && (

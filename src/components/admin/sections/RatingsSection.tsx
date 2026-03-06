@@ -84,17 +84,18 @@ export default function RatingsSection() {
   const fetchRatings = async () => {
     try {
       setLoading(true);
-      const phone = sessionStorage.getItem('phone');
-      console.log('RatingsSection - Fetching with phone:', phone);
-
-      if (!phone) {
-        console.log('RatingsSection - No phone found in session');
+      const adminData = sessionStorage.getItem('adminStaffData');
+      if (!adminData) {
+        console.log('RatingsSection - No admin data found');
         setRatings([]);
+        setLoading(false);
         return;
       }
+      const email = JSON.parse(adminData).email;
+      console.log('RatingsSection - Fetching with email:', email);
 
       const { data, error } = await supabase.rpc('admin_get_all_ratings', {
-        p_caller_phone: phone,
+        p_caller_email: email,
         p_filter_type: filters.type,
         p_filter_status: filters.status,
         p_rating_type: filters.ratingType,
@@ -126,11 +127,12 @@ export default function RatingsSection() {
 
   const fetchAnalytics = async () => {
     try {
-      const phone = sessionStorage.getItem('phone');
-      if (!phone) return;
+      const adminData = sessionStorage.getItem('adminStaffData');
+      if (!adminData) return;
+      const email = JSON.parse(adminData).email;
 
       const { data, error } = await supabase.rpc('admin_get_ratings_analytics', {
-        p_caller_phone: phone,
+        p_caller_email: email,
       });
       if (error) throw error;
       if (data?.success) {
@@ -161,14 +163,15 @@ export default function RatingsSection() {
 
     try {
       setProcessingId(selectedRating.rating_id);
-      const phone = sessionStorage.getItem('phone');
-      if (!phone) {
+      const adminData = sessionStorage.getItem('adminStaffData');
+      if (!adminData) {
         alert('يجب تسجيل الدخول');
         return;
       }
+      const email = JSON.parse(adminData).email;
 
       const { data, error } = await supabase.rpc('admin_update_rating', {
-        p_caller_phone: phone,
+        p_caller_email: email,
         p_rating_id: selectedRating.rating_id,
         p_rating_value: editForm.rating_value,
         p_comment: editForm.comment_text || null,
@@ -196,14 +199,15 @@ export default function RatingsSection() {
 
     try {
       setProcessingId(ratingId);
-      const phone = sessionStorage.getItem('phone');
-      if (!phone) {
+      const adminData = sessionStorage.getItem('adminStaffData');
+      if (!adminData) {
         alert('يجب تسجيل الدخول');
         return;
       }
+      const email = JSON.parse(adminData).email;
 
       const { data, error } = await supabase.rpc('admin_delete_rating', {
-        p_caller_phone: phone,
+        p_caller_email: email,
         p_rating_id: ratingId,
       });
 
@@ -223,14 +227,15 @@ export default function RatingsSection() {
   const handleConfirm = async (ratingId: string, isConfirmed: boolean) => {
     try {
       setProcessingId(ratingId);
-      const phone = sessionStorage.getItem('phone');
-      if (!phone) {
+      const adminData = sessionStorage.getItem('adminStaffData');
+      if (!adminData) {
         alert('يجب تسجيل الدخول');
         return;
       }
+      const email = JSON.parse(adminData).email;
 
       const { data, error } = await supabase.rpc('admin_update_rating', {
-        p_caller_phone: phone,
+        p_caller_email: email,
         p_rating_id: ratingId,
         p_is_confirmed: isConfirmed,
       });

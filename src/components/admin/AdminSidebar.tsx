@@ -1,10 +1,13 @@
-import { LayoutDashboard, TrendingUp, Handshake, DollarSign, Users, Star, MessageSquare, Settings, X } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Handshake, DollarSign, Users, Star, MessageSquare, Settings, X, User } from 'lucide-react';
 import type { AdminSection } from '../../types/admin';
+import type { AdminStaffData } from './AdminLoginSheet';
 
 interface Props {
   active: AdminSection;
   onChange: (s: AdminSection) => void;
   onClose: () => void;
+  adminStaff: AdminStaffData;
+  availableSections: AdminSection[];
 }
 
 const navItems: { id: AdminSection; label: string; icon: typeof LayoutDashboard }[] = [
@@ -18,7 +21,17 @@ const navItems: { id: AdminSection; label: string; icon: typeof LayoutDashboard 
   { id: 'settings', label: 'الإعدادات', icon: Settings },
 ];
 
-export default function AdminSidebar({ active, onChange, onClose }: Props) {
+const roleNames: Record<string, string> = {
+  system_admin: 'مدير النظام',
+  market_manager: 'مدير السوق',
+  deals_manager: 'مدير الصفقات',
+  finance_manager: 'مدير المالية',
+  support_staff: 'موظف دعم',
+};
+
+export default function AdminSidebar({ active, onChange, onClose, adminStaff, availableSections }: Props) {
+  const visibleNavItems = navItems.filter(item => availableSections.includes(item.id));
+
   return (
     <div
       className="flex flex-col h-full"
@@ -53,6 +66,27 @@ export default function AdminSidebar({ active, onChange, onClose }: Props) {
 
       <div className="mx-4 h-px flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }} />
 
+      {/* Admin Info */}
+      <div className="px-4 py-3 flex-shrink-0">
+        <div
+          className="rounded-xl px-3 py-2.5 flex items-center gap-2"
+          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(231,76,60,0.2)' }}
+          >
+            <User className="w-4 h-4 text-[#e74c3c]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-xs font-medium truncate">{adminStaff.full_name}</p>
+            <p className="text-white/40 text-[10px] truncate">{roleNames[adminStaff.role] || adminStaff.role}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-4 h-px flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
       {/* Nav — horizontal scrollable row on mobile, vertical list on desktop */}
       <nav
         className="
@@ -64,7 +98,7 @@ export default function AdminSidebar({ active, onChange, onClose }: Props) {
         "
         style={{ scrollbarWidth: 'none' }}
       >
-        {navItems.map(({ id, label, icon: Icon }) => {
+        {visibleNavItems.map(({ id, label, icon: Icon }) => {
           const isActive = active === id;
           return (
             <button
