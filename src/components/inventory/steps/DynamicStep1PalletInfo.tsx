@@ -34,9 +34,15 @@ export default function DynamicStep1PalletInfo({
   }
 
   const activePalletTypes = palletTypes.filter(t => t.is_active);
+
+  const selectedTypeId = palletType
+    ? activePalletTypes.find(t => t.name_ar === palletType)?.id
+    : null;
+
   const activePalletSizes = palletSizes
     .filter(s => s.is_active)
-    .filter(s => !palletType || s.pallet_type_id === activePalletTypes.find(t => t.name_ar === palletType)?.id);
+    .filter(s => !selectedTypeId || s.pallet_type_id === selectedTypeId);
+
   const activeQualityGrades = qualityGrades.filter(g => g.is_active);
   const activePalletConditions = palletConditions.filter(c => c.is_active);
 

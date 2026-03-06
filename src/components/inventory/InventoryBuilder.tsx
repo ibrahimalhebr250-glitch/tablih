@@ -6,7 +6,7 @@ import { useInventoryMatch } from '../../hooks/useInventoryMatch';
 import { usePlatformSettings } from '../../hooks/usePlatformSettings';
 import { supabase } from '../../lib/supabase';
 import type { PalletType, PalletQuality, PalletSize, InventoryWizardStep } from '../../types/inventory';
-import Step1PalletInfo from './steps/Step1PalletInfo';
+import DynamicStep1PalletInfo from './steps/DynamicStep1PalletInfo';
 import Step2QuantityCity from './steps/Step2QuantityCity';
 import Step3ImagesDescription from './steps/Step3ImagesDescription';
 import Step4PreviewPublish from './steps/Step4PreviewPublish';
@@ -344,7 +344,7 @@ export default function InventoryBuilder({
     switch (builder.wizardStep) {
       case 1:
         return (
-          <Step1PalletInfo
+          <DynamicStep1PalletInfo
             palletType={builder.form.palletType}
             size={builder.form.size}
             quality={builder.form.quality}
