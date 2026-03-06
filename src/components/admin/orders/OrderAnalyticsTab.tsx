@@ -55,7 +55,7 @@ export default function OrderAnalyticsTab({ analytics }: Props) {
           <p className="text-xs opacity-75 mt-1">طبلية</p>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white">
+        <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl p-6 text-white">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium opacity-90">نسبة المطابقة</span>
             <Star className="w-5 h-5 opacity-75" />
@@ -125,14 +125,14 @@ export default function OrderAnalyticsTab({ analytics }: Props) {
 
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-purple-600" />
+            <MapPin className="w-5 h-5 text-orange-600" />
             أكثر المدن طلباً
           </h3>
           <div className="space-y-3">
             {sortedCities.map(([city, count], idx) => (
               <div key={city} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-sm">
+                  <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-sm">
                     {idx + 1}
                   </div>
                   <span className="font-medium text-gray-900">{city}</span>

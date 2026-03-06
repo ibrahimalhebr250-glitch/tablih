@@ -202,10 +202,10 @@ export default function OrdersMonitoringTab({ orders, onUpdate, onDelete }: Prop
                         <MessageCircle className="w-4 h-4 text-green-600" />
                       </button>
                       <button
-                        className="p-1.5 hover:bg-purple-50 rounded-lg transition-colors"
+                        className="p-1.5 hover:bg-teal-50 rounded-lg transition-colors"
                         title="الصفقات"
                       >
-                        <ExternalLink className="w-4 h-4 text-purple-600" />
+                        <ExternalLink className="w-4 h-4 text-teal-600" />
                       </button>
                     </div>
                   </td>
