@@ -424,7 +424,7 @@ export default function InventoryBuilder({
       <div
         className="relative w-full lg:w-[720px] xl:w-[840px] lg:max-h-[90vh] flex flex-col slide-up lg:rounded-3xl"
         style={{
-          background: '#f0f6fa',
+          background: '#dde9f3',
           boxShadow: '0 40px 100px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.15)',
           height: '100dvh',
           maxHeight: '100dvh',

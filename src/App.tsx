@@ -148,7 +148,7 @@ function App() {
         <div
           className="flex-1 flex flex-col min-w-0 h-screen rounded-l-3xl overflow-hidden"
           style={{
-            background: 'linear-gradient(160deg, #cfdce6 0%, #dbe8f2 40%, #e3f0f8 70%, #d6e4f0 100%)',
+            background: 'linear-gradient(160deg, #bccad6 0%, #c8d5e2 40%, #d0dfe8 70%, #c3d1e0 100%)',
             boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.6)',
           }}
         >
@@ -188,7 +188,7 @@ function App() {
       </div>
 
       {/* ── Mobile Layout ── */}
-      <div className="lg:hidden min-h-screen" style={{ background: 'linear-gradient(180deg, #d6e4f0 0%, #e0ecf6 30%, #e8f4fa 50%, #e0ecf6 70%, #d6e4f0 100%)' }}>
+      <div className="lg:hidden min-h-screen" style={{ background: 'linear-gradient(180deg, #c3d1e0 0%, #cdd9e6 30%, #d5e1ea 50%, #cdd9e6 70%, #c3d1e0 100%)' }}>
         <Header
           session={session}
           onOpenAccount={() => { session ? setModal('account') : openAuth('none'); }}
