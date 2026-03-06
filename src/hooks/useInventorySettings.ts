@@ -105,27 +105,27 @@ export function useInventorySettings() {
         conditionsRes,
         usageRes
       ] = await Promise.all([
-        supabase.from('inventory_settings').select('*').single(),
-        supabase.from('inventory_pallet_types').select('*').eq('is_active', true).order('display_order'),
-        supabase.from('inventory_pallet_sizes').select('*').eq('is_active', true).order('display_order'),
-        supabase.from('inventory_quality_grades').select('*').eq('is_active', true).order('display_order'),
-        supabase.from('inventory_pallet_conditions').select('*').eq('is_active', true).order('display_order'),
-        supabase.from('inventory_usage_types').select('*').eq('is_active', true).order('display_order'),
+        supabase.from('inventory_settings').select('*').maybeSingle(),
+        supabase.from('inventory_pallet_types').select('*').order('display_order'),
+        supabase.from('inventory_pallet_sizes').select('*').order('display_order'),
+        supabase.from('inventory_quality_grades').select('*').order('display_order'),
+        supabase.from('inventory_pallet_conditions').select('*').order('display_order'),
+        supabase.from('inventory_usage_types').select('*').order('display_order'),
       ]);
 
-      if (settingsRes.error) throw settingsRes.error;
-      if (typesRes.error) throw typesRes.error;
-      if (sizesRes.error) throw sizesRes.error;
-      if (gradesRes.error) throw gradesRes.error;
-      if (conditionsRes.error) throw conditionsRes.error;
-      if (usageRes.error) throw usageRes.error;
+      if (settingsRes.error) console.warn('Settings error:', settingsRes.error);
+      if (typesRes.error) console.warn('Types error:', typesRes.error);
+      if (sizesRes.error) console.warn('Sizes error:', sizesRes.error);
+      if (gradesRes.error) console.warn('Grades error:', gradesRes.error);
+      if (conditionsRes.error) console.warn('Conditions error:', conditionsRes.error);
+      if (usageRes.error) console.warn('Usage error:', usageRes.error);
 
-      setSettings(settingsRes.data);
-      setPalletTypes(typesRes.data || []);
-      setPalletSizes(sizesRes.data || []);
-      setQualityGrades(gradesRes.data || []);
-      setPalletConditions(conditionsRes.data || []);
-      setUsageTypes(usageRes.data || []);
+      setSettings(settingsRes.data || null);
+      setPalletTypes((typesRes.data || []).filter((t: PalletType) => t.is_active));
+      setPalletSizes((sizesRes.data || []).filter((s: PalletSize) => s.is_active));
+      setQualityGrades((gradesRes.data || []).filter((g: QualityGrade) => g.is_active));
+      setPalletConditions((conditionsRes.data || []).filter((c: PalletCondition) => c.is_active));
+      setUsageTypes((usageRes.data || []).filter((u: UsageType) => u.is_active));
     } catch (err) {
       console.error('Error fetching inventory settings:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch settings');

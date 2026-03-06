@@ -18,7 +18,7 @@ export default function Step2QuantityCity({
   quantity, city, pricePerPallet, minQuantity: propMinQuantity, maxQuantity: propMaxQuantity,
   onSetQuantity, onSetCity, onSetPrice,
 }: Props) {
-  const { settings } = useInventorySettings();
+  const { settings, loading } = useInventorySettings();
   const [showAllCities, setShowAllCities] = useState(false);
 
   const minQuantity = propMinQuantity ?? settings?.min_quantity ?? 100;
@@ -28,6 +28,17 @@ export default function Step2QuantityCity({
   const maxPrice = settings?.max_price ?? 1000;
   const priceStep = settings?.price_step ?? 5;
   const allowNegotiation = settings?.allow_negotiation ?? true;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#1a4a5e] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-[13px] text-[#a0b5c0]">جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
 
   const PRICE_PRESETS = allowNegotiation
     ? [0, 10, 25, 50, 75, 100, 150, 200, 300, 500].filter(p => p >= minPrice && p <= maxPrice)
@@ -203,7 +214,7 @@ export default function Step2QuantityCity({
           {/* Price display + buttons */}
           <div className="flex items-center justify-between gap-3 mb-5">
             <button
-              onPointerDown={() => startPriceHold(-PRICE_STEP)}
+              onPointerDown={() => startPriceHold(-priceStep)}
               onPointerUp={stopPriceHold}
               onPointerLeave={stopPriceHold}
               onPointerCancel={stopPriceHold}
@@ -218,7 +229,7 @@ export default function Step2QuantityCity({
               <span className="text-[11px] text-[#a0b5c0] mt-1 block">ريال / طبلية</span>
             </div>
             <button
-              onPointerDown={() => startPriceHold(PRICE_STEP)}
+              onPointerDown={() => startPriceHold(priceStep)}
               onPointerUp={stopPriceHold}
               onPointerLeave={stopPriceHold}
               onPointerCancel={stopPriceHold}
@@ -241,9 +252,9 @@ export default function Step2QuantityCity({
             </div>
             <input
               type="range"
-              min={PRICE_MIN}
-              max={PRICE_MAX}
-              step={PRICE_STEP}
+              min={minPrice}
+              max={maxPrice}
+              step={priceStep}
               value={pricePerPallet}
               onChange={(e) => onSetPrice(Number(e.target.value))}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer touch-none"
