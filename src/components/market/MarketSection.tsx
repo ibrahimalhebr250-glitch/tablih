@@ -694,9 +694,25 @@ export default function MarketSection({
       })
       .subscribe();
 
+    const ratingsChannel = supabase
+      .channel('market-ratings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_ratings' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    const usersChannel = supabase
+      .channel('market-users')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'platform_users' }, () => {
+        loadData();
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(inventoryChannel);
+      supabase.removeChannel(ratingsChannel);
+      supabase.removeChannel(usersChannel);
     };
   }, []);
 
