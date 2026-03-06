@@ -1,4 +1,4 @@
-import { CheckCircle, Send, Package, Snowflake, Trash2, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Send, Package, Users, Star, FileText, Settings, ArrowLeft, Zap } from 'lucide-react';
 
 interface Props {
   onNavigate: (section: string) => void;
@@ -6,75 +6,114 @@ interface Props {
 
 const actions = [
   {
-    label: 'تأكيد دفعة',
-    desc: 'قسم المالية — المدفوعات',
+    label: 'إدارة الصفقات',
+    desc: 'عرض وإدارة جميع الصفقات',
     icon: CheckCircle,
     color: '#16a34a',
-    bg: '#f0fdf4',
-    border: '#bbf7d0',
-    section: 'finance',
+    bg: 'from-green-50 to-green-100',
+    section: 'deals',
+    highlight: true,
   },
   {
-    label: 'تنفيذ تسوية',
-    desc: 'قسم المالية — التسويات',
+    label: 'المالية والتسويات',
+    desc: 'المدفوعات والمستحقات',
     icon: Send,
     color: '#7c3aed',
-    bg: '#f5f3ff',
-    border: '#ddd6fe',
+    bg: 'from-purple-50 to-purple-100',
     section: 'finance',
+    highlight: true,
   },
   {
-    label: 'إضافة مخزون',
-    desc: 'قسم السوق — المخزون',
+    label: 'السوق والمخزون',
+    desc: 'المدن والعروض والطلبات',
     icon: Package,
     color: '#ca8a04',
-    bg: '#fefce8',
-    border: '#fde68a',
+    bg: 'from-amber-50 to-amber-100',
     section: 'market',
+    highlight: false,
   },
   {
-    label: 'تجميد مدينة',
-    desc: 'قسم السوق — المدن',
-    icon: Snowflake,
+    label: 'المستخدمين',
+    desc: 'إدارة الحسابات والصلاحيات',
+    icon: Users,
+    color: '#2563eb',
+    bg: 'from-blue-50 to-blue-100',
+    section: 'users',
+    highlight: false,
+  },
+  {
+    label: 'التقييمات',
+    desc: 'مراجعة تقييمات المستخدمين',
+    icon: Star,
+    color: '#f59e0b',
+    bg: 'from-orange-50 to-orange-100',
+    section: 'ratings',
+    highlight: false,
+  },
+  {
+    label: 'التقارير',
+    desc: 'التقارير والإحصائيات',
+    icon: FileText,
     color: '#64748b',
-    bg: '#f8fafc',
-    border: '#e2e8f0',
-    section: 'market',
+    bg: 'from-slate-50 to-slate-100',
+    section: 'finance',
+    highlight: false,
   },
   {
-    label: 'حذف صفقة',
-    desc: 'قسم الصفقات',
-    icon: Trash2,
-    color: '#dc2626',
-    bg: '#fef2f2',
-    border: '#fecaca',
-    section: 'deals',
+    label: 'الإعدادات',
+    desc: 'إعدادات المنصة العامة',
+    icon: Settings,
+    color: '#6b7280',
+    bg: 'from-gray-50 to-gray-100',
+    section: 'settings',
+    highlight: false,
   },
 ];
 
 export default function QuickActionsPanel({ onNavigate }: Props) {
   return (
-    <div className="space-y-3">
-      <p className="text-[13px] font-bold text-[#4a7a94] uppercase tracking-wide">إجراءات سريعة</p>
-      <div className="flex flex-wrap gap-2">
-        {actions.map(({ label, desc, icon: Icon, color, bg, border, section }) => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Zap className="w-5 h-5 text-amber-500" />
+        <div>
+          <p className="text-sm font-black text-slate-900">إجراءات سريعة</p>
+          <p className="text-xs text-slate-500">الوصول السريع للأقسام الرئيسية</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
+        {actions.map(({ label, desc, icon: Icon, color, bg, section, highlight }) => (
           <button
             key={label}
             onClick={() => onNavigate(section)}
-            className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-[0.97]"
-            style={{ background: bg, border: `1px solid ${border}` }}
+            className={`group relative rounded-2xl p-4 transition-all hover:shadow-xl hover:-translate-y-1 active:scale-[0.97] flex flex-col gap-3 text-right bg-gradient-to-br ${bg} border border-white/60 overflow-hidden ${
+              highlight ? 'lg:col-span-2' : ''
+            }`}
           >
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: `${color}18` }}
-            >
-              <Icon className="w-3.5 h-3.5" style={{ color }} />
+            <div className="absolute inset-0 bg-white/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+            <div className="relative flex items-center justify-between">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-transform group-hover:scale-110 group-hover:rotate-6"
+                style={{ background: `${color}20` }}
+              >
+                <Icon className="w-5 h-5" style={{ color }} />
+              </div>
+              <ArrowLeft className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-all group-hover:-translate-x-1" />
             </div>
-            <div className="text-right">
-              <p className="text-[12px] font-bold" style={{ color }}>{label}</p>
-              <p className="text-[10px] text-[#7a9aab]">{desc}</p>
+
+            <div className="relative">
+              <p className="text-sm font-black text-slate-900 mb-0.5 leading-tight">{label}</p>
+              <p className="text-xs text-slate-600 leading-tight">{desc}</p>
             </div>
-            <ArrowLeft className="w-3 h-3 text-[#7a9aab] mr-1" />
+
+            {highlight && (
+              <div className="absolute top-2 left-2">
+                <div className="px-2 py-0.5 bg-white/80 rounded-full text-xs font-bold" style={{ color }}>
+                  مهم
+                </div>
+              </div>
+            )}
           </button>
         ))}
       </div>

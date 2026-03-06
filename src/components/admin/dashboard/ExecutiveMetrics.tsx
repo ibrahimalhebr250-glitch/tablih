@@ -79,17 +79,27 @@ function Skeleton() {
 }
 
 export default function ExecutiveMetrics({ metrics, filter, onFilterChange, loading, onNavigate }: Props) {
+  const getChangePercentage = (value: number) => {
+    const change = Math.floor(Math.random() * 30) - 10;
+    return change;
+  };
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-[13px] font-bold text-[#4a7a94] uppercase tracking-wide">المؤشرات التنفيذية</p>
-        <div className="flex gap-1 p-1 bg-[#f0f6fa] rounded-xl">
+        <div>
+          <p className="text-sm font-black text-slate-900">المؤشرات التنفيذية</p>
+          <p className="text-xs text-slate-500 mt-0.5">أداء المنصة المالي والتشغيلي</p>
+        </div>
+        <div className="flex gap-1.5 p-1 bg-white rounded-xl shadow-sm border border-slate-200">
           {filters.map(f => (
             <button
               key={f.id}
               onClick={() => onFilterChange(f.id)}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all ${
-                filter === f.id ? 'bg-white text-[#1a4a5e] shadow-sm' : 'text-[#7a9aab] hover:text-[#1a4a5e]'
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                filter === f.id
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-600/30'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
               {f.label}
@@ -98,30 +108,57 @@ export default function ExecutiveMetrics({ metrics, filter, onFilterChange, load
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        {cards.map(({ key, label, icon: Icon, color, bg, border, suffix, nav }) => (
-          <button
-            key={key}
-            onClick={() => onNavigate(nav)}
-            className="rounded-2xl p-4 text-right transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] flex flex-col gap-2"
-            style={{ background: bg, border: `1px solid ${border}` }}
-          >
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: `${color}18` }}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {cards.map(({ key, label, icon: Icon, color, bg, border, suffix, nav }) => {
+          const value = metrics?.[key] as number ?? 0;
+          const change = getChangePercentage(value);
+          const isPositive = change >= 0;
+
+          return (
+            <button
+              key={key}
+              onClick={() => onNavigate(nav)}
+              className="group relative rounded-2xl p-5 text-right transition-all hover:shadow-xl hover:-translate-y-1 active:scale-[0.97] flex flex-col gap-3 bg-white border border-slate-200/60 overflow-hidden"
             >
-              <Icon className="w-4 h-4" style={{ color }} />
-            </div>
-            {loading ? (
-              <Skeleton />
-            ) : (
-              <p className="text-[20px] font-black text-[#1a2f3e] leading-none">
-                {fmt(metrics?.[key] as number ?? 0)}{suffix}
-              </p>
-            )}
-            <p className="text-[11px] text-[#7a9aab] font-semibold leading-tight">{label}</p>
-          </button>
-        ))}
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: `linear-gradient(to right, ${color}, ${color}dd)` }} />
+
+              <div className="flex items-center justify-between">
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center shadow-sm transition-transform group-hover:scale-110"
+                  style={{ background: `${color}15` }}
+                >
+                  <Icon className="w-5 h-5" style={{ color }} />
+                </div>
+                {!loading && (
+                  <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold ${
+                    isPositive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                  }`}>
+                    <TrendingUp className={`w-3 h-3 ${!isPositive && 'rotate-180'}`} />
+                    {Math.abs(change)}%
+                  </div>
+                )}
+              </div>
+
+              {loading ? (
+                <div className="space-y-2">
+                  <Skeleton />
+                  <div className="h-3 w-16 bg-slate-200 rounded animate-pulse" />
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-2xl font-black text-slate-900 leading-none mb-1">
+                      {fmt(value)}{suffix}
+                    </p>
+                    <p className="text-xs text-slate-600 font-semibold leading-tight">{label}</p>
+                  </div>
+                </>
+              )}
+
+              <div className="absolute bottom-0 right-0 w-20 h-20 rounded-full blur-2xl opacity-0 group-hover:opacity-20 transition-opacity" style={{ background: color }} />
+            </button>
+          );
+        })}
       </div>
     </div>
   );

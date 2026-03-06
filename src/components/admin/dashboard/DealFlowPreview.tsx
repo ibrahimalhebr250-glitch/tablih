@@ -5,6 +5,7 @@ interface Props {
   dealFlow: DealFlow | null;
   loading: boolean;
   onViewAll: (status: string) => void;
+  compact?: boolean;
 }
 
 const COLUMNS: { key: keyof DealFlow; label: string; color: string; bg: string; border: string }[] = [
@@ -92,11 +93,20 @@ function Column({
   );
 }
 
-export default function DealFlowPreview({ dealFlow, loading, onViewAll }: Props) {
+export default function DealFlowPreview({ dealFlow, loading, onViewAll, compact = false }: Props) {
+  const totalDeals = dealFlow
+    ? Object.values(dealFlow).reduce((sum, deals) => sum + deals.length, 0)
+    : 0;
+
   return (
     <div className="space-y-3">
-      <p className="text-[13px] font-bold text-[#4a7a94] uppercase tracking-wide">تدفق الصفقات</p>
-      <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+          <span className="text-xs text-slate-600">إجمالي الصفقات النشطة: <span className="font-bold text-slate-900">{totalDeals}</span></span>
+        </div>
+      </div>
+      <div className={`flex gap-3 overflow-x-auto pb-2 ${compact ? 'flex-wrap' : ''}`} style={{ scrollbarWidth: 'thin' }}>
         {COLUMNS.map(col => (
           <Column
             key={col.key}
