@@ -4,6 +4,207 @@
 
 ---
 
+# إصلاح صفحة إنشاء الطلب - ربط البيانات الديناميكية
+
+## المشكلة المكتشفة
+
+عند فتح صفحة إنشاء طلب جديد، كانت تظهر الرسائل التالية:
+- "لا توجد أنواع طبليات متاحة"
+- "لا توجد مقاسات متاحة"
+- "لا توجد درجات جودة متاحة"
+- "لا توجد خيارات مرونة متاحة"
+
+## السبب الجذري
+
+الجداول الأساسية لإعدادات الطلبات لم تكن موجودة في قاعدة البيانات:
+- `order_types_settings` - غير موجود
+- `flexibility_options_settings` - غير موجود
+- `quantity_settings` - غير موجود
+
+بينما كان الكود يحاول جلب البيانات من هذه الجداول!
+
+## الحل المطبق
+
+### 1. إنشاء الجداول الناقصة
+
+تم إنشاء Migration جديد لإضافة الجداول الثلاثة:
+
+#### جدول `order_types_settings`
+```sql
+CREATE TABLE order_types_settings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code text UNIQUE NOT NULL,
+  name_ar text NOT NULL,
+  name_en text NOT NULL,
+  icon text,
+  color text,
+  is_active boolean DEFAULT true,
+  sort_order integer DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+```
+
+**البيانات الأولية:**
+- طلب عادي (Standard Order)
+- طلب عاجل (Urgent Order)
+- توريد دوري (Recurring Supply)
+
+#### جدول `flexibility_options_settings`
+```sql
+CREATE TABLE flexibility_options_settings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code text UNIQUE NOT NULL,
+  name_ar text NOT NULL,
+  name_en text NOT NULL,
+  description text,
+  is_active boolean DEFAULT true,
+  affects_matching boolean DEFAULT false,
+  sort_order integer DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+```
+
+**البيانات الأولية:**
+- مرونة في النوع
+- مرونة في المقاس
+- مرونة في الجودة
+- مرونة في الكمية
+
+#### جدول `quantity_settings`
+```sql
+CREATE TABLE quantity_settings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  min_quantity integer DEFAULT 100,
+  max_quantity integer DEFAULT 10000,
+  step integer DEFAULT 50,
+  default_quantity integer DEFAULT 1000,
+  updated_at timestamptz DEFAULT now()
+);
+```
+
+**القيم الافتراضية:**
+- الحد الأدنى: 100 طبلية
+- الحد الأقصى: 10,000 طبلية
+- الخطوة: 50 طبلية
+- القيمة الافتراضية: 1000 طبلية
+
+### 2. إعدادات الأمان (RLS)
+
+تم تفعيل Row Level Security على جميع الجداول:
+
+```sql
+-- القراءة للجميع
+CREATE POLICY "Anyone can read order types"
+  ON order_types_settings FOR SELECT
+  USING (true);
+
+-- التعديل للمسؤولين فقط
+CREATE POLICY "Admins can manage order types"
+  ON order_types_settings FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM admin_staff
+      WHERE email = (SELECT auth.jwt()->>'email')
+      AND is_active = true
+    )
+  );
+```
+
+### 3. إضافة Console Logs للتشخيص
+
+تم إضافة سجلات تشخيصية في `useDynamicOrderBuilder.ts`:
+
+```typescript
+console.log('✅ Dynamic Order Builder Data Loaded:');
+console.log('  - Order Types:', orderTypesResult.data?.length || 0);
+console.log('  - Pallet Types:', palletTypesResult.data?.length || 0);
+console.log('  - Pallet Sizes:', palletSizesResult.data?.length || 0);
+console.log('  - Quality Grades:', qualityGradesResult.data?.length || 0);
+console.log('  - Cities:', citiesResult.data?.length || 0);
+console.log('  - Flexibility Options:', flexibilityOptionsResult.data?.length || 0);
+```
+
+## النتيجة
+
+الآن صفحة إنشاء الطلب تعرض جميع البيانات بشكل صحيح:
+
+| الجدول | العدد الإجمالي | المفعّل |
+|--------|----------------|---------|
+| أنواع الطلبات | 3 | 3 |
+| أنواع الطبليات | 3 | 3 |
+| مقاسات الطبليات | 5 | 5 |
+| درجات الجودة | 4 | 4 |
+| خيارات المرونة | 7 | 7 |
+
+### البيانات المتاحة
+
+**أنواع الطلبات:**
+1. طلب عادي (Standard Order)
+2. طلب عاجل (Urgent Order)
+3. توريد دوري (Recurring Supply)
+
+**أنواع الطبليات:**
+1. بلاستيكية (Plastic)
+2. إعادة تدوير (Recycled)
+3. خشب (Wood)
+
+**مقاسات الطبليات:**
+1. 120×100 سم (بلاستيك)
+2. 110×110 سم (بلاستيك)
+3. 120×80 سم (بلاستيك)
+4. 120×100 سم (إعادة تدوير)
+5. 110×110 سم (خشب)
+
+**درجات الجودة:**
+1. ممتازة (A)
+2. جيدة (B)
+3. مقبول (C)
+4. خردة (Scrap)
+
+**خيارات المرونة:**
+1. مرونة في النوع
+2. مرونة في المقاس
+3. مرونة في الجودة
+4. مرونة في الكمية
+5. أقبل جودة قريبة
+6. أقبل مدينة قريبة
+7. أقبل تسليم جزئي
+
+## الملفات المعدلة
+
+1. **Migration:** `create_order_types_and_flexibility_settings.sql`
+   - إنشاء 3 جداول جديدة
+   - إضافة RLS policies
+   - إدراج البيانات الأولية
+
+2. **Hook:** `src/hooks/useDynamicOrderBuilder.ts`
+   - إضافة console logs للتشخيص
+   - التحقق من جلب البيانات بشكل صحيح
+
+## الاختبار
+
+```sql
+-- التحقق من البيانات
+SELECT
+  'order_types_settings' as table_name,
+  COUNT(*) as total,
+  COUNT(*) FILTER (WHERE is_active = true) as active
+FROM order_types_settings;
+-- ✅ النتيجة: 3 سجلات، 3 مفعّلة
+```
+
+## الحالة النهائية
+
+✅ جميع البيانات متوفرة
+✅ صفحة إنشاء الطلب تعمل بشكل كامل
+✅ جميع الخيارات معروضة
+✅ البناء ناجح بدون أخطاء
+
+---
+
 # القسم الأول: إصلاحات نظام إدارة الطلبات
 
 ## المشكلة الرئيسية

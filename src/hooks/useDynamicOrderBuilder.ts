@@ -214,6 +214,14 @@ export function useDynamicOrderBuilder() {
       setCities(citiesResult.data || []);
       setFlexibilityOptions(flexibilityOptionsResult.data || []);
 
+      console.log('✅ Dynamic Order Builder Data Loaded:');
+      console.log('  - Order Types:', orderTypesResult.data?.length || 0);
+      console.log('  - Pallet Types:', palletTypesResult.data?.length || 0);
+      console.log('  - Pallet Sizes:', palletSizesResult.data?.length || 0);
+      console.log('  - Quality Grades:', qualityGradesResult.data?.length || 0);
+      console.log('  - Cities:', citiesResult.data?.length || 0);
+      console.log('  - Flexibility Options:', flexibilityOptionsResult.data?.length || 0);
+
       if (quantitySettingsResult.data) {
         setQuantitySettings({
           min_quantity: quantitySettingsResult.data.min_quantity || 100,
