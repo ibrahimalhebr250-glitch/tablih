@@ -131,7 +131,7 @@ export default function DashboardSection({ onNavigate }: Props) {
               <h3 className="text-lg font-black text-slate-900">نظرة عامة على السوق</h3>
               <Maximize2 className={`w-4 h-4 text-slate-400 transition-transform ${expandedSection === 'market' ? 'rotate-45' : ''}`} />
             </button>
-            <MarketOverview cities={cities} loading={loading} />
+            <MarketOverview cities={cities} loading={loading} onRefresh={refetch} />
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/60">
