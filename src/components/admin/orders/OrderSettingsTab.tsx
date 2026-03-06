@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Plus, Eye, EyeOff, ArrowUp, ArrowDown, Edit2, Trash2, Package, Zap, RefreshCw, Settings } from 'lucide-react';
+import { Save, Plus, Eye, EyeOff, ArrowUp, ArrowDown, CreditCard as Edit2, Trash2, Package, Zap, RefreshCw, Settings } from 'lucide-react';
 import { useOrderSettings, type OrderType } from '../../../hooks/useOrderSettings';
 
 const ICON_MAP: Record<string, any> = {
