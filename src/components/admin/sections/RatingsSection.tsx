@@ -85,7 +85,10 @@ export default function RatingsSection() {
     try {
       setLoading(true);
       const phone = sessionStorage.getItem('phone');
+      console.log('RatingsSection - Fetching with phone:', phone);
+
       if (!phone) {
+        console.log('RatingsSection - No phone found in session');
         setRatings([]);
         return;
       }
@@ -100,14 +103,18 @@ export default function RatingsSection() {
         p_offset: pagination.offset,
       });
 
+      console.log('RatingsSection - Response:', { data, error });
+
       if (error) {
         console.error('Error fetching ratings:', error);
         if (error.message?.includes('غير مصرح') || error.code === 'P0001') {
+          console.log('RatingsSection - Access denied');
           setRatings([]);
           return;
         }
         throw error;
       }
+      console.log('RatingsSection - Loaded ratings:', data?.length);
       setRatings(data || []);
     } catch (error) {
       console.error('Error fetching ratings:', error);
