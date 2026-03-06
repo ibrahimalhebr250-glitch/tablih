@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Zap, RefreshCw, ShoppingBag } from 'lucide-react';
 import { useOrderBuilder } from '../../hooks/useOrderBuilder';
 import { useMatching } from '../../hooks/useMatching';
 import { usePlatformSettings } from '../../hooks/usePlatformSettings';
+import { useDynamicOrderBuilder } from '../../hooks/useDynamicOrderBuilder';
 import TypeSelector from './TypeSelector';
 import SizeSelector from './SizeSelector';
 import QualitySelector from './QualitySelector';
@@ -42,6 +43,7 @@ const REQUEST_TYPE_CONFIG = {
 
 export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegisterComplete, onLoginComplete, authError, onOpenDeals, prefillOpportunity }: Props) {
   const { settings } = usePlatformSettings();
+  const dynamicData = useDynamicOrderBuilder();
   const builder = useOrderBuilder(prefilledPhone, prefillOpportunity ? {
     palletType: prefillOpportunity.pallet_type,
     size: prefillOpportunity.size,
@@ -51,9 +53,31 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
   } : undefined, settings.request_creation.fields_config);
   const matching = useMatching();
   const [requestType, setRequestType] = useState<'standard' | 'urgent' | 'recurring'>('standard');
+  const [flexibilitySelections, setFlexibilitySelections] = useState<Record<string, boolean>>({});
 
   const rc = settings.request_creation;
   const allowedTypes = rc.allowed_types;
+
+  const availableSizes = useMemo(() => {
+    if (!builder.form.palletType) return dynamicData.palletSizes;
+    return dynamicData.getSizesForPalletType(builder.form.palletType);
+  }, [builder.form.palletType, dynamicData]);
+
+  const handleFlexibilityChange = (code: string, value: boolean) => {
+    setFlexibilitySelections(prev => ({ ...prev, [code]: value }));
+  };
+
+  if (dynamicData.loading) {
+    return createPortal(
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+        <div className="bg-white rounded-2xl p-8 text-center">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">جاري التحميل...</p>
+        </div>
+      </div>,
+      document.body
+    );
+  }
 
   const stepTitles: Record<string, { title: string; sub?: string }> = {
     form: { title: 'إنشاء طلب جديد', sub: 'حدّد مواصفات طلبك وسيتم مطابقته فورًا مع الشبكة' },
@@ -145,26 +169,45 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
                 </div>
               )}
               {(rc.fields_config.pallet_type?.show ?? true) && (
-                <TypeSelector selected={builder.form.palletType} onSelect={builder.setPalletType} />
+                <TypeSelector
+                  palletTypes={dynamicData.palletTypes}
+                  selected={builder.form.palletType}
+                  onSelect={builder.setPalletType}
+                />
               )}
               {(rc.fields_config.size?.show ?? true) && (
-                <SizeSelector selected={builder.form.size} onSelect={builder.setSize} />
+                <SizeSelector
+                  palletSizes={availableSizes}
+                  selected={builder.form.size}
+                  onSelect={builder.setSize}
+                />
               )}
               {(rc.fields_config.quality?.show ?? true) && (
-                <QualitySelector selected={builder.form.quality} onSelect={builder.setQuality} />
+                <QualitySelector
+                  qualityGrades={dynamicData.qualityGrades}
+                  selected={builder.form.quality}
+                  onSelect={builder.setQuality}
+                />
               )}
               {(rc.fields_config.quantity?.show ?? true) && (
                 <QuantityInput
                   value={builder.form.quantity}
                   onChange={builder.setQuantity}
-                  min={rc.min_quantity}
-                  max={rc.max_quantity}
+                  settings={dynamicData.quantitySettings}
                 />
               )}
               {(rc.fields_config.city?.show ?? true) && (
-                <CitySelector selected={builder.form.city} onSelect={builder.setCity} />
+                <CitySelector
+                  cities={dynamicData.cities}
+                  selected={builder.form.city}
+                  onSelect={builder.setCity}
+                />
               )}
-              <FlexibilityToggle form={builder.form} onChange={builder.setFlexibility} />
+              <FlexibilityToggle
+                flexibilityOptions={dynamicData.flexibilityOptions}
+                selectedOptions={flexibilitySelections}
+                onChange={handleFlexibilityChange}
+              />
             </div>
           )}
 

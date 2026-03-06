@@ -1,29 +1,34 @@
-import type { PalletType } from '../../types/order';
+import type { DynamicPalletType } from '../../hooks/useDynamicOrderBuilder';
 
 interface Props {
-  selected: PalletType | null;
-  onSelect: (type: PalletType) => void;
+  palletTypes: DynamicPalletType[];
+  selected: string | null;
+  onSelect: (code: string) => void;
 }
 
-const types: { value: PalletType; icon: string; desc: string }[] = [
-  { value: 'خشبية', icon: '🪵', desc: 'الأكثر شيوعاً' },
-  { value: 'بلاستيكية', icon: '🔷', desc: 'داين ومتين' },
-  { value: 'إعادة تدوير', icon: '♻️', desc: 'اقتصادية' },
-];
+const defaultIcon = '📦';
 
-export default function TypeSelector({ selected, onSelect }: Props) {
+export default function TypeSelector({ palletTypes, selected, onSelect }: Props) {
+  if (palletTypes.length === 0) {
+    return (
+      <div className="text-center py-4 text-gray-500">
+        <p>لا توجد أنواع طبليات متاحة</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h3 className="text-[13px] font-bold text-[#1a4a5e] mb-3 uppercase tracking-wide">
         نوع الطبلية
       </h3>
       <div className="grid grid-cols-3 gap-2.5">
-        {types.map((t) => {
-          const isSelected = selected === t.value;
+        {palletTypes.map((type) => {
+          const isSelected = selected === type.code;
           return (
             <button
-              key={t.value}
-              onClick={() => onSelect(t.value)}
+              key={type.id}
+              onClick={() => onSelect(type.code)}
               className={`relative flex flex-col items-center justify-center py-4 px-2 rounded-2xl border-2 transition-all duration-200 ${
                 isSelected
                   ? 'border-[#2196F3] bg-[#EBF5FF] shadow-[0_0_0_3px_rgba(33,150,243,0.12)]'
@@ -37,11 +42,10 @@ export default function TypeSelector({ selected, onSelect }: Props) {
                   </svg>
                 </span>
               )}
-              <span className="text-2xl mb-1.5">{t.icon}</span>
+              <span className="text-2xl mb-1.5">{defaultIcon}</span>
               <span className={`text-[13px] font-bold ${isSelected ? 'text-[#2196F3]' : 'text-[#1a4a5e]'}`}>
-                {t.value}
+                {type.name_ar}
               </span>
-              <span className="text-[10px] text-[#a0b5c0] mt-0.5">{t.desc}</span>
             </button>
           );
         })}

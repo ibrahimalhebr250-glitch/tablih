@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { OrderFormData, PalletType, PalletSize, PalletQuality, BuilderStep } from '../types/order';
 import type { RequestFieldsConfig } from './usePlatformSettings';
+import { supabase } from '../lib/supabase';
 
 interface PrefillData {
   palletType?: string | null;
@@ -37,21 +38,86 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
   const [isAuthenticated, setIsAuthenticated] = useState(!!prefilledPhone);
   const [savedOrderId, setSavedOrderId] = useState<string | null>(null);
   const [savedRequestId, setSavedRequestId] = useState<string | null>(null);
+  const [draftId, setDraftId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (phone && form.palletType && step === 'form') {
+      saveDraft();
+    }
+  }, [form, phone, step]);
+
+  const saveDraft = async () => {
+    if (!phone) return;
+
+    try {
+      const draftData = {
+        phone,
+        pallet_type: form.palletType,
+        size: form.size,
+        quality: form.quality,
+        quantity: form.quantity,
+        city: form.city,
+        stage: step,
+        data: form
+      };
+
+      if (draftId) {
+        await supabase
+          .from('orders')
+          .update({ ...draftData, updated_at: new Date().toISOString() })
+          .eq('id', draftId);
+      } else {
+        const { data, error } = await supabase
+          .from('orders')
+          .insert([{ ...draftData, status: 'unmatched' }])
+          .select('id')
+          .single();
+
+        if (!error && data) {
+          setDraftId(data.id);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to save draft:', err);
+    }
+  };
+
+  const logOperation = async (action: string, details?: any) => {
+    if (!phone) return;
+
+    try {
+      await supabase
+        .from('order_operations_log')
+        .insert([{
+          phone,
+          order_id: draftId,
+          action,
+          details,
+          timestamp: new Date().toISOString()
+        }]);
+    } catch (err) {
+      console.error('Failed to log operation:', err);
+    }
+  };
 
   const setPalletType = useCallback((type: PalletType) => {
     setForm((prev) => ({ ...prev, palletType: type }));
+    logOperation('change_pallet_type', { type });
   }, []);
 
   const setSize = useCallback((size: PalletSize) => {
     setForm((prev) => ({ ...prev, size }));
+    logOperation('change_size', { size });
   }, []);
 
   const setQuality = useCallback((quality: PalletQuality) => {
     setForm((prev) => ({ ...prev, quality }));
+    logOperation('change_quality', { quality });
   }, []);
 
   const setQuantity = useCallback((quantity: number) => {
     setForm((prev) => ({ ...prev, quantity: Math.max(1, quantity) }));
+    logOperation('change_quantity', { quantity });
   }, []);
 
   const setCity = useCallback((city: string) => {
@@ -85,8 +151,10 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
   const handleCompleteOrder = useCallback(() => {
     if (!isAuthenticated) {
       setStep('auth');
+      logOperation('start_auth', { form });
     } else {
       setStep('matching');
+      logOperation('start_matching', { form });
     }
   }, [isAuthenticated]);
 
@@ -94,12 +162,14 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
     setPhone(userPhone);
     setIsAuthenticated(true);
     setStep('matching');
+    logOperation('auth_complete', { phone: userPhone });
   }, []);
 
   const handleMatchingDone = useCallback((orderId: string, requestId: string) => {
     setSavedOrderId(orderId);
     setSavedRequestId(requestId);
     setStep('result');
+    logOperation('matching_complete', { orderId, requestId });
   }, []);
 
   const reset = useCallback(() => {

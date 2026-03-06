@@ -1,35 +1,42 @@
-import type { PalletQuality } from '../../types/order';
-import { PALLET_QUALITY_LABELS } from '../../types/order';
+import type { DynamicQualityGrade } from '../../hooks/useDynamicOrderBuilder';
 
 interface Props {
-  selected: PalletQuality | null;
-  onSelect: (quality: PalletQuality) => void;
+  qualityGrades: DynamicQualityGrade[];
+  selected: string | null;
+  onSelect: (code: string) => void;
 }
 
-const grades: PalletQuality[] = ['A', 'B', 'C', 'Scrap'];
-
-const gradeColors: Record<PalletQuality, { border: string; bg: string; badge: string; text: string }> = {
-  A: { border: 'border-[#27AE60]', bg: 'bg-[#E8F8F0]', badge: 'bg-[#27AE60]', text: 'text-[#27AE60]' },
-  B: { border: 'border-[#2196F3]', bg: 'bg-[#EBF5FF]', badge: 'bg-[#2196F3]', text: 'text-[#2196F3]' },
-  C: { border: 'border-[#F59E0B]', bg: 'bg-[#FFFBEB]', badge: 'bg-[#F59E0B]', text: 'text-[#F59E0B]' },
-  Scrap: { border: 'border-gray-300', bg: 'bg-gray-50', badge: 'bg-gray-400', text: 'text-gray-500' },
+const gradeColors: Record<string, { border: string; bg: string; badge: string; text: string }> = {
+  'A': { border: 'border-[#27AE60]', bg: 'bg-[#E8F8F0]', badge: 'bg-[#27AE60]', text: 'text-[#27AE60]' },
+  'B': { border: 'border-[#2196F3]', bg: 'bg-[#EBF5FF]', badge: 'bg-[#2196F3]', text: 'text-[#2196F3]' },
+  'C': { border: 'border-[#F59E0B]', bg: 'bg-[#FFFBEB]', badge: 'bg-[#F59E0B]', text: 'text-[#F59E0B]' },
+  'Scrap': { border: 'border-gray-300', bg: 'bg-gray-50', badge: 'bg-gray-400', text: 'text-gray-500' },
 };
 
-export default function QualitySelector({ selected, onSelect }: Props) {
+const defaultColors = { border: 'border-blue-300', bg: 'bg-blue-50', badge: 'bg-blue-500', text: 'text-blue-600' };
+
+export default function QualitySelector({ qualityGrades, selected, onSelect }: Props) {
+  if (qualityGrades.length === 0) {
+    return (
+      <div className="text-center py-4 text-gray-500">
+        <p>لا توجد درجات جودة متاحة</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h3 className="text-[13px] font-bold text-[#1a4a5e] mb-3 uppercase tracking-wide">
         الجودة
       </h3>
       <div className="grid grid-cols-2 gap-2.5">
-        {grades.map((g) => {
-          const isSelected = selected === g;
-          const colors = gradeColors[g];
-          const label = PALLET_QUALITY_LABELS[g];
+        {qualityGrades.map((grade) => {
+          const isSelected = selected === grade.code;
+          const colors = gradeColors[grade.code] || defaultColors;
           return (
             <button
-              key={g}
-              onClick={() => onSelect(g)}
+              key={grade.id}
+              onClick={() => onSelect(grade.code)}
               className={`relative flex flex-col items-start p-3.5 rounded-2xl border-2 transition-all duration-200 text-right ${
                 isSelected
                   ? `${colors.border} ${colors.bg} shadow-sm`
@@ -48,12 +55,14 @@ export default function QualitySelector({ selected, onSelect }: Props) {
                   isSelected ? colors.badge : 'bg-gray-300'
                 }`}
               >
-                Grade {g}
+                Grade {grade.code}
               </span>
               <span className={`text-[13px] font-bold ${isSelected ? colors.text : 'text-[#1a4a5e]'}`}>
-                {label.ar}
+                {grade.name_ar}
               </span>
-              <span className="text-[11px] text-[#a0b5c0] mt-0.5 text-right">{label.desc}</span>
+              {grade.description && (
+                <span className="text-[11px] text-[#a0b5c0] mt-0.5 text-right">{grade.description}</span>
+              )}
             </button>
           );
         })}
