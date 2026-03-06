@@ -3,7 +3,7 @@ export type AdminSection = 'dashboard' | 'market' | 'deals' | 'finance' | 'users
 export type MarketTab = 'cities' | 'inventory' | 'requests';
 export type FinanceTab = 'dashboard' | 'commissions' | 'supplier_profile' | 'market_stats';
 export type CommissionTab = 'due' | 'overdue' | 'settled';
-export type SettingsTab = 'general' | 'requests' | 'inventory' | 'matching' | 'roles';
+export type SettingsTab = 'general';
 export type UsersTab = 'users' | 'analytics' | 'staff' | 'roles';
 
 export type TrustRating = 1 | 2 | 3 | 4 | 5;
