@@ -89,7 +89,7 @@ export function useOrderSettings() {
         supabase
           .from('order_quantity_settings')
           .select('*')
-          .single(),
+          .maybeSingle(),
         supabase
           .from('inventory_pallet_types')
           .select('*')

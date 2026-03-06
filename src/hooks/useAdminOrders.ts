@@ -201,7 +201,7 @@ export function useAdminOrders() {
       const { data, error: fetchError } = await supabase
         .from('order_quantity_settings')
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (fetchError) throw fetchError;
       setQuantitySettings(data);
