@@ -1,28 +1,38 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Minus, Plus, MapPin, DollarSign } from 'lucide-react';
 import { QUICK_QUANTITIES, SAUDI_CITIES } from '../../../types/inventory';
+import { useInventorySettings } from '../../../hooks/useInventorySettings';
 
 interface Props {
   quantity: number;
   city: string;
   pricePerPallet: number;
-  minQuantity: number;
-  maxQuantity: number;
+  minQuantity?: number;
+  maxQuantity?: number;
   onSetQuantity: (v: number) => void;
   onSetCity: (v: string) => void;
   onSetPrice: (v: number) => void;
 }
 
-const PRICE_PRESETS = [0, 10, 25, 50, 75, 100, 150, 200, 300, 500];
-const PRICE_MIN = 0;
-const PRICE_MAX = 1000;
-const PRICE_STEP = 5;
-
 export default function Step2QuantityCity({
-  quantity, city, pricePerPallet, minQuantity, maxQuantity,
+  quantity, city, pricePerPallet, minQuantity: propMinQuantity, maxQuantity: propMaxQuantity,
   onSetQuantity, onSetCity, onSetPrice,
 }: Props) {
+  const { settings } = useInventorySettings();
   const [showAllCities, setShowAllCities] = useState(false);
+
+  const minQuantity = propMinQuantity ?? settings?.min_quantity ?? 100;
+  const maxQuantity = propMaxQuantity ?? settings?.max_quantity ?? 10000;
+  const quantityStep = settings?.quantity_step ?? 100;
+  const minPrice = settings?.min_price ?? 0;
+  const maxPrice = settings?.max_price ?? 1000;
+  const priceStep = settings?.price_step ?? 5;
+  const allowNegotiation = settings?.allow_negotiation ?? true;
+
+  const PRICE_PRESETS = allowNegotiation
+    ? [0, 10, 25, 50, 75, 100, 150, 200, 300, 500].filter(p => p >= minPrice && p <= maxPrice)
+    : [10, 25, 50, 75, 100, 150, 200, 300, 500].filter(p => p >= minPrice && p <= maxPrice);
+
   const outOfRange = quantity > 0 && (quantity < minQuantity || quantity > maxQuantity);
 
   const qtyHoldRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -44,21 +54,25 @@ export default function Step2QuantityCity({
 
   const startQtyHold = useCallback((delta: number) => {
     stopQtyHold();
-    onSetQuantity(Math.max(1, Math.min(maxQuantity, qtyValueRef.current + delta)));
+    const newQty = Math.max(1, Math.min(maxQuantity, qtyValueRef.current + delta));
+    onSetQuantity(Math.floor(newQty / quantityStep) * quantityStep);
     qtyHoldRef.current = setInterval(() => {
-      onSetQuantity(Math.max(1, Math.min(maxQuantity, qtyValueRef.current + delta)));
+      const newQty = Math.max(1, Math.min(maxQuantity, qtyValueRef.current + delta));
+      onSetQuantity(Math.floor(newQty / quantityStep) * quantityStep);
     }, 120);
-  }, [maxQuantity, onSetQuantity, stopQtyHold]);
+  }, [maxQuantity, quantityStep, onSetQuantity, stopQtyHold]);
 
   const startPriceHold = useCallback((delta: number) => {
     stopPriceHold();
-    onSetPrice(Math.max(PRICE_MIN, Math.min(PRICE_MAX, priceValueRef.current + delta)));
+    const newPrice = Math.max(minPrice, Math.min(maxPrice, priceValueRef.current + delta));
+    onSetPrice(Math.floor(newPrice / priceStep) * priceStep);
     priceHoldRef.current = setInterval(() => {
-      onSetPrice(Math.max(PRICE_MIN, Math.min(PRICE_MAX, priceValueRef.current + delta)));
+      const newPrice = Math.max(minPrice, Math.min(maxPrice, priceValueRef.current + delta));
+      onSetPrice(Math.floor(newPrice / priceStep) * priceStep);
     }, 100);
-  }, [onSetPrice, stopPriceHold]);
+  }, [minPrice, maxPrice, priceStep, onSetPrice, stopPriceHold]);
 
-  const sliderPercent = ((pricePerPallet - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * 100;
+  const sliderPercent = ((pricePerPallet - minPrice) / (maxPrice - minPrice)) * 100;
 
   const popularCities = SAUDI_CITIES.slice(0, 8);
   const displayedCities = showAllCities ? SAUDI_CITIES : popularCities;

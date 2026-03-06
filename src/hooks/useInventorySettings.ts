@@ -152,6 +152,12 @@ export function useInventorySettings() {
     };
   }, []);
 
+  const getSizesForType = (palletTypeId: string): PalletSize[] => {
+    return palletSizes.filter(size =>
+      size.pallet_type_id === palletTypeId || size.pallet_type_id === null
+    );
+  };
+
   return {
     settings,
     palletTypes,
@@ -162,5 +168,6 @@ export function useInventorySettings() {
     loading,
     error,
     refetch: fetchSettings,
+    getSizesForType,
   };
 }
