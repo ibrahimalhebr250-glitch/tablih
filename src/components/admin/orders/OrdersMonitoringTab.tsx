@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, Edit2, Pause, Trash2, MessageCircle, ExternalLink, Search, Filter } from 'lucide-react';
+import { Eye, CreditCard as Edit2, Pause, Trash2, MessageCircle, ExternalLink, Search, Filter } from 'lucide-react';
 import type { OrderWithDetails } from '../../../hooks/useAdminOrders';
 
 interface Props {
