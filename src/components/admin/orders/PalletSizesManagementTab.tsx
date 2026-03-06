@@ -33,7 +33,7 @@ export default function PalletSizesManagementTab() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('pallet_sizes')
+        .from('pallet_sizes_master')
         .select('*')
         .order('sort_order');
 
@@ -51,7 +51,7 @@ export default function PalletSizesManagementTab() {
     try {
       if (editingSize) {
         const { error } = await supabase
-          .from('pallet_sizes')
+          .from('pallet_sizes_master')
           .update({
             label: formData.label,
             width_cm: formData.width_cm,
@@ -65,7 +65,7 @@ export default function PalletSizesManagementTab() {
       } else {
         const maxOrder = sizes.length > 0 ? Math.max(...sizes.map(s => s.sort_order)) : 0;
         const { error } = await supabase
-          .from('pallet_sizes')
+          .from('pallet_sizes_master')
           .insert([{
             label: formData.label,
             width_cm: formData.width_cm,
@@ -103,7 +103,7 @@ export default function PalletSizesManagementTab() {
 
     try {
       const { error } = await supabase
-        .from('pallet_sizes')
+        .from('pallet_sizes_master')
         .delete()
         .eq('id', id);
 
@@ -118,7 +118,7 @@ export default function PalletSizesManagementTab() {
   const toggleActive = async (id: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
-        .from('pallet_sizes')
+        .from('pallet_sizes_master')
         .update({ is_active: !currentStatus, updated_at: new Date().toISOString() })
         .eq('id', id);
 

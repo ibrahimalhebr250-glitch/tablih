@@ -35,13 +35,13 @@ export default function DynamicStep1PalletInfo({
 
   const activePalletTypes = palletTypes.filter(t => t.is_active);
 
-  const selectedTypeId = palletType
-    ? activePalletTypes.find(t => t.name_ar === palletType)?.id
+  const selectedTypeCode = palletType
+    ? activePalletTypes.find(t => t.name_ar === palletType)?.code
     : null;
 
   const activePalletSizes = palletSizes
     .filter(s => s.is_active)
-    .filter(s => !selectedTypeId || s.pallet_type_id === selectedTypeId);
+    .filter(s => !selectedTypeCode || s.pallet_type_code === selectedTypeCode);
 
   const activeQualityGrades = qualityGrades.filter(g => g.is_active);
   const activePalletConditions = palletConditions.filter(c => c.is_active);
@@ -90,7 +90,7 @@ export default function DynamicStep1PalletInfo({
           ) : (
             <div className="flex gap-2 flex-wrap">
               {activePalletSizes.map((s) => {
-                const displayText = s.name_ar || `${s.length}×${s.width}`;
+                const displayText = s.name_ar || `${s.length_cm}×${s.width_cm}`;
                 const sel = size === displayText;
                 return (
                   <button
@@ -128,21 +128,21 @@ export default function DynamicStep1PalletInfo({
                   ${sel ? 'shadow-md scale-105' : 'active:scale-95'}
                 `}
                 style={{
-                  borderColor: sel ? g.color : '#e5e7eb',
-                  backgroundColor: sel ? `${g.color}15` : '#ffffff',
+                  borderColor: sel ? g.color_hex : '#e5e7eb',
+                  backgroundColor: sel ? g.bg_color : '#ffffff',
                 }}
               >
                 <div className="flex items-start justify-between mb-1">
                   <span
                     className="px-2 py-0.5 rounded text-white text-[10px] font-bold"
-                    style={{ backgroundColor: g.color }}
+                    style={{ backgroundColor: g.badge_color }}
                   >
                     {g.code}
                   </span>
                   {sel && (
                     <div
                       className="w-4 h-4 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: g.color }}
+                      style={{ backgroundColor: g.color_hex }}
                     >
                       <CheckCircle className="w-2.5 h-2.5 text-white" />
                     </div>
@@ -150,12 +150,12 @@ export default function DynamicStep1PalletInfo({
                 </div>
                 <p
                   className="text-[13px] font-bold mb-0.5"
-                  style={{ color: sel ? g.color : '#4a6a7a' }}
+                  style={{ color: sel ? g.color_hex : '#4a6a7a' }}
                 >
                   {g.name_ar}
                 </p>
-                {g.description && (
-                  <p className="text-[10px] text-[#a0b5c0] line-clamp-2">{g.description}</p>
+                {g.description_ar && (
+                  <p className="text-[10px] text-[#a0b5c0] line-clamp-2">{g.description_ar}</p>
                 )}
               </button>
             );

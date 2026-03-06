@@ -23,25 +23,31 @@ export interface InventorySettings {
 
 export interface PalletType {
   id: string;
+  code: string;
   name_ar: string;
   name_en: string;
+  description_ar?: string;
+  description_en?: string;
   icon: string;
   is_active: boolean;
-  display_order: number;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }
 
 export interface PalletSize {
   id: string;
-  pallet_type_id: string;
-  length: number;
-  width: number;
-  max_weight_kg: number;
+  pallet_type_code: string;
+  code: string;
   name_ar: string;
   name_en: string;
+  length_cm: number;
+  width_cm: number;
+  height_cm?: number;
+  max_load_kg?: number;
+  weight_unit: string;
   is_active: boolean;
-  display_order: number;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -51,10 +57,14 @@ export interface QualityGrade {
   code: string;
   name_ar: string;
   name_en: string;
-  color: string;
-  description: string;
+  description_ar?: string;
+  description_en?: string;
+  color_hex: string;
+  badge_color: string;
+  bg_color: string;
+  border_color: string;
   is_active: boolean;
-  display_order: number;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -106,9 +116,9 @@ export function useInventorySettings() {
         usageRes
       ] = await Promise.all([
         supabase.from('inventory_settings').select('*').maybeSingle(),
-        supabase.from('inventory_pallet_types').select('*').order('display_order'),
-        supabase.from('inventory_pallet_sizes').select('*').order('display_order'),
-        supabase.from('inventory_quality_grades').select('*').order('display_order'),
+        supabase.from('pallet_types_master').select('*').order('sort_order'),
+        supabase.from('pallet_sizes_master').select('*').order('sort_order'),
+        supabase.from('quality_grades_master').select('*').order('sort_order'),
         supabase.from('inventory_pallet_conditions').select('*').order('display_order'),
         supabase.from('inventory_usage_types').select('*').order('display_order'),
       ]);
@@ -140,9 +150,9 @@ export function useInventorySettings() {
     const channel = supabase
       .channel('inventory_settings_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_settings' }, fetchSettings)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_pallet_types' }, fetchSettings)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_pallet_sizes' }, fetchSettings)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_quality_grades' }, fetchSettings)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pallet_types_master' }, fetchSettings)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pallet_sizes_master' }, fetchSettings)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quality_grades_master' }, fetchSettings)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_pallet_conditions' }, fetchSettings)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_usage_types' }, fetchSettings)
       .subscribe();
@@ -152,9 +162,9 @@ export function useInventorySettings() {
     };
   }, []);
 
-  const getSizesForType = (palletTypeId: string): PalletSize[] => {
+  const getSizesForType = (palletTypeCode: string): PalletSize[] => {
     return palletSizes.filter(size =>
-      size.pallet_type_id === palletTypeId || size.pallet_type_id === null
+      size.pallet_type_code === palletTypeCode || !size.pallet_type_code
     );
   };
 

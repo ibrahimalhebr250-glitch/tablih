@@ -33,7 +33,7 @@ export default function PalletTypesManagementTab() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('pallet_types')
+        .from('pallet_types_master_master')
         .select('*')
         .order('sort_order');
 
@@ -51,7 +51,7 @@ export default function PalletTypesManagementTab() {
     try {
       if (editingType) {
         const { error } = await supabase
-          .from('pallet_types')
+          .from('pallet_types_master')
           .update({
             name: formData.name,
             name_en: formData.name_en,
@@ -65,7 +65,7 @@ export default function PalletTypesManagementTab() {
       } else {
         const maxOrder = types.length > 0 ? Math.max(...types.map(t => t.sort_order)) : 0;
         const { error } = await supabase
-          .from('pallet_types')
+          .from('pallet_types_master')
           .insert([{
             name: formData.name,
             name_en: formData.name_en,
@@ -103,7 +103,7 @@ export default function PalletTypesManagementTab() {
 
     try {
       const { error } = await supabase
-        .from('pallet_types')
+        .from('pallet_types_master')
         .delete()
         .eq('id', id);
 
@@ -118,7 +118,7 @@ export default function PalletTypesManagementTab() {
   const toggleActive = async (id: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
-        .from('pallet_types')
+        .from('pallet_types_master')
         .update({ is_active: !currentStatus, updated_at: new Date().toISOString() })
         .eq('id', id);
 

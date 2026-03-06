@@ -43,7 +43,7 @@ export default function QualityGradesManagementTab() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('quality_grades')
+        .from('quality_grades_master')
         .select('*')
         .order('sort_order');
 
@@ -61,7 +61,7 @@ export default function QualityGradesManagementTab() {
     try {
       if (editingGrade) {
         const { error } = await supabase
-          .from('quality_grades')
+          .from('quality_grades_master')
           .update({
             name: formData.name,
             description: formData.description || null,
@@ -76,7 +76,7 @@ export default function QualityGradesManagementTab() {
       } else {
         const maxOrder = grades.length > 0 ? Math.max(...grades.map(g => g.sort_order)) : 0;
         const { error } = await supabase
-          .from('quality_grades')
+          .from('quality_grades_master')
           .insert([{
             name: formData.name,
             description: formData.description || null,
@@ -116,7 +116,7 @@ export default function QualityGradesManagementTab() {
 
     try {
       const { error } = await supabase
-        .from('quality_grades')
+        .from('quality_grades_master')
         .delete()
         .eq('id', id);
 
@@ -131,7 +131,7 @@ export default function QualityGradesManagementTab() {
   const toggleActive = async (id: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
-        .from('quality_grades')
+        .from('quality_grades_master')
         .update({ is_active: !currentStatus, updated_at: new Date().toISOString() })
         .eq('id', id);
 
