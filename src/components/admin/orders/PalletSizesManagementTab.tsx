@@ -410,8 +410,10 @@ export default function PalletSizesManagementTab() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">الطول (سم)</label>
                   <input
-                    type="text"
+                    type="number"
                     required
+                    min="1"
+                    step="1"
                     value={formData.length_cm}
                     onChange={(e) => setFormData({ ...formData, length_cm: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -421,8 +423,10 @@ export default function PalletSizesManagementTab() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">العرض (سم)</label>
                   <input
-                    type="text"
+                    type="number"
                     required
+                    min="1"
+                    step="1"
                     value={formData.width_cm}
                     onChange={(e) => setFormData({ ...formData, width_cm: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -434,7 +438,9 @@ export default function PalletSizesManagementTab() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">الارتفاع (سم) - اختياري</label>
                   <input
-                    type="text"
+                    type="number"
+                    min="1"
+                    step="1"
                     value={formData.height_cm}
                     onChange={(e) => setFormData({ ...formData, height_cm: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -444,7 +450,9 @@ export default function PalletSizesManagementTab() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">الحمولة القصوى (كجم)</label>
                   <input
-                    type="text"
+                    type="number"
+                    min="1"
+                    step="1"
                     value={formData.max_load_kg}
                     onChange={(e) => setFormData({ ...formData, max_load_kg: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
