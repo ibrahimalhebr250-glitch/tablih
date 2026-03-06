@@ -84,7 +84,14 @@ export default function RatingsSection() {
   const fetchRatings = async () => {
     try {
       setLoading(true);
+      const phone = sessionStorage.getItem('phone');
+      if (!phone) {
+        setRatings([]);
+        return;
+      }
+
       const { data, error } = await supabase.rpc('admin_get_all_ratings', {
+        p_caller_phone: phone,
         p_filter_type: filters.type,
         p_filter_status: filters.status,
         p_rating_type: filters.ratingType,
@@ -94,6 +101,7 @@ export default function RatingsSection() {
       });
 
       if (error) {
+        console.error('Error fetching ratings:', error);
         if (error.message?.includes('غير مصرح') || error.code === 'P0001') {
           setRatings([]);
           return;
@@ -111,7 +119,12 @@ export default function RatingsSection() {
 
   const fetchAnalytics = async () => {
     try {
-      const { data, error } = await supabase.rpc('admin_get_ratings_analytics');
+      const phone = sessionStorage.getItem('phone');
+      if (!phone) return;
+
+      const { data, error } = await supabase.rpc('admin_get_ratings_analytics', {
+        p_caller_phone: phone,
+      });
       if (error) throw error;
       if (data?.success) {
         setAnalytics(data.analytics);
@@ -141,7 +154,14 @@ export default function RatingsSection() {
 
     try {
       setProcessingId(selectedRating.rating_id);
+      const phone = sessionStorage.getItem('phone');
+      if (!phone) {
+        alert('يجب تسجيل الدخول');
+        return;
+      }
+
       const { data, error } = await supabase.rpc('admin_update_rating', {
+        p_caller_phone: phone,
         p_rating_id: selectedRating.rating_id,
         p_rating_value: editForm.rating_value,
         p_comment: editForm.comment_text || null,
@@ -169,7 +189,14 @@ export default function RatingsSection() {
 
     try {
       setProcessingId(ratingId);
+      const phone = sessionStorage.getItem('phone');
+      if (!phone) {
+        alert('يجب تسجيل الدخول');
+        return;
+      }
+
       const { data, error } = await supabase.rpc('admin_delete_rating', {
+        p_caller_phone: phone,
         p_rating_id: ratingId,
       });
 
@@ -189,7 +216,14 @@ export default function RatingsSection() {
   const handleConfirm = async (ratingId: string, isConfirmed: boolean) => {
     try {
       setProcessingId(ratingId);
+      const phone = sessionStorage.getItem('phone');
+      if (!phone) {
+        alert('يجب تسجيل الدخول');
+        return;
+      }
+
       const { data, error } = await supabase.rpc('admin_update_rating', {
+        p_caller_phone: phone,
         p_rating_id: ratingId,
         p_is_confirmed: isConfirmed,
       });

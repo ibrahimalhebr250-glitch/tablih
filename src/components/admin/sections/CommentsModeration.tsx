@@ -84,7 +84,14 @@ export function CommentsModeration() {
   const fetchComments = async () => {
     try {
       setLoading(true);
+      const phone = sessionStorage.getItem('phone');
+      if (!phone) {
+        setComments([]);
+        return;
+      }
+
       const { data, error } = await supabase.rpc('admin_get_all_comments', {
+        p_caller_phone: phone,
         p_filter_status: filters.status,
         p_search_text: filters.searchText || null,
         p_search_phone: filters.searchPhone || null,
@@ -93,6 +100,7 @@ export function CommentsModeration() {
       });
 
       if (error) {
+        console.error('Error loading comments:', error);
         if (error.message?.includes('غير مصرح') || error.code === 'P0001') {
           setComments([]);
           return;
@@ -110,7 +118,12 @@ export function CommentsModeration() {
 
   const fetchAnalytics = async () => {
     try {
-      const { data, error } = await supabase.rpc('admin_get_comments_analytics');
+      const phone = sessionStorage.getItem('phone');
+      if (!phone) return;
+
+      const { data, error } = await supabase.rpc('admin_get_comments_analytics', {
+        p_caller_phone: phone,
+      });
       if (error) throw error;
       if (data?.success) {
         setAnalytics(data.analytics);
@@ -141,7 +154,14 @@ export function CommentsModeration() {
 
     try {
       setActioningId(selectedComment.comment_id);
+      const phone = sessionStorage.getItem('phone');
+      if (!phone) {
+        alert('يجب تسجيل الدخول');
+        return;
+      }
+
       const { data, error } = await supabase.rpc('admin_update_comment', {
+        p_caller_phone: phone,
         p_comment_id: selectedComment.comment_id,
         p_comment_text: editForm.comment_text,
         p_moderation_status: editForm.moderation_status,
@@ -170,7 +190,14 @@ export function CommentsModeration() {
 
     try {
       setActioningId(commentId);
+      const phone = sessionStorage.getItem('phone');
+      if (!phone) {
+        alert('يجب تسجيل الدخول');
+        return;
+      }
+
       const { data, error } = await supabase.rpc('admin_delete_comment', {
+        p_caller_phone: phone,
         p_comment_id: commentId,
       });
 
@@ -190,7 +217,14 @@ export function CommentsModeration() {
   const handleRestore = async (commentId: string) => {
     try {
       setActioningId(commentId);
+      const phone = sessionStorage.getItem('phone');
+      if (!phone) {
+        alert('يجب تسجيل الدخول');
+        return;
+      }
+
       const { data, error } = await supabase.rpc('admin_restore_comment', {
+        p_caller_phone: phone,
         p_comment_id: commentId,
       });
 
@@ -215,7 +249,14 @@ export function CommentsModeration() {
 
     try {
       setActioningId(commentId);
+      const phone = sessionStorage.getItem('phone');
+      if (!phone) {
+        alert('يجب تسجيل الدخول');
+        return;
+      }
+
       const { data, error } = await supabase.rpc('admin_bulk_moderate_comments', {
+        p_caller_phone: phone,
         p_comment_ids: [commentId],
         p_action: action,
         p_reason: reason,
