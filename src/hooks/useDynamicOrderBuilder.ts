@@ -89,6 +89,65 @@ export function useDynamicOrderBuilder() {
 
   useEffect(() => {
     loadAllData();
+
+    const palletTypesChannel = supabase
+      .channel('pallet_types_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pallet_types_master' }, () => {
+        loadAllData();
+      })
+      .subscribe();
+
+    const palletSizesChannel = supabase
+      .channel('pallet_sizes_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pallet_sizes_master' }, () => {
+        loadAllData();
+      })
+      .subscribe();
+
+    const qualityGradesChannel = supabase
+      .channel('quality_grades_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quality_grades_master' }, () => {
+        loadAllData();
+      })
+      .subscribe();
+
+    const citiesChannel = supabase
+      .channel('cities_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cities' }, () => {
+        loadAllData();
+      })
+      .subscribe();
+
+    const flexibilityChannel = supabase
+      .channel('flexibility_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'flexibility_options_settings' }, () => {
+        loadAllData();
+      })
+      .subscribe();
+
+    const quantityChannel = supabase
+      .channel('quantity_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quantity_settings' }, () => {
+        loadAllData();
+      })
+      .subscribe();
+
+    const orderTypesChannel = supabase
+      .channel('order_types_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_types_settings' }, () => {
+        loadAllData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(palletTypesChannel);
+      supabase.removeChannel(palletSizesChannel);
+      supabase.removeChannel(qualityGradesChannel);
+      supabase.removeChannel(citiesChannel);
+      supabase.removeChannel(flexibilityChannel);
+      supabase.removeChannel(quantityChannel);
+      supabase.removeChannel(orderTypesChannel);
+    };
   }, []);
 
   const loadAllData = async () => {
