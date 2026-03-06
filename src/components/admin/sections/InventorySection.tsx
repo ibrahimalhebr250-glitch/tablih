@@ -7,6 +7,7 @@ import PalletTypesTab from '../inventory/PalletTypesTab';
 import PalletSizesTab from '../inventory/PalletSizesTab';
 import QualityGradesTab from '../inventory/QualityGradesTab';
 import ConditionsTab from '../inventory/ConditionsTab';
+import OperationsTab from '../inventory/OperationsTab';
 
 interface Props {
   adminEmail: string;
@@ -89,15 +90,7 @@ export default function InventorySection({ adminEmail }: Props) {
           {activeTab === 'sizes' && <PalletSizesTab adminEmail={adminEmail} />}
           {activeTab === 'quality' && <QualityGradesTab adminEmail={adminEmail} />}
           {activeTab === 'conditions' && <ConditionsTab adminEmail={adminEmail} />}
-          {activeTab === 'operations' && (
-            <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
-              <Activity className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">سجل العمليات</h3>
-              <p className="text-slate-600">
-                عرض سجل كامل لجميع العمليات على المخزون
-              </p>
-            </div>
-          )}
+          {activeTab === 'operations' && <OperationsTab adminEmail={adminEmail} />}
         </div>
       </div>
     </div>
