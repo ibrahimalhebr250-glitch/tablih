@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Save, Eye, EyeOff, Edit2, ArrowUp, ArrowDown, Plus, X } from 'lucide-react';
+import { Save, Eye, EyeOff, CreditCard as Edit2, ArrowUp, ArrowDown, Plus, X } from 'lucide-react';
 import { useOrderSettings, type FlexibilityOption } from '../../../hooks/useOrderSettings';
 
 export default function FlexibilityOptionsTab() {
