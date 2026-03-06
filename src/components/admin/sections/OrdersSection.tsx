@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAdminOrders } from '../../../hooks/useAdminOrders';
-import { ClipboardList, FileText, Settings, Sliders, RefreshCw, BarChart3, ScrollText } from 'lucide-react';
+import { ClipboardList, FileText, Settings, Sliders, RefreshCw, BarChart3, ScrollText, Package, Ruler, Award } from 'lucide-react';
 import OrdersMonitoringTab from '../orders/OrdersMonitoringTab';
 import IncompleteDraftsTab from '../orders/IncompleteDraftsTab';
 import OrderSettingsTab from '../orders/OrderSettingsTab';
@@ -8,8 +8,11 @@ import FlexibilityOptionsTab from '../orders/FlexibilityOptionsTab';
 import RecurringOrdersTab from '../orders/RecurringOrdersTab';
 import OrderAnalyticsTab from '../orders/OrderAnalyticsTab';
 import OperationsLogTab from '../orders/OperationsLogTab';
+import PalletTypesManagementTab from '../orders/PalletTypesManagementTab';
+import PalletSizesManagementTab from '../orders/PalletSizesManagementTab';
+import QualityGradesManagementTab from '../orders/QualityGradesManagementTab';
 
-type Tab = 'monitoring' | 'drafts' | 'settings' | 'flexibility' | 'recurring' | 'analytics' | 'log';
+type Tab = 'monitoring' | 'drafts' | 'settings' | 'flexibility' | 'recurring' | 'analytics' | 'log' | 'pallet-types' | 'pallet-sizes' | 'quality-grades';
 
 export default function OrdersSection() {
   const [activeTab, setActiveTab] = useState<Tab>('monitoring');
@@ -38,6 +41,9 @@ export default function OrdersSection() {
   const tabs: Array<{ id: Tab; label: string; icon: any; count?: number }> = [
     { id: 'monitoring', label: 'مراقبة الطلبات', icon: ClipboardList, count: orders.length },
     { id: 'drafts', label: 'طلبات غير مكتملة', icon: FileText, count: drafts.length },
+    { id: 'pallet-types', label: 'إدارة أنواع الطبليات', icon: Package },
+    { id: 'pallet-sizes', label: 'إدارة مقاسات الطبليات', icon: Ruler },
+    { id: 'quality-grades', label: 'إدارة درجات الجودة', icon: Award },
     { id: 'settings', label: 'إعدادات إنشاء الطلب', icon: Settings },
     { id: 'flexibility', label: 'خيارات المرونة', icon: Sliders, count: flexibilityOptions.length },
     { id: 'recurring', label: 'طلبات دورية', icon: RefreshCw, count: recurringOrders.length },
@@ -120,6 +126,18 @@ export default function OrdersSection() {
             drafts={drafts}
             onDelete={deleteDraft}
           />
+        )}
+
+        {activeTab === 'pallet-types' && (
+          <PalletTypesManagementTab />
+        )}
+
+        {activeTab === 'pallet-sizes' && (
+          <PalletSizesManagementTab />
+        )}
+
+        {activeTab === 'quality-grades' && (
+          <QualityGradesManagementTab />
         )}
 
         {activeTab === 'settings' && (
