@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { MessageSquare, MapPin, User, Star, Flag } from 'lucide-react';
+import { MessageSquare, MapPin, User, Star } from 'lucide-react';
 
 interface UserComment {
   comment_id: string;
@@ -15,17 +15,19 @@ interface UserComment {
 interface Props {
   userPhone: string;
   maxComments?: number;
+  refreshTrigger?: number;
 }
 
-export function CommentsSection({ userPhone, maxComments = 10 }: Props) {
+export function CommentsSection({ userPhone, maxComments = 10, refreshTrigger = 0 }: Props) {
   const [comments, setComments] = useState<UserComment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadComments();
-  }, [userPhone]);
+  }, [userPhone, maxComments, refreshTrigger]);
 
   const loadComments = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase.rpc('get_user_comments', {
         p_user_phone: userPhone,
@@ -47,8 +49,8 @@ export function CommentsSection({ userPhone, maxComments = 10 }: Props) {
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`w-4 h-4 ${
-              star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+            className={`w-3.5 h-3.5 ${
+              star <= rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'
             }`}
           />
         ))}
@@ -71,72 +73,51 @@ export function CommentsSection({ userPhone, maxComments = 10 }: Props) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <MessageSquare className="w-5 h-5 text-gray-600" />
-          <h3 className="font-bold text-gray-900">التعليقات</h3>
-        </div>
-        <div className="text-center text-gray-500 py-4">جاري التحميل...</div>
+      <div className="rounded-2xl p-4 text-center" style={{ background: '#f5f9fc', border: '1px solid rgba(0,0,0,0.04)' }}>
+        <div className="text-[13px] text-[#7a9aab]">جاري تحميل التعليقات...</div>
       </div>
     );
   }
 
   if (comments.length === 0) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <MessageSquare className="w-5 h-5 text-gray-600" />
-          <h3 className="font-bold text-gray-900">التعليقات</h3>
-        </div>
-        <div className="text-center py-8">
-          <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-600">لا توجد تعليقات بعد</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="w-5 h-5 text-gray-600" />
-          <h3 className="font-bold text-gray-900">التعليقات</h3>
-          <span className="text-sm text-gray-500">({comments.length})</span>
-        </div>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 justify-end mb-3">
+        <span className="text-[12px] font-bold text-[#4a7a8a]">التعليقات ({comments.length})</span>
+        <MessageSquare className="w-4 h-4 text-[#4a7a8a]" />
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2.5">
         {comments.map((comment) => (
           <div
             key={comment.comment_id}
-            className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+            className="rounded-2xl p-3.5 text-right"
+            style={{ background: '#f5f9fc', border: '1px solid rgba(0,0,0,0.04)' }}
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  {renderStars(comment.rating_value)}
-                  <span className="text-xs text-gray-500">
-                    {formatDate(comment.created_at)}
-                  </span>
-                </div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] text-[#7a9aab]">
+                {formatDate(comment.created_at)}
+              </span>
+              {renderStars(comment.rating_value)}
+            </div>
 
-                <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span>{comment.commenter_city || 'غير محدد'}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <User className="w-3.5 h-3.5" />
-                    <span>
-                      {comment.commenter_type === 'supplier' ? 'مورد' : 'مشتري'}
-                    </span>
-                  </div>
-                </div>
-
-                <p className="text-gray-900 leading-relaxed">{comment.comment_text}</p>
+            <div className="flex items-center gap-3 justify-end text-[11px] text-[#7a9aab] mb-2">
+              <div className="flex items-center gap-1">
+                <span>
+                  {comment.commenter_type === 'supplier' ? 'مورد' : 'مشتري'}
+                </span>
+                <User className="w-3 h-3" />
+              </div>
+              <div className="flex items-center gap-1">
+                <span>{comment.commenter_city || 'غير محدد'}</span>
+                <MapPin className="w-3 h-3" />
               </div>
             </div>
+
+            <p className="text-[13px] text-[#1a3a4a] leading-relaxed">{comment.comment_text}</p>
           </div>
         ))}
       </div>

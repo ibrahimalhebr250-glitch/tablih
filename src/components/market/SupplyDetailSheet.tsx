@@ -84,6 +84,7 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
   const [isFavorited, setIsFavorited] = useState(false);
   const [showRatingDialog, setShowRatingDialog] = useState(false);
   const [ratingSummary, setRatingSummary] = useState<{ average_rating: number; total_ratings: number } | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     loadRatingSummary();
@@ -355,7 +356,7 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
           </div>
 
           <div className="px-5 mt-4">
-            <CommentsSection userPhone={card.phone} maxComments={5} />
+            <CommentsSection userPhone={card.phone} maxComments={5} refreshTrigger={refreshKey} />
           </div>
         </div>
 
@@ -420,6 +421,7 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
           onRatingSubmitted={() => {
             setShowRatingDialog(false);
             loadRatingSummary();
+            setRefreshKey(prev => prev + 1);
           }}
         />
       )}
