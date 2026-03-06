@@ -25,6 +25,7 @@ export default function CitiesTab() {
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<City | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return cities.filter(c => {
@@ -64,9 +65,25 @@ export default function CitiesTab() {
           message={`هل أنت متأكد من حذف "${confirmDelete.name}"؟ لا يمكن التراجع.`}
           confirmLabel="حذف"
           danger
-          onConfirm={async () => { await deleteCity(confirmDelete.id); setConfirmDelete(null); }}
+          onConfirm={async () => {
+            const error = await deleteCity(confirmDelete.id);
+            if (error) {
+              setDeleteError(error.message || 'فشل حذف المدينة');
+            } else {
+              setConfirmDelete(null);
+            }
+          }}
           onCancel={() => setConfirmDelete(null)}
         />
+      )}
+
+      {deleteError && (
+        <div className="bg-[#fef2f2] border border-[#fecaca] rounded-xl p-4 flex items-start justify-between" dir="rtl">
+          <p className="text-[13px] text-[#dc2626] font-semibold">{deleteError}</p>
+          <button onClick={() => { setDeleteError(null); setConfirmDelete(null); }} className="text-[#dc2626] hover:text-[#991b1b]">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+          </button>
+        </div>
       )}
 
       <TableControls

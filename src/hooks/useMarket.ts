@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { getAdminEmail } from '../utils/adminAuth';
 
 export interface City {
   id: string;
@@ -85,9 +86,23 @@ export function useCities() {
   };
 
   const deleteCity = async (id: string) => {
-    const { error: err } = await supabase.from('cities').delete().eq('id', id);
-    if (!err) await fetch();
-    return err;
+    const adminEmail = getAdminEmail();
+    if (!adminEmail) {
+      return { message: 'غير مصرح لك بهذا الإجراء' };
+    }
+
+    const { data, error: err } = await supabase.rpc('admin_delete_city', {
+      p_admin_email: adminEmail,
+      p_city_id: id
+    });
+
+    if (err) return err;
+    if (data && !data.success) {
+      return { message: data.error || 'فشل حذف المدينة' };
+    }
+
+    await fetch();
+    return null;
   };
 
   const freezeCity = async (id: string) => {
@@ -142,9 +157,23 @@ export function useInventory() {
   };
 
   const deleteBatch = async (id: string) => {
-    const { error } = await supabase.from('inventory_batches').delete().eq('id', id);
-    if (!error) await fetch();
-    return error;
+    const adminEmail = getAdminEmail();
+    if (!adminEmail) {
+      return { message: 'غير مصرح لك بهذا الإجراء' };
+    }
+
+    const { data, error } = await supabase.rpc('admin_delete_inventory_batch', {
+      p_admin_email: adminEmail,
+      p_batch_id: id
+    });
+
+    if (error) return error;
+    if (data && !data.success) {
+      return { message: data.error || 'فشل حذف دفعة المخزون' };
+    }
+
+    await fetch();
+    return null;
   };
 
   const freezeBatch = async (id: string) => {
@@ -181,9 +210,23 @@ export function useOrders() {
   };
 
   const deleteOrder = async (id: string) => {
-    const { error } = await supabase.from('orders').delete().eq('id', id);
-    if (!error) await fetch();
-    return error;
+    const adminEmail = getAdminEmail();
+    if (!adminEmail) {
+      return { message: 'غير مصرح لك بهذا الإجراء' };
+    }
+
+    const { data, error } = await supabase.rpc('admin_delete_order', {
+      p_admin_email: adminEmail,
+      p_order_id: id
+    });
+
+    if (error) return error;
+    if (data && !data.success) {
+      return { message: data.error || 'فشل حذف الطلب' };
+    }
+
+    await fetch();
+    return null;
   };
 
   return { orders, loading, refetch: fetch, updateOrder, deleteOrder };
