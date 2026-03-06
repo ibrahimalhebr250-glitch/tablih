@@ -4,6 +4,9 @@ import type { InventoryTab } from '../../../types/admin';
 import PublishedInventoryTab from '../inventory/PublishedInventoryTab';
 import SettingsTab from '../inventory/SettingsTab';
 import PalletTypesTab from '../inventory/PalletTypesTab';
+import PalletSizesTab from '../inventory/PalletSizesTab';
+import QualityGradesTab from '../inventory/QualityGradesTab';
+import ConditionsTab from '../inventory/ConditionsTab';
 
 interface Props {
   adminEmail: string;
@@ -83,33 +86,9 @@ export default function InventorySection({ adminEmail }: Props) {
           )}
           {activeTab === 'settings' && <SettingsTab adminEmail={adminEmail} />}
           {activeTab === 'types' && <PalletTypesTab adminEmail={adminEmail} />}
-          {activeTab === 'sizes' && (
-            <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
-              <Layers className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">المقاسات</h3>
-              <p className="text-slate-600">
-                إضافة وتعديل مقاسات الطبليات مع الأبعاد والوزن
-              </p>
-            </div>
-          )}
-          {activeTab === 'quality' && (
-            <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
-              <Award className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">درجات الجودة</h3>
-              <p className="text-slate-600">
-                إضافة وتعديل درجات الجودة (A، B، C، Scrap)
-              </p>
-            </div>
-          )}
-          {activeTab === 'conditions' && (
-            <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
-              <Clipboard className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">حالة الطبلية</h3>
-              <p className="text-slate-600">
-                إضافة وتعديل حالات الطبلية (جديدة، مستعملة، قابلة للإصلاح)
-              </p>
-            </div>
-          )}
+          {activeTab === 'sizes' && <PalletSizesTab adminEmail={adminEmail} />}
+          {activeTab === 'quality' && <QualityGradesTab adminEmail={adminEmail} />}
+          {activeTab === 'conditions' && <ConditionsTab adminEmail={adminEmail} />}
           {activeTab === 'operations' && (
             <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
               <Activity className="w-12 h-12 text-slate-400 mx-auto mb-3" />

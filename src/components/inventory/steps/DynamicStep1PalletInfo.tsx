@@ -14,9 +14,9 @@ interface Props {
 }
 
 const CONDITION_ICONS: Record<string, typeof Package> = {
-  new: CheckCircle,
-  used: Package,
-  repairable: Wrench,
+  NEW: CheckCircle,
+  USED: Package,
+  REPAIRABLE: Wrench,
 };
 
 export default function DynamicStep1PalletInfo({
@@ -33,16 +33,12 @@ export default function DynamicStep1PalletInfo({
     );
   }
 
-  const qualityColors: Record<string, { border: string; bg: string; badge: string; text: string }> = {};
-  qualityGrades.forEach(grade => {
-    const baseColor = grade.color;
-    qualityColors[grade.code] = {
-      border: `border-[${baseColor}]`,
-      bg: `bg-[${baseColor}]/10`,
-      badge: `bg-[${baseColor}]`,
-      text: `text-[${baseColor}]`,
-    };
-  });
+  const activePalletTypes = palletTypes.filter(t => t.is_active);
+  const activePalletSizes = palletSizes
+    .filter(s => s.is_active)
+    .filter(s => !palletType || s.pallet_type_id === activePalletTypes.find(t => t.name_ar === palletType)?.id);
+  const activeQualityGrades = qualityGrades.filter(g => g.is_active);
+  const activePalletConditions = palletConditions.filter(c => c.is_active);
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -52,7 +48,7 @@ export default function DynamicStep1PalletInfo({
           <h3 className="text-[14px] font-bold text-[#1a4a5e]">نوع الطبلية</h3>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          {palletTypes.map((t) => {
+          {activePalletTypes.map((t) => {
             const sel = palletType === t.name_ar;
             return (
               <button
@@ -75,30 +71,39 @@ export default function DynamicStep1PalletInfo({
         </div>
       </div>
 
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <Layers className="w-4 h-4 text-[#1a4a5e]" />
-          <h3 className="text-[14px] font-bold text-[#1a4a5e]">المقاس (سم)</h3>
+      {palletType && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Layers className="w-4 h-4 text-[#1a4a5e]" />
+            <h3 className="text-[14px] font-bold text-[#1a4a5e]">المقاس</h3>
+          </div>
+          {activePalletSizes.length === 0 ? (
+            <div className="p-4 bg-slate-50 rounded-lg text-center text-sm text-slate-600">
+              لا توجد مقاسات متاحة لهذا النوع
+            </div>
+          ) : (
+            <div className="flex gap-2 flex-wrap">
+              {activePalletSizes.map((s) => {
+                const displayText = s.name_ar || `${s.length}×${s.width}`;
+                const sel = size === displayText;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => onSetSize(displayText as PalletSize)}
+                    className={`px-4 py-2.5 rounded-xl border-2 font-bold text-[13px] transition-all duration-200 ${
+                      sel
+                        ? 'border-[#1a4a5e] bg-[#1a4a5e] text-white shadow-md'
+                        : 'border-gray-200 bg-white text-[#2c5f7c] hover:border-gray-300 active:scale-95'
+                    }`}
+                  >
+                    {displayText}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {palletSizes.map((s) => {
-            const sel = size === s.name_ar;
-            return (
-              <button
-                key={s.id}
-                onClick={() => onSetSize(s.name_ar as PalletSize)}
-                className={`px-4 py-2.5 rounded-xl border-2 font-bold text-[13px] transition-all duration-200 ${
-                  sel
-                    ? 'border-[#1a4a5e] bg-[#1a4a5e] text-white shadow-md'
-                    : 'border-gray-200 bg-white text-[#2c5f7c] hover:border-gray-300 active:scale-95'
-                }`}
-              >
-                {s.name_ar}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      )}
 
       <div>
         <div className="flex items-center gap-2 mb-3">
@@ -106,7 +111,7 @@ export default function DynamicStep1PalletInfo({
           <h3 className="text-[14px] font-bold text-[#1a4a5e]">درجة الجودة</h3>
         </div>
         <div className="grid grid-cols-2 gap-2.5">
-          {qualityGrades.map((g) => {
+          {activeQualityGrades.map((g) => {
             const sel = quality === g.code;
             return (
               <button
@@ -143,7 +148,9 @@ export default function DynamicStep1PalletInfo({
                 >
                   {g.name_ar}
                 </p>
-                <p className="text-[10px] text-[#a0b5c0]">{g.description}</p>
+                {g.description && (
+                  <p className="text-[10px] text-[#a0b5c0] line-clamp-2">{g.description}</p>
+                )}
               </button>
             );
           })}
@@ -152,11 +159,11 @@ export default function DynamicStep1PalletInfo({
 
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <CheckCircle className="w-4 h-4 text-[#1a4a5e]" />
+          <Package className="w-4 h-4 text-[#1a4a5e]" />
           <h3 className="text-[14px] font-bold text-[#1a4a5e]">حالة الطبلية</h3>
         </div>
         <div className="grid grid-cols-3 gap-2.5">
-          {palletConditions.map((c) => {
+          {activePalletConditions.map((c) => {
             const sel = condition === c.code;
             const Icon = CONDITION_ICONS[c.code] || Package;
             return (
@@ -171,7 +178,7 @@ export default function DynamicStep1PalletInfo({
                   }
                 `}
               >
-                <Icon className={`w-4 h-4 mb-1.5 ${sel ? 'text-[#1a4a5e]' : 'text-[#a0b5c0]'}`} />
+                <span className="text-2xl mb-1">{c.icon}</span>
                 <span className={`text-[12px] font-bold ${sel ? 'text-[#1a4a5e]' : 'text-[#4a6a7a]'}`}>
                   {c.name_ar}
                 </span>
