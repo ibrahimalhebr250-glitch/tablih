@@ -6,6 +6,7 @@ import { usePlatformSettings } from '../../../hooks/usePlatformSettings';
 import type { PlatformSettings } from '../../../hooks/usePlatformSettings';
 import { useEffect } from 'react';
 import { getAdminEmail } from '../../../utils/adminAuth';
+import EnhancedGeneralSettings from '../settings/EnhancedGeneralSettings';
 
 const feePresets = [0, 0.25, 0.50, 1.00, 1.50, 2.00];
 
@@ -611,7 +612,7 @@ export default function SettingsSection() {
         ))}
       </div>
 
-      {activeTab === 'general' && <GeneralSettings />}
+      {activeTab === 'general' && <EnhancedGeneralSettings />}
       {activeTab === 'requests' && <RequestsSettings />}
       {activeTab === 'inventory' && <InventorySettings />}
       {activeTab === 'matching' && <MatchingSettings />}
