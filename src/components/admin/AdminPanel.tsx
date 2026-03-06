@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import AdminSidebar from './AdminSidebar';
 import DashboardSection from './sections/DashboardSection';
+import InventorySection from './sections/InventorySection';
 import MarketSection from './sections/MarketSection';
 import DealsSection from './sections/DealsSection';
 import FinanceSection from './sections/FinanceSection';
@@ -22,6 +23,7 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
     const perms = adminStaff.permissions;
 
     if (perms.dashboard?.can_view) sections.push('dashboard');
+    if (perms.market?.can_view) sections.push('inventory');
     if (perms.market?.can_view) sections.push('market');
     if (perms.deals?.can_view) sections.push('deals');
     if (perms.finance?.can_view) sections.push('finance');
@@ -64,6 +66,7 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
         style={{ scrollbarWidth: 'thin', scrollbarColor: '#c5d8e4 transparent' }}
       >
         {section === 'dashboard' && canViewSection('dashboard') && <DashboardSection onNavigate={handleSectionChange} />}
+        {section === 'inventory' && canViewSection('inventory') && <InventorySection adminEmail={adminStaff.email} />}
         {section === 'market' && canViewSection('market') && <MarketSection />}
         {section === 'deals' && canViewSection('deals') && <DealsSection />}
         {section === 'finance' && canViewSection('finance') && <FinanceSection />}

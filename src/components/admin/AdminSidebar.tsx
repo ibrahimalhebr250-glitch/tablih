@@ -1,4 +1,4 @@
-import { LayoutDashboard, TrendingUp, Handshake, DollarSign, Users, Star, MessageSquare, Settings, X, User } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Handshake, DollarSign, Users, Star, MessageSquare, Settings, X, User, Package } from 'lucide-react';
 import type { AdminSection } from '../../types/admin';
 import type { AdminStaffData } from './AdminLoginSheet';
 
@@ -12,6 +12,7 @@ interface Props {
 
 const navItems: { id: AdminSection; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard },
+  { id: 'inventory', label: 'إدارة المخزون', icon: Package },
   { id: 'market', label: 'السوق', icon: TrendingUp },
   { id: 'deals', label: 'الصفقات', icon: Handshake },
   { id: 'finance', label: 'المالية', icon: DollarSign },
