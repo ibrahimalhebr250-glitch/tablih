@@ -44,15 +44,21 @@ export default function PalletSizesManagementTab() {
   const loadSizes = async () => {
     try {
       setLoading(true);
+      console.log('Loading pallet sizes...');
       const { data, error } = await supabase
         .from('pallet_sizes_master')
         .select('*')
         .order('sort_order');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading pallet sizes:', error);
+        throw error;
+      }
+      console.log('Loaded pallet sizes:', data?.length || 0, 'items');
       setSizes(data || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading pallet sizes:', err);
+      alert(`حدث خطأ أثناء تحميل البيانات: ${err.message || 'خطأ غير معروف'}`);
     } finally {
       setLoading(false);
     }
@@ -60,24 +66,52 @@ export default function PalletSizesManagementTab() {
 
   const loadPalletTypes = async () => {
     try {
+      console.log('Loading pallet types...');
       const { data, error } = await supabase
         .from('pallet_types_master')
         .select('code, name_ar')
         .eq('is_active', true)
         .order('sort_order');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading pallet types:', error);
+        throw error;
+      }
+      console.log('Loaded pallet types:', data?.length || 0, 'items');
       setPalletTypes(data || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading pallet types:', err);
+      alert(`حدث خطأ أثناء تحميل أنواع الطبليات: ${err.message || 'خطأ غير معروف'}`);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.pallet_type_code) {
+      alert('يرجى اختيار نوع الطبلية');
+      return;
+    }
+
+    if (!formData.code && !editingSize) {
+      alert('يرجى إدخال الكود');
+      return;
+    }
+
+    if (!formData.name_ar || !formData.name_en) {
+      alert('يرجى إدخال الاسم بالعربية والإنجليزية');
+      return;
+    }
+
+    if (!formData.length_cm || !formData.width_cm) {
+      alert('يرجى إدخال الطول والعرض');
+      return;
+    }
+
     try {
       if (editingSize) {
-        const { error } = await supabase
+        console.log('Updating pallet size:', editingSize.id, formData);
+        const { data, error } = await supabase
           .from('pallet_sizes_master')
           .update({
             pallet_type_code: formData.pallet_type_code,
@@ -90,12 +124,19 @@ export default function PalletSizesManagementTab() {
             is_active: formData.is_active,
             updated_at: new Date().toISOString()
           })
-          .eq('id', editingSize.id);
+          .eq('id', editingSize.id)
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Update error:', error);
+          throw error;
+        }
+        console.log('Updated successfully:', data);
+        alert('تم التعديل بنجاح');
       } else {
         const maxOrder = sizes.length > 0 ? Math.max(...sizes.map(s => s.sort_order)) : 0;
-        const { error } = await supabase
+        console.log('Inserting new pallet size:', formData);
+        const { data, error } = await supabase
           .from('pallet_sizes_master')
           .insert([{
             pallet_type_code: formData.pallet_type_code,
@@ -108,9 +149,15 @@ export default function PalletSizesManagementTab() {
             max_load_kg: formData.max_load_kg || null,
             is_active: formData.is_active,
             sort_order: maxOrder + 1
-          }]);
+          }])
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
+        console.log('Inserted successfully:', data);
+        alert('تمت الإضافة بنجاح');
       }
 
       setShowDialog(false);
@@ -126,10 +173,10 @@ export default function PalletSizesManagementTab() {
         max_load_kg: '',
         is_active: true
       });
-      loadSizes();
-    } catch (err) {
+      await loadSizes();
+    } catch (err: any) {
       console.error('Error saving pallet size:', err);
-      alert('حدث خطأ أثناء الحفظ');
+      alert(`حدث خطأ أثناء الحفظ: ${err.message || 'خطأ غير معروف'}`);
     }
   };
 
@@ -150,33 +197,47 @@ export default function PalletSizesManagementTab() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذا المقاس؟')) return;
+    if (!confirm('هل أنت متأكد من حذف هذا المقاس؟\nسيتم حذفه نهائياً من النظام.')) return;
 
     try {
-      const { error } = await supabase
+      console.log('Deleting pallet size:', id);
+      const { data, error } = await supabase
         .from('pallet_sizes_master')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
-      if (error) throw error;
-      loadSizes();
-    } catch (err) {
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
+      console.log('Deleted successfully:', data);
+      alert('تم الحذف بنجاح');
+      await loadSizes();
+    } catch (err: any) {
       console.error('Error deleting pallet size:', err);
-      alert('حدث خطأ أثناء الحذف');
+      alert(`حدث خطأ أثناء الحذف: ${err.message || 'خطأ غير معروف'}`);
     }
   };
 
   const toggleActive = async (id: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
+      console.log('Toggling active status for:', id, 'current:', currentStatus);
+      const { data, error } = await supabase
         .from('pallet_sizes_master')
         .update({ is_active: !currentStatus, updated_at: new Date().toISOString() })
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
-      if (error) throw error;
-      loadSizes();
-    } catch (err) {
+      if (error) {
+        console.error('Toggle error:', error);
+        throw error;
+      }
+      console.log('Toggled successfully:', data);
+      await loadSizes();
+    } catch (err: any) {
       console.error('Error toggling active status:', err);
+      alert(`حدث خطأ أثناء تغيير الحالة: ${err.message || 'خطأ غير معروف'}`);
     }
   };
 
@@ -219,20 +280,26 @@ export default function PalletSizesManagementTab() {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">نوع الطبلية</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الاسم</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الأبعاد</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحمولة</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحالة</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الإجراءات</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {sizes.map((size) => (
-              <tr key={size.id} className="hover:bg-gray-50">
+        {sizes.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg mb-2">لا توجد مقاسات مسجلة</p>
+            <p className="text-gray-400 text-sm">اضغط على "إضافة مقاس جديد" للبدء</p>
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">نوع الطبلية</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الاسم</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الأبعاد</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحمولة</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحالة</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {sizes.map((size) => (
+                <tr key={size.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="text-sm text-gray-500">{size.pallet_type_code}</span>
                 </td>
@@ -278,9 +345,10 @@ export default function PalletSizesManagementTab() {
                   </div>
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {showDialog && (
