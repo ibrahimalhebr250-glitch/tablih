@@ -2,12 +2,13 @@ import { useState } from 'react';
 import {
   User, Building2, Phone, MapPin, Briefcase, ShieldCheck, Ban,
   CheckCircle2, ChevronLeft, Clock, Handshake, ShoppingBag, Package,
-  AlertTriangle, X, Star, MessageCircle, TrendingUp,
+  AlertTriangle, X, Star, MessageCircle, TrendingUp, Trash2,
 } from 'lucide-react';
 import { useAdminUsers, type AdminUser } from '../../../hooks/useAdminUsers';
 import type { TrustRating } from '../../../types/admin';
 import TableControls from '../market/shared/TableControls';
 import ConfirmDialog from '../market/shared/ConfirmDialog';
+import { getAdminEmail } from '../../../utils/adminAuth';
 
 function formatDate(dateStr: string) {
   if (!dateStr) return '-';
@@ -70,11 +71,14 @@ export default function UsersList() {
     roleFilter, setRoleFilter,
     statusFilter, setStatusFilter,
     page, setPage, total, pageSize,
-    toggleSuspend, toggleRiskFlag, updateTrustRating,
+    toggleSuspend, toggleRiskFlag, updateTrustRating, deleteUsers,
   } = useAdminUsers();
 
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ user: AdminUser; action: 'suspend' | 'unsuspend' } | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [deleteConfirm, setDeleteConfirm] = useState<{ userIds: string[]; names: string[] } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSuspendConfirm = async () => {
     if (!confirmAction) return;
@@ -83,8 +87,87 @@ export default function UsersList() {
     setSelectedUser(null);
   };
 
+  const toggleSelectUser = (userId: string) => {
+    const newSet = new Set(selectedUserIds);
+    if (newSet.has(userId)) {
+      newSet.delete(userId);
+    } else {
+      newSet.add(userId);
+    }
+    setSelectedUserIds(newSet);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedUserIds.size === users.length) {
+      setSelectedUserIds(new Set());
+    } else {
+      setSelectedUserIds(new Set(users.map(u => u.id)));
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm) return;
+
+    const adminEmail = getAdminEmail();
+    if (!adminEmail) {
+      alert('غير مصرح لك بهذا الإجراء');
+      return;
+    }
+
+    setDeleting(true);
+    const result = await deleteUsers(deleteConfirm.userIds, adminEmail);
+    setDeleting(false);
+
+    if (result.success) {
+      setSelectedUserIds(new Set());
+      setDeleteConfirm(null);
+      setSelectedUser(null);
+    } else {
+      alert(result.error || 'فشل حذف المستخدمين');
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedUserIds.size === 0) return;
+    const names = users.filter(u => selectedUserIds.has(u.id)).map(u => u.display_name || u.phone);
+    setDeleteConfirm({ userIds: Array.from(selectedUserIds), names });
+  };
+
+  const handleDeleteSingle = (user: AdminUser) => {
+    setDeleteConfirm({ userIds: [user.id], names: [user.display_name || user.phone] });
+  };
+
   return (
     <div className="space-y-4">
+      {selectedUserIds.size > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between" dir="rtl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+              <Trash2 className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-[13px] font-bold text-red-900">تم تحديد {selectedUserIds.size} مستخدم</p>
+              <p className="text-[11px] text-red-700">يمكنك حذفهم دفعة واحدة</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedUserIds(new Set())}
+              className="px-4 py-2 text-[12px] font-bold text-red-700 hover:bg-red-100 rounded-lg transition-colors"
+            >
+              إلغاء التحديد
+            </button>
+            <button
+              onClick={handleDeleteSelected}
+              className="px-4 py-2 bg-red-600 text-white text-[12px] font-bold rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              حذف المحدد
+            </button>
+          </div>
+        </div>
+      )}
+
       <TableControls
         search={search}
         onSearch={setSearch}
@@ -130,6 +213,14 @@ export default function UsersList() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#f0f6fa]">
+                <th className="px-4 py-3 text-center w-12">
+                  <input
+                    type="checkbox"
+                    checked={users.length > 0 && selectedUserIds.size === users.length}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                  />
+                </th>
                 {['الاسم', 'رقم الجوال', 'المدينة', 'نوع النشاط', 'التقييم', 'تاريخ التسجيل', 'الحالة'].map(col => (
                   <th key={col} className="px-4 py-3 text-right text-[11px] font-bold text-[#4a7a94] whitespace-nowrap">{col}</th>
                 ))}
@@ -139,14 +230,14 @@ export default function UsersList() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-t border-[#edf4f9]">
-                    {Array.from({ length: 7 }).map((__, j) => (
+                    {Array.from({ length: 8 }).map((__, j) => (
                       <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded w-20 animate-pulse" /></td>
                     ))}
                   </tr>
                 ))
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center">
+                  <td colSpan={8} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <User className="w-8 h-8 text-gray-300" />
                       <p className="text-[13px] text-[#7a9aab]">لا يوجد مستخدمون</p>
@@ -157,10 +248,20 @@ export default function UsersList() {
                 users.map(u => (
                   <tr
                     key={u.id}
-                    onClick={() => setSelectedUser(u)}
-                    className="border-t border-[#edf4f9] hover:bg-[#f7fbfd] cursor-pointer transition-colors group"
+                    className="border-t border-[#edf4f9] hover:bg-[#f7fbfd] transition-colors group"
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedUserIds.has(u.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleSelectUser(u.id);
+                        }}
+                        className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                      />
+                    </td>
+                    <td className="px-4 py-3 cursor-pointer" onClick={() => setSelectedUser(u)}>
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: u.user_type === 'company' ? '#eff6ff' : '#f0fdf4' }}>
                           {u.user_type === 'company'
@@ -176,12 +277,12 @@ export default function UsersList() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-[12px] text-[#1a2f3e] font-medium whitespace-nowrap" dir="ltr">{u.phone}</td>
-                    <td className="px-4 py-3 text-[12px] text-[#4a7a94]">{u.city || '-'}</td>
-                    <td className="px-4 py-3"><ActivityTypeBadge roles={u.roles} /></td>
-                    <td className="px-4 py-3"><TrustBadge rating={u.trust_rating} /></td>
-                    <td className="px-4 py-3 text-[11px] text-[#4a7a94] whitespace-nowrap">{formatDate(u.created_at)}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-[12px] text-[#1a2f3e] font-medium whitespace-nowrap cursor-pointer" dir="ltr" onClick={() => setSelectedUser(u)}>{u.phone}</td>
+                    <td className="px-4 py-3 text-[12px] text-[#4a7a94] cursor-pointer" onClick={() => setSelectedUser(u)}>{u.city || '-'}</td>
+                    <td className="px-4 py-3 cursor-pointer" onClick={() => setSelectedUser(u)}><ActivityTypeBadge roles={u.roles} /></td>
+                    <td className="px-4 py-3 cursor-pointer" onClick={() => setSelectedUser(u)}><TrustBadge rating={u.trust_rating} /></td>
+                    <td className="px-4 py-3 text-[11px] text-[#4a7a94] whitespace-nowrap cursor-pointer" onClick={() => setSelectedUser(u)}>{formatDate(u.created_at)}</td>
+                    <td className="px-4 py-3 cursor-pointer" onClick={() => setSelectedUser(u)}>
                       <div className="flex items-center gap-1.5">
                         <AccountStatusBadge status={u.account_status} />
                         <ChevronLeft className="w-3.5 h-3.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -210,6 +311,7 @@ export default function UsersList() {
             await updateTrustRating(selectedUser.id, rating);
             setSelectedUser(prev => prev ? { ...prev, trust_rating: rating } : null);
           }}
+          onDelete={() => handleDeleteSingle(selectedUser)}
         />
       )}
 
@@ -227,16 +329,32 @@ export default function UsersList() {
           onCancel={() => setConfirmAction(null)}
         />
       )}
+
+      {deleteConfirm && (
+        <ConfirmDialog
+          title="حذف المستخدمين"
+          message={
+            deleteConfirm.userIds.length === 1
+              ? `هل أنت متأكد من حذف "${deleteConfirm.names[0]}"؟ سيتم حذف جميع البيانات المرتبطة (الطلبات، المخزون، الصفقات) بشكل نهائي ولا يمكن التراجع عن هذا الإجراء.`
+              : `هل أنت متأكد من حذف ${deleteConfirm.userIds.length} مستخدم؟ سيتم حذف جميع البيانات المرتبطة بهم بشكل نهائي ولا يمكن التراجع عن هذا الإجراء.`
+          }
+          confirmLabel={deleting ? 'جاري الحذف...' : 'حذف نهائي'}
+          danger={true}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
     </div>
   );
 }
 
-function UserDetailPanel({ user, onClose, onToggleSuspend, onToggleRisk, onUpdateTrust }: {
+function UserDetailPanel({ user, onClose, onToggleSuspend, onToggleRisk, onUpdateTrust, onDelete }: {
   user: AdminUser;
   onClose: () => void;
   onToggleSuspend: (suspend: boolean) => void;
   onToggleRisk: (flag: boolean) => void;
   onUpdateTrust: (rating: TrustRating) => void;
+  onDelete: () => void;
 }) {
   const isCompany = user.user_type === 'company';
 
@@ -369,6 +487,16 @@ function UserDetailPanel({ user, onClose, onToggleSuspend, onToggleRisk, onUpdat
               {user.risk_flag ? <ShieldCheck className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
               {user.risk_flag ? 'إزالة علامة المخاطر' : 'تعليم كمخاطر'}
             </button>
+
+            <div className="pt-3 border-t border-gray-100">
+              <button
+                onClick={onDelete}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-bold text-white bg-red-600 hover:bg-red-700 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                حذف المستخدم نهائياً
+              </button>
+            </div>
           </div>
         </div>
       </div>

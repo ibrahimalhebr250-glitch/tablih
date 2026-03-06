@@ -186,6 +186,24 @@ export function useAdminUsers() {
     await fetchUsers();
   }, [fetchUsers]);
 
+  const deleteUsers = useCallback(async (userIds: string[], adminEmail: string): Promise<{ success: boolean; error?: string; deletedCount?: number }> => {
+    const { data, error } = await supabase.rpc('admin_delete_users', {
+      p_admin_email: adminEmail,
+      p_user_ids: userIds
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    if (data && !data.success) {
+      return { success: false, error: data.error };
+    }
+
+    await fetchUsers();
+    return { success: true, deletedCount: data?.deleted_count || 0 };
+  }, [fetchUsers]);
+
   return {
     users,
     loading,
@@ -204,6 +222,7 @@ export function useAdminUsers() {
     toggleSuspend,
     toggleRiskFlag,
     updateTrustRating,
+    deleteUsers,
     refetch: fetchUsers,
   };
 }
