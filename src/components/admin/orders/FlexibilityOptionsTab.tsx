@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Save, Eye, EyeOff, Edit2 } from 'lucide-react';
+import { Save, Eye, EyeOff, CreditCard as Edit2 } from 'lucide-react';
 import type { FlexibilityOption } from '../../../hooks/useAdminOrders';
 
 interface Props {
