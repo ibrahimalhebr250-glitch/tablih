@@ -1,11 +1,10 @@
 import { useState, useCallback } from 'react';
 import { LayoutDashboard, Receipt, BarChart3 } from 'lucide-react';
 import type { FinanceTab } from '../../../types/admin';
-import { useFinanceMetrics, useCommissions } from '../../../hooks/useFinance';
-import FinanceDashboard from '../finance/FinanceDashboard';
-import CommissionCollection from '../finance/CommissionCollection';
+import EnhancedFinancialOverview from '../finance/EnhancedFinancialOverview';
+import EnhancedCommissionCollection from '../finance/EnhancedCommissionCollection';
 import SupplierFinancialProfile from '../finance/SupplierFinancialProfile';
-import MarketStatistics from '../finance/MarketStatistics';
+import EnhancedMarketStatistics from '../finance/EnhancedMarketStatistics';
 
 const navItems: { id: FinanceTab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'نظرة عامة', icon: LayoutDashboard },
@@ -16,14 +15,6 @@ const navItems: { id: FinanceTab; label: string; icon: typeof LayoutDashboard }[
 export default function FinanceSection() {
   const [activeTab, setActiveTab] = useState<FinanceTab>('dashboard');
   const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
-
-  const { metrics, loading: metricsLoading, refresh: refreshMetrics } = useFinanceMetrics();
-  const { due, overdue, settled, loading: commissionsLoading, refresh: refreshCommissions } = useCommissions();
-
-  const refreshAll = useCallback(() => {
-    refreshMetrics();
-    refreshCommissions();
-  }, [refreshMetrics, refreshCommissions]);
 
   const handleViewSupplier = useCallback((phone: string) => {
     setSelectedSupplier(phone);
@@ -61,27 +52,16 @@ export default function FinanceSection() {
         </div>
       )}
 
-      {activeTab === 'dashboard' && (
-        <FinanceDashboard metrics={metrics} loading={metricsLoading} onRefresh={refreshAll} />
-      )}
+      {activeTab === 'dashboard' && <EnhancedFinancialOverview />}
 
-      {activeTab === 'commissions' && (
-        <CommissionCollection
-          due={due}
-          overdue={overdue}
-          settled={settled}
-          loading={commissionsLoading}
-          onRefresh={refreshAll}
-          onViewSupplier={handleViewSupplier}
-        />
-      )}
+      {activeTab === 'commissions' && <EnhancedCommissionCollection onViewSupplier={handleViewSupplier} />}
 
       {activeTab === 'supplier_profile' && selectedSupplier && (
         <SupplierFinancialProfile phone={selectedSupplier} onBack={handleBackFromProfile} />
       )}
 
       {activeTab === 'market_stats' && (
-        <MarketStatistics onViewSupplier={handleViewSupplier} />
+        <EnhancedMarketStatistics onViewSupplier={handleViewSupplier} />
       )}
     </div>
   );
