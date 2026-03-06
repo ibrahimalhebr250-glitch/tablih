@@ -3,6 +3,7 @@ import AdminSidebar from './AdminSidebar';
 import DashboardSection from './sections/DashboardSection';
 import InventorySection from './sections/InventorySection';
 import MarketSection from './sections/MarketSection';
+import OrdersSection from './sections/OrdersSection';
 import DealsSection from './sections/DealsSection';
 import FinanceSection from './sections/FinanceSection';
 import UsersSection from './sections/UsersSection';
@@ -25,6 +26,7 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
     if (perms.dashboard?.can_view) sections.push('dashboard');
     if (perms.market?.can_view) sections.push('inventory');
     if (perms.market?.can_view) sections.push('market');
+    if (perms.market?.can_view) sections.push('orders');
     if (perms.deals?.can_view) sections.push('deals');
     if (perms.finance?.can_view) sections.push('finance');
     if (perms.users?.can_view) sections.push('users');
@@ -68,6 +70,11 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
         {section === 'dashboard' && canViewSection('dashboard') && <DashboardSection onNavigate={handleSectionChange} />}
         {section === 'inventory' && canViewSection('inventory') && <InventorySection adminEmail={adminStaff.email} />}
         {section === 'market' && canViewSection('market') && <MarketSection />}
+        {section === 'orders' && canViewSection('orders') && (
+          <div className="p-6 max-w-7xl mx-auto">
+            <OrdersSection />
+          </div>
+        )}
         {section === 'deals' && canViewSection('deals') && <DealsSection />}
         {section === 'finance' && canViewSection('finance') && <FinanceSection />}
         {section === 'users' && canViewSection('users') && <UsersSection />}

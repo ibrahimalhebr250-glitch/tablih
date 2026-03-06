@@ -1,4 +1,4 @@
-export type AdminSection = 'dashboard' | 'inventory' | 'market' | 'deals' | 'finance' | 'users' | 'ratings' | 'comments' | 'settings';
+export type AdminSection = 'dashboard' | 'inventory' | 'market' | 'orders' | 'deals' | 'finance' | 'users' | 'ratings' | 'comments' | 'settings';
 
 export type MarketTab = 'cities' | 'inventory' | 'requests';
 export type InventoryTab = 'published' | 'drafts' | 'settings' | 'types' | 'sizes' | 'quality' | 'conditions' | 'operations';
