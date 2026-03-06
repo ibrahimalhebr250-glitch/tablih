@@ -1,13 +1,9 @@
 import { useState } from 'react';
-import { Save, Eye, EyeOff, CreditCard as Edit2 } from 'lucide-react';
-import type { FlexibilityOption } from '../../../hooks/useAdminOrders';
+import { Save, Eye, EyeOff, Edit2, ArrowUp, ArrowDown } from 'lucide-react';
+import { useOrderSettings, type FlexibilityOption } from '../../../hooks/useOrderSettings';
 
-interface Props {
-  options: FlexibilityOption[];
-  onUpdate: (optionId: string, updates: Partial<FlexibilityOption>) => Promise<{ success: boolean; error?: string }>;
-}
-
-export default function FlexibilityOptionsTab({ options, onUpdate }: Props) {
+export default function FlexibilityOptionsTab() {
+  const { flexibilityOptions, loading, error, updateFlexibilityOption } = useOrderSettings();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<FlexibilityOption>>({});
 
@@ -19,20 +15,60 @@ export default function FlexibilityOptionsTab({ options, onUpdate }: Props) {
   const handleSave = async () => {
     if (!editingId) return;
 
-    const result = await onUpdate(editingId, editForm);
-    if (result.success) {
+    const result = await updateFlexibilityOption(editingId, editForm);
+    if (result?.success) {
       setEditingId(null);
       setEditForm({});
+      alert('تم حفظ التعديلات بنجاح');
     }
   };
 
   const handleToggleActive = async (option: FlexibilityOption) => {
-    await onUpdate(option.id, { is_active: !option.is_active });
+    await updateFlexibilityOption(option.id, { is_active: !option.is_active });
   };
 
+  const handleMoveUp = async (option: FlexibilityOption, index: number) => {
+    if (index === 0) return;
+    const prevOption = flexibilityOptions[index - 1];
+    await updateFlexibilityOption(option.id, { sort_order: prevOption.sort_order });
+    await updateFlexibilityOption(prevOption.id, { sort_order: option.sort_order });
+  };
+
+  const handleMoveDown = async (option: FlexibilityOption, index: number) => {
+    if (index === flexibilityOptions.length - 1) return;
+    const nextOption = flexibilityOptions[index + 1];
+    await updateFlexibilityOption(option.id, { sort_order: nextOption.sort_order });
+    await updateFlexibilityOption(nextOption.id, { sort_order: option.sort_order });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+        <p className="text-red-700">حدث خطأ: {error}</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4">
-      {options.map((option) => {
+    <div className="space-y-6">
+      <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+        <p className="text-sm text-blue-800">
+          <strong>ملاحظة:</strong> خيارات المرونة تؤثر مباشرة على نظام المطابقة في المنصة. عند تفعيل خيار مرونة، سيتم استخدامه في خوارزمية المطابقة للعثور على عروض مناسبة للطلب.
+        </p>
+      </div>
+
+      {flexibilityOptions.map((option, index) => {
         const isEditing = editingId === option.id;
 
         return (

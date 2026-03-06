@@ -123,20 +123,11 @@ export default function OrdersSection() {
         )}
 
         {activeTab === 'settings' && (
-          <OrderSettingsTab
-            orderTypes={orderTypes}
-            quantitySettings={quantitySettings}
-            onUpdateOrderType={updateOrderType}
-            onCreateOrderType={createOrderType}
-            onUpdateQuantitySettings={updateQuantitySettings}
-          />
+          <OrderSettingsTab />
         )}
 
         {activeTab === 'flexibility' && (
-          <FlexibilityOptionsTab
-            options={flexibilityOptions}
-            onUpdate={updateFlexibilityOption}
-          />
+          <FlexibilityOptionsTab />
         )}
 
         {activeTab === 'recurring' && (
