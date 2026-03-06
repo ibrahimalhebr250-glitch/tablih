@@ -4,9 +4,12 @@ import { supabase } from '../../../lib/supabase';
 
 interface PalletType {
   id: string;
-  name: string;
+  code: string;
+  name_ar: string;
   name_en: string;
-  icon?: string;
+  description_ar?: string;
+  description_en?: string;
+  icon: string;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -19,7 +22,8 @@ export default function PalletTypesManagementTab() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingType, setEditingType] = useState<PalletType | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
+    code: '',
+    name_ar: '',
     name_en: '',
     icon: '',
     is_active: true
@@ -33,7 +37,7 @@ export default function PalletTypesManagementTab() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('pallet_types_master_master')
+        .from('pallet_types_master')
         .select('*')
         .order('sort_order');
 
@@ -53,9 +57,10 @@ export default function PalletTypesManagementTab() {
         const { error } = await supabase
           .from('pallet_types_master')
           .update({
-            name: formData.name,
+            code: formData.code,
+            name_ar: formData.name_ar,
             name_en: formData.name_en,
-            icon: formData.icon || null,
+            icon: formData.icon || '📦',
             is_active: formData.is_active,
             updated_at: new Date().toISOString()
           })
@@ -67,9 +72,10 @@ export default function PalletTypesManagementTab() {
         const { error } = await supabase
           .from('pallet_types_master')
           .insert([{
-            name: formData.name,
+            code: formData.code,
+            name_ar: formData.name_ar,
             name_en: formData.name_en,
-            icon: formData.icon || null,
+            icon: formData.icon || '📦',
             is_active: formData.is_active,
             sort_order: maxOrder + 1
           }]);
@@ -79,7 +85,7 @@ export default function PalletTypesManagementTab() {
 
       setShowDialog(false);
       setEditingType(null);
-      setFormData({ name: '', name_en: '', icon: '', is_active: true });
+      setFormData({ code: '', name_ar: '', name_en: '', icon: '', is_active: true });
       loadTypes();
     } catch (err) {
       console.error('Error saving pallet type:', err);
@@ -90,7 +96,8 @@ export default function PalletTypesManagementTab() {
   const handleEdit = (type: PalletType) => {
     setEditingType(type);
     setFormData({
-      name: type.name,
+      code: type.code,
+      name_ar: type.name_ar,
       name_en: type.name_en,
       icon: type.icon || '',
       is_active: type.is_active
@@ -147,7 +154,7 @@ export default function PalletTypesManagementTab() {
         <button
           onClick={() => {
             setEditingType(null);
-            setFormData({ name: '', name_en: '', icon: '', is_active: true });
+            setFormData({ code: '', name_ar: '', name_en: '', icon: '', is_active: true });
             setShowDialog(true);
           }}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -176,7 +183,7 @@ export default function PalletTypesManagementTab() {
                   <GripVertical className="w-4 h-4 text-gray-400" />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm font-medium text-gray-900">{type.name}</span>
+                  <span className="text-sm font-medium text-gray-900">{type.name_ar}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="text-sm text-gray-500">{type.name_en}</span>
@@ -230,12 +237,25 @@ export default function PalletTypesManagementTab() {
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">الكود (بالإنجليزية)</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toLowerCase() })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="مثال: wood"
+                  disabled={!!editingType}
+                />
+                <p className="text-xs text-gray-500 mt-1">الكود يجب أن يكون فريد ولا يمكن تعديله بعد الإنشاء</p>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">الاسم بالعربية</label>
                 <input
                   type="text"
                   required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.name_ar}
+                  onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="مثال: خشب"
                 />
