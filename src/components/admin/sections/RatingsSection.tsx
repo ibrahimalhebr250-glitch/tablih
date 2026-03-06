@@ -29,10 +29,17 @@ export default function RatingsSection() {
       setLoading(true);
       const { data, error } = await supabase.rpc('get_pending_ratings_for_admin');
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('غير مصرح') || error.code === 'P0001') {
+          setPendingRatings([]);
+          return;
+        }
+        throw error;
+      }
       setPendingRatings(data || []);
     } catch (error) {
       console.error('Error fetching pending ratings:', error);
+      setPendingRatings([]);
     } finally {
       setLoading(false);
     }

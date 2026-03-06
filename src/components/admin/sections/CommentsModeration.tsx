@@ -28,10 +28,17 @@ export function CommentsModeration() {
     try {
       const { data, error } = await supabase.rpc('get_flagged_comments');
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('غير مصرح') || error.code === 'P0001') {
+          setComments([]);
+          return;
+        }
+        throw error;
+      }
       setComments(data || []);
     } catch (err) {
       console.error('Error loading flagged comments:', err);
+      setComments([]);
     } finally {
       setLoading(false);
     }
