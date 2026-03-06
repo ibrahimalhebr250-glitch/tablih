@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, MapPin, Package, Star, ShoppingBag, Heart } from 'lucide-react';
 import TrustRatingBadge from '../shared/TrustRatingBadge';
 import VisitorRatingDialog from './VisitorRatingDialog';
+import { CommentsSection } from '../shared/CommentsSection';
+import { supabase } from '../../lib/supabase';
 
 interface DemandCard {
   id: string;
@@ -45,6 +47,25 @@ interface Props {
 export default function DemandDetailSheet({ card, onClose, isAuthenticated, onShowAuthPrompt }: Props) {
   const [isFavorited, setIsFavorited] = useState(false);
   const [showRatingDialog, setShowRatingDialog] = useState(false);
+  const [ratingSummary, setRatingSummary] = useState<{ average_rating: number; total_ratings: number } | null>(null);
+
+  useEffect(() => {
+    loadRatingSummary();
+  }, [card.phone]);
+
+  const loadRatingSummary = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_visitor_ratings_summary', {
+        p_user_phone: card.phone
+      });
+
+      if (error) throw error;
+      setRatingSummary(data);
+    } catch (err) {
+      console.error('Error loading rating summary:', err);
+    }
+  };
+
   const q = QUALITY_COLORS[card.quality] || QUALITY_COLORS.C;
   const flexItems = [
     { active: card.accept_close_quality, label: 'يقبل جودة قريبة', bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
@@ -174,6 +195,24 @@ export default function DemandDetailSheet({ card, onClose, isAuthenticated, onSh
                 الكمية المطلوبة: <strong className="text-amber-700">{card.quantity.toLocaleString()}</strong> طبلية
               </span>
             </div>
+
+            {ratingSummary && ratingSummary.total_ratings > 0 && (
+              <div className="rounded-2xl p-3.5 text-right" style={{ background: '#fffbeb', border: '1px solid rgba(245,158,11,0.2)' }}>
+                <div className="flex items-center justify-end gap-2 mb-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[16px] font-black text-amber-600">{ratingSummary.average_rating.toFixed(1)}</span>
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  </div>
+                </div>
+                <p className="text-[11px] text-amber-600/70">
+                  {ratingSummary.total_ratings} تقييم من زوّار المنصة
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="px-5 mt-4">
+            <CommentsSection userPhone={card.phone} maxComments={5} />
           </div>
         </div>
 
@@ -210,6 +249,7 @@ export default function DemandDetailSheet({ card, onClose, isAuthenticated, onSh
           itemId={card.id}
           onRatingSubmitted={() => {
             setShowRatingDialog(false);
+            loadRatingSummary();
           }}
         />
       )}
