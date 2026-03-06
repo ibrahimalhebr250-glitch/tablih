@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Minus, Plus, MapPin, DollarSign } from 'lucide-react';
+import { Minus, Plus, MapPin } from 'lucide-react';
 import { QUICK_QUANTITIES, SAUDI_CITIES } from '../../../types/inventory';
 import { useInventorySettings } from '../../../hooks/useInventorySettings';
 
@@ -188,7 +188,7 @@ export default function Step2QuantityCity({
         <div className="flex items-center justify-between mb-3">
           <span className="text-[10px] text-[#a0b5c0] bg-gray-100 px-2 py-0.5 rounded-full">اختياري</span>
           <div className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-[#1a4a5e]" />
+            <span className="text-[16px] font-bold text-[#1a4a5e]">﷼</span>
             <h3 className="text-[14px] font-bold text-[#1a4a5e]">السعر لكل طبلية</h3>
           </div>
         </div>
@@ -320,7 +320,7 @@ export default function Step2QuantityCity({
           {pricePerPallet > 0 && (
             <div className="mt-4 text-center">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#e8f4f8] to-[#d0e5f2] rounded-full">
-                <DollarSign className="w-4 h-4 text-[#1a4a5e]" />
+                <span className="text-[14px] font-bold text-[#1a4a5e]">﷼</span>
                 <span className="text-[12px] font-semibold text-[#1a4a5e]">
                   السعر المختار: {pricePerPallet.toLocaleString('ar-SA')} ريال
                 </span>
