@@ -37,7 +37,7 @@ export default function SizeSelector({ palletSizes, selected, onSelect }: Props)
                 <span>{size.name_ar}</span>
                 {size.max_load_kg && (
                   <span className={`text-[10px] mt-0.5 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
-                    {size.max_load_kg} كجم
+                    حمولة {size.max_load_kg} كجم
                   </span>
                 )}
               </div>

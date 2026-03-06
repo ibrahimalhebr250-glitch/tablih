@@ -42,7 +42,7 @@ export default function TypeSelector({ palletTypes, selected, onSelect }: Props)
                   </svg>
                 </span>
               )}
-              <span className="text-2xl mb-1.5">{defaultIcon}</span>
+              <span className="text-2xl mb-1.5">{type.icon || defaultIcon}</span>
               <span className={`text-[13px] font-bold ${isSelected ? 'text-[#2196F3]' : 'text-[#1a4a5e]'}`}>
                 {type.name_ar}
               </span>

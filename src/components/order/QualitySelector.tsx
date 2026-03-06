@@ -60,8 +60,8 @@ export default function QualitySelector({ qualityGrades, selected, onSelect }: P
               <span className={`text-[13px] font-bold ${isSelected ? colors.text : 'text-[#1a4a5e]'}`}>
                 {grade.name_ar}
               </span>
-              {grade.description && (
-                <span className="text-[11px] text-[#a0b5c0] mt-0.5 text-right">{grade.description}</span>
+              {grade.description_ar && (
+                <span className="text-[11px] text-[#a0b5c0] mt-0.5 text-right">{grade.description_ar}</span>
               )}
             </button>
           );

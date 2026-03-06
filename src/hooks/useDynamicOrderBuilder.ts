@@ -17,6 +17,7 @@ export interface DynamicPalletType {
   code: string;
   name_ar: string;
   name_en: string;
+  icon: string;
   is_active: boolean;
   sort_order: number;
 }
@@ -26,9 +27,11 @@ export interface DynamicPalletSize {
   code: string;
   name_ar: string;
   name_en: string;
-  dimensions?: string;
-  max_load_kg?: number;
-  pallet_type_codes?: string[];
+  pallet_type_code: string;
+  length_cm: string;
+  width_cm: string;
+  height_cm?: string;
+  max_load_kg?: string;
   is_active: boolean;
   sort_order: number;
 }
@@ -38,7 +41,8 @@ export interface DynamicQualityGrade {
   code: string;
   name_ar: string;
   name_en: string;
-  description?: string;
+  description_ar?: string;
+  description_en?: string;
   is_active: boolean;
   sort_order: number;
 }
@@ -108,17 +112,17 @@ export function useDynamicOrderBuilder() {
           .eq('is_active', true)
           .order('sort_order'),
         supabase
-          .from('pallet_types_settings')
+          .from('pallet_types_master')
           .select('*')
           .eq('is_active', true)
           .order('sort_order'),
         supabase
-          .from('pallet_sizes_settings')
+          .from('pallet_sizes_master')
           .select('*')
           .eq('is_active', true)
           .order('sort_order'),
         supabase
-          .from('quality_grades_settings')
+          .from('quality_grades_master')
           .select('*')
           .eq('is_active', true)
           .order('sort_order'),
@@ -170,11 +174,7 @@ export function useDynamicOrderBuilder() {
   };
 
   const getSizesForPalletType = (palletTypeCode: string) => {
-    return palletSizes.filter(size =>
-      !size.pallet_type_codes ||
-      size.pallet_type_codes.length === 0 ||
-      size.pallet_type_codes.includes(palletTypeCode)
-    );
+    return palletSizes.filter(size => size.pallet_type_code === palletTypeCode);
   };
 
   return {
