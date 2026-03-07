@@ -318,12 +318,13 @@ export function useAdminOrders() {
 
   const deleteOrder = async (orderId: string) => {
     try {
-      const { error: deleteError } = await supabase
-        .from('orders')
-        .delete()
-        .eq('id', orderId);
+      const { data, error: rpcError } = await supabase.rpc('admin_delete_order', {
+        p_order_id: orderId
+      });
 
-      if (deleteError) throw deleteError;
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error(data.error || 'فشل حذف الطلب');
+
       await fetchOrders();
       return { success: true };
     } catch (err: any) {
