@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck, Home, ShoppingCart, Warehouse, Handshake, User, Sparkles, LayoutGrid } from 'lucide-react';
+import { ShieldCheck, Home, User, Sparkles, LayoutGrid } from 'lucide-react';
 import type { AppSession } from '../types/session';
 import { getTrustConfig } from './shared/TrustRatingBadge';
 import { supabase } from '../lib/supabase';
@@ -135,94 +135,6 @@ export default function Header({
               />
               <Home className="w-6 h-6 text-[#2563eb] relative z-10 group-active:scale-90 transition-transform" />
               <span className="text-[8px] font-bold text-[#2563eb] mt-0.5 relative z-10">الرئيسية</span>
-            </button>
-          )}
-
-          {/* Buyer Deals / Cart */}
-          {isBuyer && onOpenBuyerDeals && (
-            <button
-              onClick={onOpenBuyerDeals}
-              className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl active:scale-95 transition-all group relative overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                border: '2px solid #fbbf24',
-              }}
-              aria-label="طلباتي"
-            >
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity"
-                style={{
-                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                }}
-              />
-              <ShoppingCart className="w-6 h-6 text-[#f59e0b] relative z-10 group-active:scale-90 transition-transform" />
-              <span className="text-[8px] font-bold text-[#f59e0b] mt-0.5 relative z-10">طلباتي</span>
-            </button>
-          )}
-
-          {/* Supplier Inventory / Cloud Warehouse */}
-          {isSupplier && onOpenSupplierInventory && (
-            <button
-              onClick={onOpenSupplierInventory}
-              className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl active:scale-95 transition-all group relative overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
-                border: '2px solid #6ee7b7',
-              }}
-              aria-label="مستودعي السحابي"
-            >
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity"
-                style={{
-                  background: 'linear-gradient(135deg, #10b981, #059669)',
-                }}
-              />
-              <Warehouse className="w-6 h-6 text-[#10b981] relative z-10 group-active:scale-90 transition-transform" />
-              <span className="text-[8px] font-bold text-[#10b981] mt-0.5 relative z-10">المستودع</span>
-            </button>
-          )}
-
-          {/* Buyer Purchased Inventory */}
-          {isBuyer && onOpenPurchasedInventory && (
-            <button
-              onClick={onOpenPurchasedInventory}
-              className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl active:scale-95 transition-all group relative overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
-                border: '2px solid #6ee7b7',
-              }}
-              aria-label="مشترياتي"
-            >
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity"
-                style={{
-                  background: 'linear-gradient(135deg, #10b981, #059669)',
-                }}
-              />
-              <Warehouse className="w-6 h-6 text-[#10b981] relative z-10 group-active:scale-90 transition-transform" />
-              <span className="text-[8px] font-bold text-[#10b981] mt-0.5 relative z-10">مشترياتي</span>
-            </button>
-          )}
-
-          {/* Supplier Deals */}
-          {isSupplier && onOpenSupplierDeals && (
-            <button
-              onClick={onOpenSupplierDeals}
-              className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl active:scale-95 transition-all group relative overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
-                border: '2px solid #a5b4fc',
-              }}
-              aria-label="صفقاتي"
-            >
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity"
-                style={{
-                  background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                }}
-              />
-              <Handshake className="w-6 h-6 text-[#6366f1] relative z-10 group-active:scale-90 transition-transform" />
-              <span className="text-[8px] font-bold text-[#6366f1] mt-0.5 relative z-10">الصفقات</span>
             </button>
           )}
 
