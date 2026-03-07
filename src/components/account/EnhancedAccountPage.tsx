@@ -1,12 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  ArrowRight, User, Phone, MapPin, Briefcase, LogOut,
-  Building2, Handshake, ShoppingBag, Warehouse, Settings,
-  Sparkles, Star, TrendingUp, Package, CheckCircle, Activity,
-  Edit3, Save, X, ChevronLeft, Bell, Shield, History,
-  BarChart3, Zap, Target, Award, Users, Clock, Calendar,
-  FileText, TrendingDown, DollarSign, Percent, Eye, EyeOff
-} from 'lucide-react';
+import { ArrowRight, User, Phone, MapPin, Briefcase, LogOut, Building2, Handshake, ShoppingBag, Warehouse, Settings, Sparkles, Star, TrendingUp, Package, CheckCircle, Activity, CreditCard as Edit3, Save, X, ChevronLeft, Bell, Shield, History, BarChart3, Zap, Target, Award, Users, Clock, Calendar, FileText, TrendingDown, DollarSign, Percent, Eye, EyeOff } from 'lucide-react';
 import type { AppSession } from '../../types/session';
 import { SAUDI_CITIES } from '../../types/inventory';
 import { supabase } from '../../lib/supabase';
