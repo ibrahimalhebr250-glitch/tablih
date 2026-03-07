@@ -389,6 +389,12 @@ function App() {
           onRegisterComplete={async (data) => { await handleInlineRegister(data); await activateRole('buyer'); }}
           onLoginComplete={async (phone, pin) => { await handleInlineLogin(phone, pin); await activateRole('buyer'); }}
           onOpenDeals={() => { setModal('buyerDeals'); dashboardRefresh.current?.(); }}
+          onOpenAccount={() => {
+            setModal('none');
+            setFreshLogin(true);
+            setMainView('account');
+            dashboardRefresh.current?.();
+          }}
         />
       )}
 

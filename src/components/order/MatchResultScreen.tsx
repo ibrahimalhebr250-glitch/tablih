@@ -1,4 +1,5 @@
-import { CheckCircle, Copy, RefreshCw, Handshake, Radar } from 'lucide-react';
+import { useEffect } from 'react';
+import { CheckCircle, Copy, RefreshCw, Handshake, Radar, Sparkles } from 'lucide-react';
 import type { MatchResult, OrderFormData } from '../../types/order';
 
 interface Props {
@@ -8,9 +9,20 @@ interface Props {
   onReset: () => void;
   onEdit: () => void;
   onExecute?: () => void;
+  onAutoRedirect?: () => void;
 }
 
-export default function MatchResultScreen({ requestId, matchResult, onReset, onEdit, onExecute }: Props) {
+export default function MatchResultScreen({ requestId, matchResult, onReset, onEdit, onExecute, onAutoRedirect }: Props) {
+  // انتقال تلقائي بعد 3 ثواني عند عدم المطابقة
+  useEffect(() => {
+    if (!matchResult.found && onAutoRedirect) {
+      const timer = setTimeout(() => {
+        onAutoRedirect();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [matchResult.found, onAutoRedirect]);
+
   if (matchResult.found) {
     return (
       <div className="px-4 pt-6 pb-36">
@@ -167,21 +179,24 @@ export default function MatchResultScreen({ requestId, matchResult, onReset, onE
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-gray-100 max-w-md mx-auto">
-        <div className="flex gap-3">
-          <button
-            onClick={onEdit}
-            className="flex-1 py-3.5 border-2 border-[#1a4a5e] text-[#1a4a5e] font-bold text-[14px] rounded-2xl flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
-          >
-            <RefreshCw className="w-4 h-4" />
-            تعديل الطلب
-          </button>
-          <button
-            onClick={onReset}
-            className="flex-1 py-3.5 bg-[#1a4a5e] text-white font-bold text-[14px] rounded-2xl active:scale-[0.98] transition-transform"
-          >
-            طلب جديد
-          </button>
+      <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-gradient-to-t from-white via-white to-white/80 backdrop-blur-sm border-t border-gray-100 max-w-md mx-auto">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-[#27AE60]/10 flex items-center justify-center animate-pulse">
+            <Sparkles className="w-6 h-6 text-[#27AE60]" />
+          </div>
+          <div className="text-center">
+            <p className="text-[14px] font-bold text-[#1a4a5e] mb-0.5">
+              جاري الانتقال إلى حسابك
+            </p>
+            <p className="text-[11px] text-[#7a9aab]">
+              يمكنك متابعة طلبك من صفحة "حسابي"
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#0369A1] animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-1.5 h-1.5 rounded-full bg-[#0369A1] animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="w-1.5 h-1.5 rounded-full bg-[#0369A1] animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
         </div>
       </div>
     </div>

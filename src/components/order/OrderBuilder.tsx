@@ -33,6 +33,7 @@ interface Props {
   onLoginComplete?: (phone: string, pin: string) => Promise<void>;
   authError?: string;
   onOpenDeals?: () => void;
+  onOpenAccount?: () => void;
   prefillOpportunity?: PrefillOpportunity;
 }
 
@@ -42,7 +43,7 @@ const REQUEST_TYPE_CONFIG = {
   recurring:{ label: 'توريد دوري', icon: RefreshCw, color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' },
 };
 
-export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegisterComplete, onLoginComplete, authError, onOpenDeals, prefillOpportunity }: Props) {
+export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegisterComplete, onLoginComplete, authError, onOpenDeals, onOpenAccount, prefillOpportunity }: Props) {
   const { settings } = usePlatformSettings();
   const dynamicData = useDynamicOrderBuilder();
   const builder = useOrderBuilder(prefilledPhone, prefillOpportunity ? {
@@ -240,6 +241,11 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
                 builder.reset();
                 onClose();
                 onOpenDeals?.();
+              }}
+              onAutoRedirect={() => {
+                builder.reset();
+                onClose();
+                onOpenAccount?.();
               }}
             />
           )}
