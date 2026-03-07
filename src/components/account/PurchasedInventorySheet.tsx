@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Package, MapPin, DollarSign, Warehouse, X, ImageIcon } from 'lucide-react';
+import { ArrowRight, Package, MapPin, DollarSign, Warehouse, X, Image as ImageIcon } from 'lucide-react';
 import { useBuyerInventory } from '../../hooks/useBuyerInventory';
 
 interface Props {
