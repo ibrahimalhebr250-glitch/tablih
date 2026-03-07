@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { getTrustConfig } from '../shared/TrustRatingBadge';
 import RatingsSection from './RatingsSection';
 import { CommentsSection } from '../shared/CommentsSection';
+import ProfileImageUploader from './ProfileImageUploader';
 
 interface Props {
   session: AppSession;
@@ -59,6 +60,7 @@ export default function EnhancedAccountPage({
   const [city, setCity] = useState(session.profile.city || '');
   const [activityType, setActivityType] = useState(session.profile.activity_type || '');
   const [saving, setSaving] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
 
   const isCompany = session.profile.user_type === 'company';
   const isSupplier = session.roles.includes('supplier');
@@ -71,11 +73,16 @@ export default function EnhancedAccountPage({
       const phone = session.profile.phone;
 
       const [userRes, ordersRes, dealsRes, inventoryRes] = await Promise.all([
-        supabase.from('platform_users').select('trust_rating').eq('phone', phone).maybeSingle(),
+        supabase.from('platform_users').select('trust_rating, profile_image_url').eq('phone', phone).maybeSingle(),
         supabase.from('orders').select('id, status').eq('phone', phone),
         supabase.from('deals').select('id, status, buyer_price, supplier_price').or(`supplier_phone.eq.${phone},buyer_phone.eq.${phone}`),
         supabase.from('inventory_batches').select('id').eq('supplier_phone', phone).eq('published', true)
       ]);
+
+      // تحديث صورة الملف الشخصي
+      if (userRes.data?.profile_image_url) {
+        setProfileImageUrl(userRes.data.profile_image_url);
+      }
 
       const completedDeals = dealsRes.data?.filter(d => d.status === 'completed').length || 0;
       const pendingDeals = dealsRes.data?.filter(d => ['matched', 'awaiting_buyer', 'inventory_reserved', 'in_delivery'].includes(d.status)).length || 0;
@@ -190,9 +197,18 @@ export default function EnhancedAccountPage({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                overflow: 'hidden',
               }}
             >
-              <span className="text-[28px] font-black text-white">{initials}</span>
+              {profileImageUrl ? (
+                <img
+                  src={profileImageUrl}
+                  alt="الصورة الشخصية"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-[28px] font-black text-white">{initials}</span>
+              )}
               <div
                 className="absolute -bottom-2 -right-2 w-9 h-9 rounded-xl flex items-center justify-center border-3 border-white"
                 style={{ background: trustConfig.color }}
@@ -458,6 +474,13 @@ export default function EnhancedAccountPage({
 
         {activeTab === 'settings' && (
           <div className="space-y-4">
+            {/* قسم رفع الصورة */}
+            <ProfileImageUploader
+              currentImageUrl={profileImageUrl || undefined}
+              userPhone={session.profile.phone}
+              onImageUpdate={setProfileImageUrl}
+            />
+
             <div className="rounded-3xl bg-white p-5 border" style={{ borderColor: '#e5e7eb' }}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[15px] font-black text-[#1a4a5e]">معلومات الحساب</h3>
