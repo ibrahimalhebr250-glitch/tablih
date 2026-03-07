@@ -68,6 +68,7 @@ export function useDashboard(phone: string) {
         .from('orders')
         .select('id, request_id, pallet_type, size, quality, quantity, city, status, matched_quantity, matched_price, delivery_days, created_at')
         .eq('phone', phone)
+        .neq('status', 'fulfilled')
         .order('created_at', { ascending: false }),
 
       supabase
