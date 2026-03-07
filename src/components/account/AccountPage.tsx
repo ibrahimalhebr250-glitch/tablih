@@ -398,54 +398,53 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
       >
         {/* Header */}
         <div
-          className="relative flex-shrink-0 px-5 pt-5 pb-0 overflow-hidden"
-          style={{ background: 'linear-gradient(160deg, #0a1e2e 0%, #0f3048 55%, #14496e 100%)' }}
+          className="relative flex-shrink-0 px-5 pt-4 pb-0 overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, #0a1f2e 0%, #0f3654 50%, #1a5073 100%)' }}
         >
-          <div className="absolute inset-0 opacity-[0.06]"
+          <div className="absolute inset-0 opacity-[0.05]"
             style={{
-              backgroundImage: 'radial-gradient(circle at 20% 50%, #fff 0%, transparent 50%), radial-gradient(circle at 80% 20%, #fff 0%, transparent 40%)',
+              backgroundImage: 'radial-gradient(circle at 25% 40%, #fff 0%, transparent 50%), radial-gradient(circle at 75% 15%, #fff 0%, transparent 45%)',
             }}
           />
 
-          <div className="relative flex items-center justify-between mb-4">
-            <div className="w-9 h-9" />
-            <h2 className="text-[15px] font-bold text-white">حسابي</h2>
+          <div className="relative flex items-center justify-between mb-3">
             <button
               onClick={onClose}
-              className="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center transition-colors"
+              className="w-8 h-8 bg-white/12 hover:bg-white/20 rounded-xl flex items-center justify-center transition-all active:scale-95"
             >
               <ArrowRight className="w-4 h-4 text-white" />
             </button>
+            <h2 className="text-[16px] font-black text-white tracking-tight">حسابي</h2>
+            <div className="w-8 h-8" />
           </div>
 
           {/* Profile identity row */}
-          <div className="relative flex items-center gap-4 pb-5" dir="rtl">
+          <div className="relative flex items-center gap-3 pb-4" dir="rtl">
             <AvatarInitials name={profileName} isCompany={isCompany} />
             <div className="flex-1 min-w-0">
-              <h3 className="text-[17px] font-black text-white leading-tight truncate">
-                {profileName || <span className="text-white/40 font-normal text-[14px]">لم يُحدد الاسم</span>}
+              <h3 className="text-[18px] font-black text-white leading-tight truncate mb-0.5">
+                {profileName || <span className="text-white/40 font-normal text-[15px]">لم يُحدد الاسم</span>}
               </h3>
-              <p className="text-[12px] text-white/50 mt-0.5 font-mono">{session.profile.phone}</p>
-              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+              <p className="text-[11px] text-white/45 font-mono mb-1.5">{session.profile.phone}</p>
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <span
-                  className="text-[9px] font-bold px-2 py-0.5 rounded-full border"
+                  className="text-[9px] font-bold px-2.5 py-0.5 rounded-full"
                   style={{
-                    background: isCompany ? 'rgba(33,150,243,0.15)' : 'rgba(39,174,96,0.15)',
-                    color: isCompany ? '#7ec8fa' : '#6ee8a0',
-                    borderColor: isCompany ? 'rgba(33,150,243,0.25)' : 'rgba(39,174,96,0.25)',
+                    background: isCompany ? 'rgba(33,150,243,0.2)' : 'rgba(39,174,96,0.2)',
+                    color: isCompany ? '#a3d9ff' : '#7ef0a8',
                   }}
                 >
-                  {isCompany ? 'حساب شركة' : 'حساب فردي'}
+                  {isCompany ? 'شركة' : 'فردي'}
                 </span>
                 {isSupplier && (
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border"
-                    style={{ background: 'rgba(39,174,96,0.15)', color: '#6ee8a0', borderColor: 'rgba(39,174,96,0.25)' }}>
+                  <span className="text-[9px] font-bold px-2.5 py-0.5 rounded-full"
+                    style={{ background: 'rgba(39,174,96,0.2)', color: '#7ef0a8' }}>
                     مورّد
                   </span>
                 )}
                 {isBuyer && (
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border"
-                    style={{ background: 'rgba(33,150,243,0.15)', color: '#7ec8fa', borderColor: 'rgba(33,150,243,0.25)' }}>
+                  <span className="text-[9px] font-bold px-2.5 py-0.5 rounded-full"
+                    style={{ background: 'rgba(33,150,243,0.2)', color: '#a3d9ff' }}>
                     مشتري
                   </span>
                 )}
@@ -454,31 +453,31 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
           </div>
 
           <div
-            className="relative mx-0 mb-1 rounded-xl px-4 py-3 flex items-center justify-between"
-            style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(8px)' }}
+            className="relative mx-0 mb-0 rounded-2xl px-3.5 py-3 flex items-center justify-between"
+            style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}
             dir="rtl"
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               {(() => {
                 const tc = getTrustConfig(trustRating);
                 const Icon = tc.icon;
                 return (
                   <>
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center"
-                      style={{ background: `${tc.color}20` }}
+                      className="w-9 h-9 rounded-xl flex items-center justify-center"
+                      style={{ background: `${tc.color}25` }}
                     >
-                      <Icon className="w-4 h-4" style={{ color: tc.color }} />
+                      <Icon className="w-4.5 h-4.5" style={{ color: tc.color }} />
                     </div>
                     <div>
-                      <p className="text-[11px] font-bold" style={{ color: tc.color }}>{tc.label}</p>
-                      <div className="flex items-center gap-0.5 mt-0.5">
+                      <p className="text-[12px] font-black mb-0.5" style={{ color: tc.color }}>{tc.label}</p>
+                      <div className="flex items-center gap-0.5">
                         {[1, 2, 3, 4, 5].map((i) => (
                           <Star
                             key={i}
-                            className="w-2.5 h-2.5"
+                            className="w-3 h-3"
                             style={{
-                              color: i <= trustRating ? tc.color : 'rgba(255,255,255,0.15)',
+                              color: i <= trustRating ? tc.color : 'rgba(255,255,255,0.2)',
                               fill: i <= trustRating ? tc.color : 'none',
                             }}
                           />
@@ -490,53 +489,52 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
               })()}
             </div>
             {completedDeals > 0 && (
-              <div className="flex items-center gap-1.5">
-                <Handshake className="w-3.5 h-3.5 text-white/40" />
-                <span className="text-[12px] font-bold text-white/70">{completedDeals}</span>
-                <span className="text-[10px] text-white/40">صفقة مكتملة</span>
+              <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl">
+                <span className="text-[13px] font-black text-white">{completedDeals}</span>
+                <Handshake className="w-4 h-4 text-white/60" />
               </div>
             )}
           </div>
 
           {/* Tabs */}
-          <div className="relative flex gap-1 pb-0" dir="rtl">
+          <div className="relative flex gap-0 mt-4 pb-0" dir="rtl">
             <button
               onClick={() => setActiveTab('home')}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-[12px] font-bold transition-all relative"
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[12px] font-bold transition-all relative"
               style={{
-                color: activeTab === 'home' ? '#fff' : 'rgba(255,255,255,0.45)',
+                color: activeTab === 'home' ? '#fff' : 'rgba(255,255,255,0.4)',
               }}
             >
-              <LayoutDashboard className="w-3.5 h-3.5" />
-              الرئيسية
+              <LayoutDashboard className="w-4 h-4" />
+              <span>الرئيسية</span>
               {activeTab === 'home' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-t-full" />
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-white rounded-t-lg" style={{ boxShadow: '0 -2px 8px rgba(255,255,255,0.3)' }} />
               )}
             </button>
             <button
               onClick={() => setActiveTab('profile')}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-[12px] font-bold transition-all relative"
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[12px] font-bold transition-all relative"
               style={{
-                color: activeTab === 'profile' ? '#fff' : 'rgba(255,255,255,0.45)',
+                color: activeTab === 'profile' ? '#fff' : 'rgba(255,255,255,0.4)',
               }}
             >
-              <Settings className="w-3.5 h-3.5" />
-              الإعدادات
+              <Settings className="w-4 h-4" />
+              <span>الإعدادات</span>
               {activeTab === 'profile' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-t-full" />
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-white rounded-t-lg" style={{ boxShadow: '0 -2px 8px rgba(255,255,255,0.3)' }} />
               )}
             </button>
             <button
               onClick={() => setActiveTab('ratings')}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-[12px] font-bold transition-all relative"
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[12px] font-bold transition-all relative"
               style={{
-                color: activeTab === 'ratings' ? '#fff' : 'rgba(255,255,255,0.45)',
+                color: activeTab === 'ratings' ? '#fff' : 'rgba(255,255,255,0.4)',
               }}
             >
-              <Star className="w-3.5 h-3.5" />
-              التقييمات
+              <Star className="w-4 h-4" />
+              <span>التقييمات</span>
               {activeTab === 'ratings' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-t-full" />
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-white rounded-t-lg" style={{ boxShadow: '0 -2px 8px rgba(255,255,255,0.3)' }} />
               )}
             </button>
           </div>
@@ -556,24 +554,25 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
               {/* Welcome banner — shown only after fresh login */}
               {showWelcome && (
                 <div
-                  className="relative overflow-hidden rounded-2xl px-4 py-4"
+                  className="relative overflow-hidden rounded-2xl px-5 py-4"
                   dir="rtl"
                   style={{
-                    background: 'linear-gradient(135deg, #0f2535 0%, #1a4a5e 60%, #1e6080 100%)',
+                    background: 'linear-gradient(135deg, #0a1f2e 0%, #1a4a5e 60%, #1e6080 100%)',
                     animation: 'fadeIn 0.4s ease-out',
+                    border: '1px solid rgba(255,255,255,0.1)',
                   }}
                 >
-                  <div className="absolute inset-0 opacity-[0.08]"
+                  <div className="absolute inset-0 opacity-[0.06]"
                     style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, #fff 0%, transparent 55%)' }} />
                   <div className="relative flex items-center gap-3">
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: 'rgba(255,255,255,0.12)' }}
+                      className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'rgba(255,255,255,0.15)' }}
                     >
-                      <Sparkles className="w-5 h-5 text-[#7ec8fa]" />
+                      <Sparkles className="w-5.5 h-5.5 text-[#7ec8fa]" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-black text-white leading-snug">
+                      <p className="text-[15px] font-black text-white leading-tight mb-0.5">
                         {(() => {
                           const h = new Date().getHours();
                           const name = (session.profile.company_name || session.profile.display_name || '').split(' ')[0];
@@ -581,17 +580,17 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
                           return name ? `${greeting}، ${name}` : greeting;
                         })()}
                       </p>
-                      <p className="text-[11px] text-white/50 mt-0.5">أهلاً بك في شبكة الطبليات</p>
+                      <p className="text-[11px] text-white/40">مرحباً بك في شبكة الطبليات</p>
                     </div>
                     <button
                       onClick={() => setShowWelcome(false)}
-                      className="w-6 h-6 flex items-center justify-center flex-shrink-0 opacity-40 hover:opacity-70 transition-opacity"
+                      className="w-7 h-7 flex items-center justify-center flex-shrink-0 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                     >
                       <X className="w-3.5 h-3.5 text-white" />
                     </button>
                   </div>
                   <div
-                    className="absolute bottom-0 right-0 h-0.5 rounded-full bg-white/20"
+                    className="absolute bottom-0 right-0 h-0.5 rounded-full bg-white/25"
                     style={{
                       animation: 'shrinkBar 3.5s linear forwards',
                       width: '100%',
@@ -603,38 +602,42 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
 
               {/* Supplier section */}
               {isSupplier && (
-                <div className="space-y-2.5" dir="rtl">
-                  <p className="text-[11px] font-bold text-[#7a9aab] px-1">مورّد</p>
+                <div className="space-y-2" dir="rtl">
+                  <div className="flex items-center gap-2 px-1 mb-2">
+                    <div className="flex-1 h-px bg-gradient-to-l from-[#27AE60]/20 to-transparent" />
+                    <p className="text-[11px] font-black text-[#27AE60]">مورّد</p>
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#27AE60]" />
+                  </div>
                   {onOpenSupplierInventory && (
                     <button
                       onClick={() => { onClose(); onOpenSupplierInventory(); }}
-                      className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white border border-[#e4f0f5] shadow-sm active:scale-[0.97] transition-all hover:border-[#1565C0]/40 hover:shadow-md"
+                      className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-white border-2 border-[#e4f0f5] shadow-sm active:scale-[0.98] transition-all hover:border-[#1565C0]/30 hover:shadow-lg"
                     >
-                      <div className="flex-1 text-right">
-                        <p className="text-[13px] font-bold text-[#1a2f3e]">مخزوني</p>
-                        <p className="text-[10px] text-[#9ab0bf] mt-0.5">إدارة المخزون المعروض في السوق</p>
-                      </div>
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg, #E3F2FD, #BBDEFB)' }}>
-                        <ClipboardList className="w-4 h-4 text-[#1565C0]" />
-                      </div>
                       <ChevronLeft className="w-4 h-4 text-[#c0d5e0] flex-shrink-0" />
+                      <div className="flex-1 text-right">
+                        <p className="text-[14px] font-black text-[#1a2f3e] mb-0.5">مخزوني</p>
+                        <p className="text-[10px] text-[#9ab0bf]">إدارة المخزون المعروض في السوق</p>
+                      </div>
+                      <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'linear-gradient(135deg, #E3F2FD, #BBDEFB)' }}>
+                        <ClipboardList className="w-5 h-5 text-[#1565C0]" />
+                      </div>
                     </button>
                   )}
                   {onOpenSupplierDeals && (
                     <button
                       onClick={() => { onClose(); onOpenSupplierDeals(); }}
-                      className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white border border-[#e4f0f5] shadow-sm active:scale-[0.97] transition-all hover:border-[#27AE60]/40 hover:shadow-md"
+                      className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-white border-2 border-[#e4f0f5] shadow-sm active:scale-[0.98] transition-all hover:border-[#27AE60]/30 hover:shadow-lg"
                     >
-                      <div className="flex-1 text-right">
-                        <p className="text-[13px] font-bold text-[#1a2f3e]">صفقاتي</p>
-                        <p className="text-[10px] text-[#9ab0bf] mt-0.5">تتبع وإدارة صفقات التوريد</p>
-                      </div>
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg, #E8F8F0, #d4f0e2)' }}>
-                        <Handshake className="w-4 h-4 text-[#27AE60]" />
-                      </div>
                       <ChevronLeft className="w-4 h-4 text-[#c0d5e0] flex-shrink-0" />
+                      <div className="flex-1 text-right">
+                        <p className="text-[14px] font-black text-[#1a2f3e] mb-0.5">صفقاتي</p>
+                        <p className="text-[10px] text-[#9ab0bf]">تتبع وإدارة صفقات التوريد</p>
+                      </div>
+                      <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'linear-gradient(135deg, #E8F8F0, #d4f0e2)' }}>
+                        <Handshake className="w-5 h-5 text-[#27AE60]" />
+                      </div>
                     </button>
                   )}
                 </div>
@@ -643,21 +646,24 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
               {/* Buyer orders inline */}
               {(isBuyer || orders.length > 0) && (
                 <div className="space-y-2.5" dir="rtl">
-                  <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center justify-between px-1 mb-2">
                     <button
                       onClick={() => { onClose(); onOpenBuyerDeals?.(); }}
-                      className="flex items-center gap-1 text-[11px] font-bold text-[#2196F3]"
+                      className="flex items-center gap-1 text-[11px] font-bold text-[#2196F3] hover:text-[#1565C0] transition-colors"
                     >
-                      <span>عرض الصفقات</span>
+                      <span>عرض جميع الصفقات</span>
                       <ChevronLeft className="w-3 h-3" />
                     </button>
-                    <div className="flex items-center gap-1.5">
-                      <ClipboardList className="w-3.5 h-3.5 text-[#1a4a5e]" />
-                      <p className="text-[11px] font-bold text-[#7a9aab]">طلباتي كمشتري</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-[11px] font-black text-[#2196F3]">مشتري</p>
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#2196F3]" />
+                      </div>
+                      <div className="flex-1 h-px bg-gradient-to-r from-[#2196F3]/20 to-transparent" />
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-2xl border border-[#e4f0f5] shadow-sm overflow-hidden">
+                  <div className="bg-white rounded-2xl border-2 border-[#e4f0f5] shadow-sm overflow-hidden">
                     {ordersLoading ? (
                       <div className="space-y-2 p-3">
                         {[1, 2].map((i) => (
@@ -665,14 +671,19 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
                         ))}
                       </div>
                     ) : orders.length === 0 ? (
-                      <div className="py-8 flex flex-col items-center gap-2">
-                        <ShoppingBag className="w-7 h-7 text-gray-300" />
-                        <p className="text-[11px] text-[#a0b5c0]">لا توجد طلبات بعد</p>
+                      <div className="py-10 flex flex-col items-center gap-3">
+                        <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
+                          <ShoppingBag className="w-7 h-7 text-gray-300" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[12px] font-bold text-[#a0b5c0] mb-1">لا توجد طلبات بعد</p>
+                          <p className="text-[10px] text-[#c0d5e0]">ابدأ بإنشاء طلبك الأول</p>
+                        </div>
                         <button
                           onClick={() => { onClose(); }}
-                          className="mt-1 px-3 py-1.5 rounded-xl bg-[#2196F3] text-white text-[11px] font-bold flex items-center gap-1"
+                          className="mt-1 px-4 py-2 rounded-xl bg-gradient-to-r from-[#2196F3] to-[#1565C0] text-white text-[12px] font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-transform"
                         >
-                          <Plus className="w-3 h-3" />
+                          <Plus className="w-3.5 h-3.5" />
                           طلب جديد
                         </button>
                       </div>
