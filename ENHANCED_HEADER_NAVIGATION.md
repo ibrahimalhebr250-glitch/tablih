@@ -10,10 +10,16 @@
 
 ✅ **حذف القائمة المنسدلة** بالكامل
 ✅ **أيقونات تنقل ملونة** ظاهرة في الهيدر
-✅ **5-6 أزرار** حسب دور المستخدم
+✅ **4-5 أزرار** حسب دور المستخدم
 ✅ **تدرجات لونية جميلة** لكل زر
 ✅ **أنيميشن hover** على كل زر
 ✅ **زر الحساب بـ Avatar** مع شارة Trust Rating
+✅ **Ring highlight** للزر النشط
+
+### المكونات المحدثة
+
+1. **Header.tsx** - للمستخدمين غير المسجلين
+2. **TopNavigation.tsx** - للمستخدمين المسجلين (Mobile + Desktop)
 
 ---
 
@@ -51,7 +57,7 @@ padding: 12px 16px
 
 **الشرط:**
 ```typescript
-onOpenDashboard موجود
+دائماً ظاهر (Always visible)
 ```
 
 **التصميم:**
@@ -64,6 +70,11 @@ label: "الرئيسية"
 size: 56×56px (14×14 على الجوال)
 ```
 
+**Active State:**
+```css
+ring: 2px ring-offset-2 ring-[#2563eb]
+```
+
 **Hover Effect:**
 ```css
 overlay: linear-gradient(135deg, #2563eb, #1d4ed8)
@@ -72,11 +83,11 @@ opacity: 0 → 0.2
 
 ---
 
-### 2. زر السلة / طلباتي (Buyer Deals)
+### 2. زر طلباتي (Orders - للمشترين فقط)
 
 **الشرط:**
 ```typescript
-isBuyer && onOpenBuyerDeals موجود
+isBuyer (المشتري فقط)
 ```
 
 **التصميم:**
@@ -88,6 +99,11 @@ color: #f59e0b
 label: "طلباتي"
 ```
 
+**Active State:**
+```css
+ring: 2px ring-offset-2 ring-[#f59e0b]
+```
+
 **Hover Effect:**
 ```css
 overlay: linear-gradient(135deg, #f59e0b, #d97706)
@@ -95,11 +111,11 @@ overlay: linear-gradient(135deg, #f59e0b, #d97706)
 
 ---
 
-### 3. زر المستودع السحابي (Supplier Inventory)
+### 3. زر المستودع (Inventory - ديناميكي)
 
 **الشرط:**
 ```typescript
-isSupplier && onOpenSupplierInventory موجود
+دائماً ظاهر (Always visible)
 ```
 
 **التصميم:**
@@ -108,7 +124,12 @@ background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)
 border: 2px solid #6ee7b7
 icon: Warehouse
 color: #10b981
-label: "المستودع"
+label: "المستودع" (للموردين) أو "مشترياتي" (للمشترين)
+```
+
+**Active State:**
+```css
+ring: 2px ring-offset-2 ring-[#10b981]
 ```
 
 **Hover Effect:**
@@ -116,33 +137,17 @@ label: "المستودع"
 overlay: linear-gradient(135deg, #10b981, #059669)
 ```
 
----
-
-### 4. زر مشترياتي (Buyer Purchased Inventory)
-
-**الشرط:**
-```typescript
-isBuyer && onOpenPurchasedInventory موجود
-```
-
-**التصميم:**
-```typescript
-background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)
-border: 2px solid #6ee7b7
-icon: Warehouse
-color: #10b981
-label: "مشترياتي"
-```
-
-**ملاحظة:** نفس تصميم المستودع لكن للمشترين
+**ملاحظة:** النص يتغير ديناميكياً:
+- **للموردين (Supplier):** "المستودع"
+- **للمشترين (Buyer):** "مشترياتي"
 
 ---
 
-### 5. زر الصفقات (Supplier Deals)
+### 4. زر الصفقات (Deals)
 
 **الشرط:**
 ```typescript
-isSupplier && onOpenSupplierDeals موجود
+دائماً ظاهر (Always visible)
 ```
 
 **التصميم:**
@@ -154,6 +159,11 @@ color: #6366f1
 label: "الصفقات"
 ```
 
+**Active State:**
+```css
+ring: 2px ring-offset-2 ring-[#6366f1]
+```
+
 **Hover Effect:**
 ```css
 overlay: linear-gradient(135deg, #6366f1, #4f46e5)
@@ -161,11 +171,11 @@ overlay: linear-gradient(135deg, #6366f1, #4f46e5)
 
 ---
 
-### 6. زر حسابي (Account)
+### 5. زر حسابي (Account)
 
 **الشرط:**
 ```typescript
-دائماً ظاهر للمستخدمين المسجلين
+دائماً ظاهر (Always visible)
 ```
 
 **التصميم:**
@@ -204,25 +214,10 @@ label_color: #047857
 
 ---
 
-### 7. زر الإدارة (Admin)
-
-**الشرط:**
-```typescript
-دائماً ظاهر
-```
-
-**التصميم:**
-```typescript
-background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)
-border: 2px solid #f87171
-icon: ShieldCheck
-color: #dc2626
-label: "الإدارة"
-```
-
-**Hover Effect:**
+**Active State:**
 ```css
-overlay: linear-gradient(135deg, #dc2626, #b91c1c)
+ring: 2px ring-offset-2
+ringColor: #60a5fa (للشركات) أو #34d399 (للأفراد)
 ```
 
 ---
