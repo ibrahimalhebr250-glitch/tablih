@@ -36,7 +36,9 @@ export default function OrdersSection() {
     updateFlexibilityOption,
     updateQuantitySettings,
     pauseRecurringOrder,
-    resumeRecurringOrder
+    resumeRecurringOrder,
+    deleteOperationLog,
+    clearAllOperationsLog
   } = useAdminOrders();
 
   const tabs: Array<{ id: Tab; label: string; icon: any; count?: number }> = [
@@ -162,7 +164,12 @@ export default function OrdersSection() {
         )}
 
         {activeTab === 'log' && (
-          <OperationsLogTab operations={operations} onRefresh={refresh} />
+          <OperationsLogTab
+            operations={operations}
+            onRefresh={refresh}
+            onDeleteOperation={deleteOperationLog}
+            onClearAll={clearAllOperationsLog}
+          />
         )}
       </div>
     </div>

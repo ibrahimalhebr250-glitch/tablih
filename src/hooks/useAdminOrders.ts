@@ -446,6 +446,36 @@ export function useAdminOrders() {
     }
   };
 
+  const deleteOperationLog = async (operationId: string) => {
+    try {
+      const { data, error: rpcError } = await supabase.rpc('admin_delete_single_operation_log', {
+        p_operation_id: operationId
+      });
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error(data.error || 'فشل حذف سجل العملية');
+
+      await fetchOperations();
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  const clearAllOperationsLog = async () => {
+    try {
+      const { data, error: rpcError } = await supabase.rpc('admin_clear_all_operations_log');
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error(data.error || 'فشل مسح سجل العمليات');
+
+      await fetchOperations();
+      return { success: true, message: data.message || 'تم مسح جميع السجلات بنجاح' };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  };
+
   return {
     orders,
     drafts,
@@ -466,6 +496,8 @@ export function useAdminOrders() {
     updateFlexibilityOption,
     updateQuantitySettings,
     pauseRecurringOrder,
-    resumeRecurringOrder
+    resumeRecurringOrder,
+    deleteOperationLog,
+    clearAllOperationsLog
   };
 }
