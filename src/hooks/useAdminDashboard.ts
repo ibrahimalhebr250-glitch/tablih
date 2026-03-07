@@ -79,6 +79,7 @@ export function useAdminDashboard(filter: TimeFilter) {
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
+    console.log('🔄 لوحة التحكم: جلب جميع البيانات...');
     setLoading(true);
     const since = getDateFilter(filter);
     const today = getDateFilter('today');
@@ -156,8 +157,8 @@ export function useAdminDashboard(filter: TimeFilter) {
         id: c.id,
         name: c.name,
         status: c.status,
-        total_supply: inv.filter(i => i.city === c.name && i.status === 'available').reduce((s, i) => s + (i.available_quantity ?? 0), 0),
-        total_demand: ords.filter(o => o.city === c.name && ['pending', 'processing'].includes(o.status)).reduce((s, o) => s + (o.quantity ?? 0), 0),
+        total_supply: inv.filter(i => i.city === c.name && ['active', 'available'].includes(i.status)).reduce((s, i) => s + (i.available_quantity ?? 0), 0),
+        total_demand: ords.filter(o => o.city === c.name && ['unmatched', 'pending', 'processing'].includes(o.status)).reduce((s, o) => s + (o.quantity ?? 0), 0),
         active_deals: dls.filter(d => d.city === c.name).length,
       }));
       setCities(stats);
@@ -206,10 +207,63 @@ export function useAdminDashboard(filter: TimeFilter) {
 
     setActivity((activityRes.data as ActivityItem[]) ?? []);
     setLoading(false);
+    console.log('✅ لوحة التحكم: تم جلب جميع البيانات بنجاح');
+    console.log('📊 المقاييس:', metrics);
+    console.log('🌍 المدن:', cities.length);
+    console.log('💼 الصفقات:', dealFlow);
   }, [filter]);
 
   useEffect(() => {
     fetchAll();
+
+    // الاشتراك في التحديثات اللحظية
+    const dealsChannel = supabase
+      .channel('admin-dashboard-deals')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => {
+        console.log('🔄 تحديث لحظي: تغيير في الصفقات');
+        fetchAll();
+      })
+      .subscribe();
+
+    const ordersChannel = supabase
+      .channel('admin-dashboard-orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        console.log('🔄 تحديث لحظي: تغيير في الطلبات');
+        fetchAll();
+      })
+      .subscribe();
+
+    const inventoryChannel = supabase
+      .channel('admin-dashboard-inventory')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_batches' }, () => {
+        console.log('🔄 تحديث لحظي: تغيير في المخزون');
+        fetchAll();
+      })
+      .subscribe();
+
+    const ledgerChannel = supabase
+      .channel('admin-dashboard-ledger')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ledger_entries' }, () => {
+        console.log('🔄 تحديث لحظي: تغيير في السجلات المالية');
+        fetchAll();
+      })
+      .subscribe();
+
+    const auditChannel = supabase
+      .channel('admin-dashboard-audit')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_log' }, () => {
+        console.log('🔄 تحديث لحظي: نشاط إداري جديد');
+        fetchAll();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(dealsChannel);
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(inventoryChannel);
+      supabase.removeChannel(ledgerChannel);
+      supabase.removeChannel(auditChannel);
+    };
   }, [fetchAll]);
 
   return { metrics, cities, dealFlow, financial, activity, loading, refetch: fetchAll };

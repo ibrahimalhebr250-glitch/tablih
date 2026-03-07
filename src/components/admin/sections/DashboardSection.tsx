@@ -21,6 +21,15 @@ export default function DashboardSection({ onNavigate }: Props) {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const { metrics, cities, dealFlow, financial, activity, loading, refetch } = useAdminDashboard(filter);
 
+  console.log('🏠 DashboardSection - البيانات الحالية:', {
+    metrics,
+    cities: cities?.length,
+    dealFlow,
+    financial,
+    activity: activity?.length,
+    loading
+  });
+
   const lastRefresh = new Date().toLocaleTimeString('ar-SA', {
     hour: '2-digit',
     minute: '2-digit'
