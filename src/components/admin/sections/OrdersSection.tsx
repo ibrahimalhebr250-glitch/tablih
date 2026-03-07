@@ -27,6 +27,7 @@ export default function OrdersSection() {
     operations,
     loading,
     error,
+    refresh,
     updateOrder,
     deleteOrder,
     deleteDraft,
@@ -157,11 +158,11 @@ export default function OrdersSection() {
         )}
 
         {activeTab === 'analytics' && (
-          <OrderAnalyticsTab analytics={analytics} />
+          <OrderAnalyticsTab analytics={analytics} onRefresh={refresh} />
         )}
 
         {activeTab === 'log' && (
-          <OperationsLogTab operations={operations} />
+          <OperationsLogTab operations={operations} onRefresh={refresh} />
         )}
       </div>
     </div>

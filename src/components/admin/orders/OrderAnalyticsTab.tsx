@@ -1,11 +1,12 @@
-import { TrendingUp, Package, MapPin, Star } from 'lucide-react';
+import { TrendingUp, Package, MapPin, Star, RefreshCw } from 'lucide-react';
 import type { OrderAnalytics } from '../../../hooks/useAdminOrders';
 
 interface Props {
   analytics: OrderAnalytics[];
+  onRefresh?: () => void;
 }
 
-export default function OrderAnalyticsTab({ analytics }: Props) {
+export default function OrderAnalyticsTab({ analytics, onRefresh }: Props) {
   const latestAnalytics = analytics[0];
 
   const totalOrders = analytics.reduce((sum, a) => sum + a.total_orders, 0);
@@ -36,6 +37,19 @@ export default function OrderAnalyticsTab({ analytics }: Props) {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">تحليلات الطلبات</h3>
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span className="text-sm">تحديث</span>
+          </button>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
           <div className="flex items-center justify-between mb-2">

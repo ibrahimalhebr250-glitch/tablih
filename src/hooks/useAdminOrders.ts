@@ -279,9 +279,16 @@ export function useAdminOrders() {
       .channel('admin-orders-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
         fetchOrders();
+        fetchAnalytics();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_operations_log' }, () => {
         fetchOperations();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_analytics' }, () => {
+        fetchAnalytics();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_drafts' }, () => {
+        fetchDrafts();
       })
       .subscribe();
 

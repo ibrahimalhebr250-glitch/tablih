@@ -1,9 +1,10 @@
-import { Filter, Search } from 'lucide-react';
+import { Filter, Search, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import type { OrderOperation } from '../../../hooks/useAdminOrders';
 
 interface Props {
   operations: OrderOperation[];
+  onRefresh?: () => void;
 }
 
 const OPERATION_LABELS: Record<string, string> = {
@@ -32,7 +33,7 @@ const PERFORMED_BY_LABELS: Record<string, string> = {
   system: 'النظام'
 };
 
-export default function OperationsLogTab({ operations }: Props) {
+export default function OperationsLogTab({ operations, onRefresh }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [operationFilter, setOperationFilter] = useState<string>('all');
 
@@ -49,6 +50,19 @@ export default function OperationsLogTab({ operations }: Props) {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">سجل العمليات</h3>
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span className="text-sm">تحديث</span>
+          </button>
+        )}
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-3">
         <div className="flex-1 relative">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
