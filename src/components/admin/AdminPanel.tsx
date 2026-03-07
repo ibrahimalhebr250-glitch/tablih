@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import AdminSidebar from './AdminSidebar';
 import DashboardSection from './sections/DashboardSection';
+import MatchingSection from './sections/MatchingSection';
 import InventorySection from './sections/InventorySection';
 import MarketSection from './sections/MarketSection';
 import OrdersSection from './sections/OrdersSection';
@@ -25,6 +26,7 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
     const perms = adminStaff.permissions;
 
     if (perms.dashboard?.can_view) sections.push('dashboard');
+    if (perms.market?.can_view) sections.push('matching');
     if (perms.market?.can_view) sections.push('inventory');
     if (perms.market?.can_view) sections.push('market');
     if (perms.market?.can_view) sections.push('orders');
@@ -70,6 +72,11 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
         style={{ scrollbarWidth: 'thin', scrollbarColor: '#c5d8e4 transparent' }}
       >
         {section === 'dashboard' && canViewSection('dashboard') && <DashboardSection onNavigate={handleSectionChange} />}
+        {section === 'matching' && canViewSection('matching') && (
+          <div className="p-6 max-w-7xl mx-auto">
+            <MatchingSection />
+          </div>
+        )}
         {section === 'inventory' && canViewSection('inventory') && <InventorySection adminEmail={adminStaff.email} />}
         {section === 'market' && canViewSection('market') && <MarketSection />}
         {section === 'orders' && canViewSection('orders') && (
