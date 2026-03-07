@@ -52,23 +52,27 @@ export default function SettingsPage({
 
   useEffect(() => {
     const fetchStats = async () => {
-      const phone = session.profile.phone;
+      try {
+        const phone = session.profile.phone;
 
-      const [userRes, dealsRes] = await Promise.all([
-        supabase.from('platform_users').select('trust_rating, profile_image_url').eq('phone', phone).maybeSingle(),
-        supabase.from('deals').select('id, status').or(`supplier_phone.eq.${phone},buyer_phone.eq.${phone}`)
-      ]);
+        const [userRes, dealsRes] = await Promise.all([
+          supabase.from('platform_users').select('trust_rating, profile_image_url').eq('phone', phone).maybeSingle(),
+          supabase.from('deals').select('id, status').or(`supplier_phone.eq.${phone},buyer_phone.eq.${phone}`)
+        ]);
 
-      if (userRes.data?.profile_image_url) {
-        setProfileImageUrl(userRes.data.profile_image_url);
+        if (userRes.data?.profile_image_url) {
+          setProfileImageUrl(userRes.data.profile_image_url);
+        }
+
+        const completedDeals = dealsRes.data?.filter(d => d.status === 'completed').length || 0;
+
+        setStats({
+          completedDeals,
+          trustRating: userRes.data?.trust_rating || 3,
+        });
+      } catch (err) {
+        console.error('Error fetching stats:', err);
       }
-
-      const completedDeals = dealsRes.data?.filter(d => d.status === 'completed').length || 0;
-
-      setStats({
-        completedDeals,
-        trustRating: userRes.data?.trust_rating || 3,
-      });
     };
 
     fetchStats();

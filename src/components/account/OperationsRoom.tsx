@@ -44,7 +44,7 @@ export default function OperationsRoom({
   const [loading, setLoading] = useState(false);
   const [recentDeals, setRecentDeals] = useState<DealCard[]>([]);
 
-  const { orders, batches, deals, summary, refresh } = useDashboard(session.profile.phone);
+  const { orders = [], batches = [], deals = [], summary, refresh } = useDashboard(session.profile.phone);
   const { summary: buyerInventorySummary } = useBuyerInventory(session.profile.phone);
 
   const isSupplier = session.roles.includes('supplier');
@@ -56,35 +56,49 @@ export default function OperationsRoom({
   }, [session.profile.phone]);
 
   const fetchRecentDeals = async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from('deals')
-      .select('*')
-      .or(`supplier_phone.eq.${session.profile.phone},buyer_phone.eq.${session.profile.phone}`)
-      .order('created_at', { ascending: false })
-      .limit(5);
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('deals')
+        .select('*')
+        .or(`supplier_phone.eq.${session.profile.phone},buyer_phone.eq.${session.profile.phone}`)
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-    if (data) {
-      const dealsWithType: DealCard[] = data.map(deal => ({
-        id: deal.id,
-        type: deal.supplier_phone === session.profile.phone ? 'supplier' : 'buyer',
-        status: deal.status,
-        pallet_type: deal.pallet_type,
-        quantity: deal.quantity,
-        price: deal.supplier_phone === session.profile.phone ? deal.supplier_price : deal.buyer_price,
-        city: deal.city,
-        created_at: deal.created_at,
-        otherParty: deal.supplier_phone === session.profile.phone ? deal.buyer_phone : deal.supplier_phone
-      }));
-      setRecentDeals(dealsWithType);
+      if (error) {
+        console.error('Error fetching deals:', error);
+        setRecentDeals([]);
+      } else if (data) {
+        const dealsWithType: DealCard[] = data.map(deal => ({
+          id: deal.id,
+          type: deal.supplier_phone === session.profile.phone ? 'supplier' : 'buyer',
+          status: deal.status || 'matched',
+          pallet_type: deal.pallet_type || '',
+          quantity: deal.quantity || 0,
+          price: deal.supplier_phone === session.profile.phone ? (deal.supplier_price || 0) : (deal.buyer_price || 0),
+          city: deal.city || '',
+          created_at: deal.created_at || new Date().toISOString(),
+          otherParty: deal.supplier_phone === session.profile.phone ? deal.buyer_phone : deal.supplier_phone
+        }));
+        setRecentDeals(dealsWithType);
+      }
+    } catch (err) {
+      console.error('Exception in fetchRecentDeals:', err);
+      setRecentDeals([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleRefresh = async () => {
-    setLoading(true);
-    await Promise.all([refresh(), fetchRecentDeals()]);
-    setLoading(false);
+    try {
+      setLoading(true);
+      await Promise.all([refresh(), fetchRecentDeals()]);
+    } catch (err) {
+      console.error('Error refreshing:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusConfig = (status: string) => {
@@ -99,9 +113,9 @@ export default function OperationsRoom({
     return configs[status] || { label: status, color: '#6B7280', bg: '#F3F4F6' };
   };
 
-  const activeOrders = orders.filter(o => o.status !== 'fulfilled' && o.status !== 'cancelled');
-  const activeBatches = batches.filter(b => b.status === 'active' && b.available_quantity > 0);
-  const activeDeals = deals.filter(d => !['completed', 'cancelled', 'failed'].includes(d.status));
+  const activeOrders = (orders || []).filter(o => o?.status && o.status !== 'fulfilled' && o.status !== 'cancelled');
+  const activeBatches = (batches || []).filter(b => b?.status === 'active' && b?.available_quantity > 0);
+  const activeDeals = (deals || []).filter(d => d?.status && !['completed', 'cancelled', 'failed'].includes(d.status));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100">
@@ -193,41 +207,43 @@ export default function OperationsRoom({
       </div>
 
       {/* Action Buttons */}
-      <div className="px-4 py-4 space-y-2" dir="rtl">
-        <div className="grid grid-cols-2 gap-2">
-          {isSupplier && (
-            <button
-              onClick={onAddInventory}
-              className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-[#27AE60] to-[#229954] shadow-lg active:scale-95 transition-transform"
-            >
-              <div className="relative z-10 flex items-center justify-between">
-                <Plus className="w-6 h-6 text-white" />
-                <div className="text-right">
-                  <p className="text-[14px] font-black text-white">إضافة مخزون</p>
-                  <p className="text-[10px] text-white/80">نشر دفعة جديدة</p>
+      {(isSupplier || isBuyer) && (
+        <div className="px-4 py-4 space-y-2" dir="rtl">
+          <div className={`grid gap-2 ${isSupplier && isBuyer ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {isSupplier && (
+              <button
+                onClick={onAddInventory}
+                className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-[#27AE60] to-[#229954] shadow-lg active:scale-95 transition-transform ${!isBuyer ? 'col-span-1' : ''}`}
+              >
+                <div className="relative z-10 flex items-center justify-between">
+                  <Plus className="w-6 h-6 text-white" />
+                  <div className="text-right">
+                    <p className="text-[14px] font-black text-white">إضافة مخزون</p>
+                    <p className="text-[10px] text-white/80">نشر دفعة جديدة</p>
+                  </div>
                 </div>
-              </div>
-              <div className="absolute inset-0 bg-white/10" />
-            </button>
-          )}
+                <div className="absolute inset-0 bg-white/10" />
+              </button>
+            )}
 
-          {isBuyer && (
-            <button
-              onClick={onCreateOrder}
-              className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-[#2196F3] to-[#1976D2] shadow-lg active:scale-95 transition-transform"
-            >
-              <div className="relative z-10 flex items-center justify-between">
-                <Plus className="w-6 h-6 text-white" />
-                <div className="text-right">
-                  <p className="text-[14px] font-black text-white">إنشاء طلب</p>
-                  <p className="text-[10px] text-white/80">طلب جديد</p>
+            {isBuyer && (
+              <button
+                onClick={onCreateOrder}
+                className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-[#2196F3] to-[#1976D2] shadow-lg active:scale-95 transition-transform ${!isSupplier ? 'col-span-1' : ''}`}
+              >
+                <div className="relative z-10 flex items-center justify-between">
+                  <Plus className="w-6 h-6 text-white" />
+                  <div className="text-right">
+                    <p className="text-[14px] font-black text-white">إنشاء طلب</p>
+                    <p className="text-[10px] text-white/80">طلب جديد</p>
+                  </div>
                 </div>
-              </div>
-              <div className="absolute inset-0 bg-white/10" />
-            </button>
-          )}
+                <div className="absolute inset-0 bg-white/10" />
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* My Orders */}
       {isBuyer && orders.length > 0 && (
@@ -274,7 +290,7 @@ export default function OperationsRoom({
                 <div className="text-right">
                   <p className="text-[14px] font-bold text-gray-900">مستودعي السحابي</p>
                   <p className="text-[11px] text-gray-500">
-                    {buyerInventorySummary.total_quantity.toLocaleString('ar-SA')} طبلية
+                    {(buyerInventorySummary?.total_quantity || 0).toLocaleString('ar-SA')} طبلية
                   </p>
                 </div>
               </div>
