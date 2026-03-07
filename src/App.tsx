@@ -160,7 +160,6 @@ function App() {
                 onCreateOrder={openOrder}
                 onOpenSupplierDeals={() => setModal('supplierDeals')}
                 onOpenBuyerDeals={() => setModal('buyerDeals')}
-                onOpenBuyerWarehouse={() => setModal('supplierInventory')}
                 refreshRef={dashboardRefresh}
               />
             ) : (
@@ -203,7 +202,6 @@ function App() {
               onCreateOrder={openOrder}
               onOpenSupplierDeals={() => setModal('supplierDeals')}
               onOpenBuyerDeals={() => setModal('buyerDeals')}
-              onOpenBuyerWarehouse={() => setModal('supplierInventory')}
               refreshRef={dashboardRefresh}
             />
           ) : (
@@ -257,7 +255,6 @@ function App() {
           onOpenSupplierDeals={() => setModal('supplierDeals')}
           onOpenBuyerDeals={() => setModal('buyerDeals')}
           onOpenSupplierInventory={() => setModal('supplierInventory')}
-          onOpenBuyerWarehouse={() => setModal('supplierInventory')}
           onExplore={() => { setModal('none'); setFreshLogin(false); pendingSession.current = null; }}
         />
       )}
