@@ -18,12 +18,15 @@ import PurchasedInventorySheet from './components/account/PurchasedInventoryShee
 import DesktopSidebar from './components/desktop/DesktopSidebar';
 import DesktopRightPanel from './components/desktop/DesktopRightPanel';
 import MarketSection from './components/market/MarketSection';
+import TopNavigation from './components/shared/TopNavigation';
 
 type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'account' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'purchasedInventory';
+type MainView = 'marketplace' | 'dashboard' | 'account';
 
 function App() {
   const { session, loading, register, login, updateProfile, activateRole, logout } = useSession();
   const [modal, setModal] = useState<ModalView>('none');
+  const [mainView, setMainView] = useState<MainView>('marketplace');
   const pendingAfterAuth = useRef<ModalView | null>(null);
   const dashboardRefresh = useRef<(() => void) | null>(null);
   const [authError, setAuthError] = useState('');
@@ -126,6 +129,39 @@ function App() {
     setModal('login');
   };
 
+  const handleNavigation = (view: 'marketplace' | 'orders' | 'inventory' | 'deals' | 'account') => {
+    setModal('none');
+    if (view === 'marketplace') {
+      setMainView('marketplace');
+    } else if (view === 'account') {
+      setMainView('account');
+    } else if (view === 'orders') {
+      setMainView('dashboard');
+    } else if (view === 'inventory') {
+      setMainView('dashboard');
+      setTimeout(() => setModal('supplierInventory'), 100);
+    } else if (view === 'deals') {
+      setMainView('dashboard');
+      setTimeout(() => setModal('buyerDeals'), 100);
+    }
+  };
+
+  const getCurrentNavView = (): 'marketplace' | 'orders' | 'inventory' | 'deals' | 'account' => {
+    if (mainView === 'account') return 'account';
+    if (mainView === 'marketplace') return 'marketplace';
+    if (modal === 'supplierInventory') return 'inventory';
+    if (modal === 'buyerDeals' || modal === 'supplierDeals') return 'deals';
+    return 'orders';
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setMainView('marketplace');
+    setModal('none');
+    setFreshLogin(false);
+    pendingSession.current = null;
+  };
+
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #bbd0df 0%, #cbdeef 40%, #dbe8f3 70%, #c3d9e8 100%)' }}>
 
@@ -134,93 +170,194 @@ function App() {
         className="hidden lg:flex h-screen overflow-hidden"
         style={{ background: 'linear-gradient(135deg, #0e2233 0%, #112a3d 40%, #0e2233 100%)' }}
       >
-        {/* Left Sidebar */}
-        <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
-          <DesktopSidebar
-            session={session}
-            onOpenAccount={() => { session ? setModal('account') : openAuth('none'); }}
-            onCreateOrder={openOrder}
-            onAddInventory={openInventory}
-            onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
-          />
-        </div>
-
-        {/* Center Main Content */}
-        <div
-          className="flex-1 flex flex-col min-w-0 h-screen rounded-l-3xl overflow-hidden"
-          style={{
-            background: 'linear-gradient(160deg, #bccad6 0%, #c8d5e2 40%, #d0dfe8 70%, #c3d1e0 100%)',
-            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.6)',
-          }}
-        >
-          <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#b8d0e0 transparent' }}>
-            {session ? (
-              <OperationalDashboard
+        {session ? (
+          <>
+            {/* Left Sidebar */}
+            <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
+              <DesktopSidebar
                 session={session}
-                onAddInventory={openInventory}
+                onOpenAccount={() => setMainView('account')}
                 onCreateOrder={openOrder}
-                onOpenSupplierDeals={() => setModal('supplierDeals')}
-                onOpenBuyerDeals={() => setModal('buyerDeals')}
-                refreshRef={dashboardRefresh}
+                onAddInventory={openInventory}
+                onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
               />
-            ) : (
-              <div className="pb-10">
-                <HeroSection desktop />
-                <MarketSection
-                  onCreateOrder={openOrder}
-                  onAddInventory={openInventory}
-                  isAuthenticated={!!session}
-                  onShowAuth={() => openAuth('none')}
-                  onDetailSheetChange={setIsDetailSheetOpen}
-                />
-              </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* Right Panel */}
-        <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
-          <DesktopRightPanel
-            session={session}
-            onLogin={() => openAuth('none')}
-            onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
-          />
-        </div>
+            {/* Center Main Content */}
+            <div
+              className="flex-1 flex flex-col min-w-0 h-screen rounded-l-3xl overflow-hidden"
+              style={{
+                background: 'linear-gradient(160deg, #bccad6 0%, #c8d5e2 40%, #d0dfe8 70%, #c3d1e0 100%)',
+                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.6)',
+              }}
+            >
+              <TopNavigation
+                session={session}
+                currentView={getCurrentNavView()}
+                onNavigate={handleNavigation}
+                onLogout={handleLogout}
+              />
+              <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#b8d0e0 transparent' }}>
+                {mainView === 'marketplace' ? (
+                  <div className="pb-10">
+                    <HeroSection desktop />
+                    <MarketSection
+                      onCreateOrder={openOrder}
+                      onAddInventory={openInventory}
+                      isAuthenticated={true}
+                      onShowAuth={() => openAuth('none')}
+                      onDetailSheetChange={setIsDetailSheetOpen}
+                    />
+                  </div>
+                ) : mainView === 'account' ? (
+                  <AccountPage
+                    session={session}
+                    freshLogin={freshLogin}
+                    onClose={() => setMainView('marketplace')}
+                    onLogout={handleLogout}
+                    onUpdateProfile={updateProfile}
+                    onOpenSupplierDeals={() => setModal('supplierDeals')}
+                    onOpenBuyerDeals={() => setModal('buyerDeals')}
+                    onOpenSupplierInventory={() => setModal('supplierInventory')}
+                    onOpenPurchasedInventory={() => setModal('purchasedInventory')}
+                  />
+                ) : (
+                  <OperationalDashboard
+                    session={session}
+                    onAddInventory={openInventory}
+                    onCreateOrder={openOrder}
+                    onOpenSupplierDeals={() => setModal('supplierDeals')}
+                    onOpenBuyerDeals={() => setModal('buyerDeals')}
+                    refreshRef={dashboardRefresh}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Right Panel */}
+            <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
+              <DesktopRightPanel
+                session={session}
+                onLogin={() => openAuth('none')}
+                onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Left Sidebar */}
+            <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
+              <DesktopSidebar
+                session={session}
+                onOpenAccount={() => openAuth('none')}
+                onCreateOrder={openOrder}
+                onAddInventory={openInventory}
+                onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
+              />
+            </div>
+
+            {/* Center Main Content */}
+            <div
+              className="flex-1 flex flex-col min-w-0 h-screen rounded-l-3xl overflow-hidden"
+              style={{
+                background: 'linear-gradient(160deg, #bccad6 0%, #c8d5e2 40%, #d0dfe8 70%, #c3d1e0 100%)',
+                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.6)',
+              }}
+            >
+              <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#b8d0e0 transparent' }}>
+                <div className="pb-10">
+                  <HeroSection desktop />
+                  <MarketSection
+                    onCreateOrder={openOrder}
+                    onAddInventory={openInventory}
+                    isAuthenticated={false}
+                    onShowAuth={() => openAuth('none')}
+                    onDetailSheetChange={setIsDetailSheetOpen}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Right Panel */}
+            <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
+              <DesktopRightPanel
+                session={session}
+                onLogin={() => openAuth('none')}
+                onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Mobile Layout ── */}
       <div className="lg:hidden min-h-screen" style={{ background: 'linear-gradient(180deg, #c3d1e0 0%, #cdd9e6 30%, #d5e1ea 50%, #cdd9e6 70%, #c3d1e0 100%)' }}>
-        <Header
-          session={session}
-          onOpenAccount={() => { session ? setModal('account') : openAuth('none'); }}
-          onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
-        />
-        <div className="overflow-y-auto" style={{ height: 'calc(100vh - 57px)' }}>
-          {session ? (
-            <OperationalDashboard
+        {session ? (
+          <>
+            <TopNavigation
               session={session}
-              onAddInventory={openInventory}
-              onCreateOrder={openOrder}
-              onOpenSupplierDeals={() => setModal('supplierDeals')}
-              onOpenBuyerDeals={() => setModal('buyerDeals')}
-              refreshRef={dashboardRefresh}
+              currentView={getCurrentNavView()}
+              onNavigate={handleNavigation}
+              onLogout={handleLogout}
             />
-          ) : (
-            <>
+            <div className="overflow-y-auto" style={{ height: 'calc(100vh - 64px)' }}>
+              {mainView === 'marketplace' ? (
+                <>
+                  <HeroSection />
+                  <MarketSection
+                    onCreateOrder={openOrder}
+                    onAddInventory={openInventory}
+                    isAuthenticated={true}
+                    onShowAuth={() => openAuth('none')}
+                    onDetailSheetChange={setIsDetailSheetOpen}
+                  />
+                </>
+              ) : mainView === 'account' ? (
+                <AccountPage
+                  session={session}
+                  freshLogin={freshLogin}
+                  onClose={() => setMainView('marketplace')}
+                  onLogout={handleLogout}
+                  onUpdateProfile={updateProfile}
+                  onOpenSupplierDeals={() => setModal('supplierDeals')}
+                  onOpenBuyerDeals={() => setModal('buyerDeals')}
+                  onOpenSupplierInventory={() => setModal('supplierInventory')}
+                  onOpenPurchasedInventory={() => setModal('purchasedInventory')}
+                />
+              ) : (
+                <OperationalDashboard
+                  session={session}
+                  onAddInventory={openInventory}
+                  onCreateOrder={openOrder}
+                  onOpenSupplierDeals={() => setModal('supplierDeals')}
+                  onOpenBuyerDeals={() => setModal('buyerDeals')}
+                  refreshRef={dashboardRefresh}
+                />
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <Header
+              session={session}
+              onOpenAccount={() => openAuth('none')}
+              onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
+            />
+            <div className="overflow-y-auto" style={{ height: 'calc(100vh - 57px)' }}>
               <HeroSection />
               <MarketSection
                 onCreateOrder={openOrder}
                 onAddInventory={openInventory}
-                isAuthenticated={!!session}
+                isAuthenticated={false}
                 onShowAuth={() => openAuth('none')}
                 onDetailSheetChange={setIsDetailSheetOpen}
               />
               {!isDetailSheetOpen && (
                 <BottomNavigation onAddInventory={openInventory} onCreateOrder={openOrder} />
               )}
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Shared Modals ── */}

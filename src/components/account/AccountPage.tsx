@@ -382,15 +382,11 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
 
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-md" onClick={onClose} />
-
+    <div className="min-h-screen" style={{ background: '#f0f6fa' }}>
       <div
-        className="relative w-full lg:w-[500px] lg:rounded-3xl overflow-hidden flex flex-col slide-up"
+        className="relative w-full max-w-2xl mx-auto overflow-hidden flex flex-col"
         style={{
           background: '#f0f6fa',
-          boxShadow: '0 40px 100px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.15)',
-          maxHeight: '92vh',
         }}
       >
         {/* Header */}
@@ -407,9 +403,10 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
           <div className="relative flex items-center justify-between mb-3">
             <button
               onClick={onClose}
-              className="w-8 h-8 bg-white/12 hover:bg-white/20 rounded-xl flex items-center justify-center transition-all active:scale-95"
+              className="flex items-center gap-2 px-3 py-2 bg-white/12 hover:bg-white/20 rounded-xl transition-all active:scale-95"
             >
               <ArrowRight className="w-4 h-4 text-white" />
+              <span className="text-sm font-semibold text-white">Go to Marketplace</span>
             </button>
             <h2 className="text-[16px] font-black text-white tracking-tight">حسابي</h2>
             <div className="w-8 h-8" />
@@ -607,7 +604,7 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
                   </div>
                   {onOpenSupplierInventory && (
                     <button
-                      onClick={() => { onClose(); onOpenSupplierInventory(); }}
+                      onClick={onOpenSupplierInventory}
                       className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-white border-2 border-[#e4f0f5] shadow-sm active:scale-[0.98] transition-all hover:border-[#1565C0]/30 hover:shadow-lg"
                     >
                       <ChevronLeft className="w-4 h-4 text-[#c0d5e0] flex-shrink-0" />
@@ -623,7 +620,7 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
                   )}
                   {onOpenSupplierDeals && (
                     <button
-                      onClick={() => { onClose(); onOpenSupplierDeals(); }}
+                      onClick={onOpenSupplierDeals}
                       className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-white border-2 border-[#e4f0f5] shadow-sm active:scale-[0.98] transition-all hover:border-[#27AE60]/30 hover:shadow-lg"
                     >
                       <ChevronLeft className="w-4 h-4 text-[#c0d5e0] flex-shrink-0" />
@@ -649,7 +646,7 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
                     <div className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
                   </div>
                   <button
-                    onClick={() => { onClose(); onOpenPurchasedInventory(); }}
+                    onClick={onOpenPurchasedInventory}
                     className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-white border-2 border-[#e4f0f5] shadow-sm active:scale-[0.98] transition-all hover:border-[#10b981]/30 hover:shadow-lg"
                   >
                     <ChevronLeft className="w-4 h-4 text-[#c0d5e0] flex-shrink-0" />
@@ -670,7 +667,7 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
                 <div className="space-y-2.5" dir="rtl">
                   <div className="flex items-center justify-between px-1 mb-2">
                     <button
-                      onClick={() => { onClose(); onOpenBuyerDeals?.(); }}
+                      onClick={onOpenBuyerDeals}
                       className="flex items-center gap-1 text-[11px] font-bold text-[#2196F3] hover:text-[#1565C0] transition-colors"
                     >
                       <span>عرض جميع الصفقات</span>
@@ -813,7 +810,7 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
                                       </div>
                                       {(order.deal_status === 'awaiting_buyer' || order.deal_status === 'inventory_reserved' || order.deal_status === 'in_delivery') && (
                                         <button
-                                          onClick={(e) => { e.stopPropagation(); onClose(); onOpenBuyerDeals?.(); }}
+                                          onClick={(e) => { e.stopPropagation(); onOpenBuyerDeals?.(); }}
                                           className="w-full flex items-center justify-center gap-1 py-1.5 text-[9px] font-bold active:opacity-70"
                                           style={{
                                             borderTop: '1px solid',
@@ -840,7 +837,7 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
                         })}
                         {orders.length > 5 && (
                           <button
-                            onClick={() => { onClose(); onOpenBuyerDeals?.(); }}
+                            onClick={onOpenBuyerDeals}
                             className="w-full py-3 text-center text-[11px] font-bold text-[#2196F3] hover:bg-[#f0f8ff] transition-colors"
                           >
                             عرض جميع الطلبات ({orders.length})
@@ -1037,15 +1034,15 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
             </>
           )}
         </div>
-      </div>
 
-      {editingOrder && (
-        <OrderEditSheet
-          order={editingOrder}
-          onClose={() => setEditingOrder(null)}
-          onSave={async (data) => { await updateOrder(editingOrder.id, data); refreshOrders(); }}
-        />
-      )}
+        {editingOrder && (
+          <OrderEditSheet
+            order={editingOrder}
+            onClose={() => setEditingOrder(null)}
+            onSave={async (data) => { await updateOrder(editingOrder.id, data); refreshOrders(); }}
+          />
+        )}
+      </div>
     </div>
   );
 }
