@@ -296,68 +296,120 @@ export default function PurchasedInventorySheet({ phone, onClose }: Props) {
 
       {showWithdrawDialog && selectedItem && (
         <div
-          className="fixed inset-0 z-[120] flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
+          className="fixed inset-0 z-[120] flex items-end lg:items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
           onClick={() => !isWithdrawing && setShowWithdrawDialog(false)}
         >
           <div
-            className="bg-white rounded-2xl p-6 max-w-md w-full mx-4"
+            className="relative bg-white rounded-t-3xl lg:rounded-3xl max-w-lg w-full mx-0 lg:mx-4 overflow-hidden slide-up"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                <TrendingDown className="w-6 h-6 text-orange-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">سحب كمية</h3>
-                <p className="text-xs text-slate-500">المتاح: {selectedItem.quantity_available} طبلية</p>
-              </div>
+            <div className="flex items-center justify-center pt-3 pb-0 lg:hidden">
+              <div className="w-10 h-1 bg-gray-200 rounded-full" />
             </div>
 
-            <div className="mb-6">
-              <label className="text-sm font-medium text-slate-700 mb-2 block">
-                الكمية المراد سحبها
-              </label>
-              <input
-                type="number"
-                value={withdrawAmount}
-                onChange={(e) => setWithdrawAmount(e.target.value)}
-                placeholder="مثال: 300"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-semibold text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-orange-500"
-                disabled={isWithdrawing}
-                min="1"
-                max={selectedItem.quantity_available}
-              />
-              <p className="text-xs text-slate-500 mt-2 text-center">
-                سيتم خصم الكمية من المخزون المشترى
-              </p>
-            </div>
+            <div className="p-6">
+              <div className="flex items-start gap-4 mb-5">
+                <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                  <TrendingDown className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-slate-900 mb-1">سحب كمية من المخزون</h3>
+                  <p className="text-sm text-slate-600">
+                    {selectedItem.pallet_type} • {selectedItem.size} • درجة {selectedItem.quality}
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
+                      <span className="text-xs text-emerald-600 font-medium">المتاح: </span>
+                      <span className="text-sm font-bold text-emerald-700">{selectedItem.quantity_available}</span>
+                      <span className="text-xs text-emerald-600"> طبلية</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowWithdrawDialog(false)}
-                disabled={isWithdrawing}
-                className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-medium hover:bg-slate-200 disabled:opacity-50"
-              >
-                إلغاء
-              </button>
-              <button
-                onClick={handleWithdraw}
-                disabled={isWithdrawing}
-                className="flex-1 bg-orange-500 text-white py-3 rounded-xl font-medium hover:bg-orange-600 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {isWithdrawing ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    جاري السحب...
-                  </>
-                ) : (
-                  <>
-                    <TrendingDown className="w-4 h-4" />
-                    تأكيد السحب
-                  </>
-                )}
-              </button>
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-2xl p-4 mb-5">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-blue-900 mb-1.5">بإمكانك إعادة بيع المخزون</h4>
+                    <p className="text-xs text-blue-700 leading-relaxed">
+                      بعد السحب، يمكنك إضافة هذا المخزون للبيع في المنصة بسعر جديد من حسابك أو من الواجهة الرئيسية عبر زر "إضافة مخزون"
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="text-sm font-bold text-slate-900 mb-3 block">
+                  الكمية المراد سحبها
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    placeholder="أدخل الكمية..."
+                    className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-2xl font-bold text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                    disabled={isWithdrawing}
+                    min="1"
+                    max={selectedItem.quantity_available}
+                  />
+                  <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">
+                    طبلية
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-2 mt-3">
+                  <button
+                    onClick={() => setWithdrawAmount(Math.floor(selectedItem.quantity_available / 2).toString())}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors"
+                    disabled={isWithdrawing}
+                  >
+                    النصف
+                  </button>
+                  <button
+                    onClick={() => setWithdrawAmount(selectedItem.quantity_available.toString())}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors"
+                    disabled={isWithdrawing}
+                  >
+                    الكل
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowWithdrawDialog(false);
+                    setWithdrawAmount('');
+                  }}
+                  disabled={isWithdrawing}
+                  className="flex-1 bg-slate-100 text-slate-700 py-3.5 rounded-xl font-semibold hover:bg-slate-200 disabled:opacity-50 transition-colors"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={handleWithdraw}
+                  disabled={isWithdrawing || !withdrawAmount || parseInt(withdrawAmount) <= 0}
+                  className="flex-1 bg-gradient-to-l from-orange-500 to-orange-600 text-white py-3.5 rounded-xl font-semibold hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg transition-all"
+                >
+                  {isWithdrawing ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      جاري السحب...
+                    </>
+                  ) : (
+                    <>
+                      <TrendingDown className="w-5 h-5" />
+                      تأكيد السحب
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
