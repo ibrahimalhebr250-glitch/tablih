@@ -6,7 +6,7 @@ export interface BuyerInventoryItem {
   pallet_type: string;
   size: string;
   quality: string;
-  condition: string;
+  condition: string | null;
   quantity: number;
   quantity_available: number;
   unit_price: number;
@@ -14,8 +14,8 @@ export interface BuyerInventoryItem {
   original_supplier_phone: string;
   original_supplier_name: string;
   city: string;
-  images: string[];
-  description: string;
+  images: string[] | any[];
+  description: string | null;
   acquired_at: string;
   deal_ref: string;
 }
@@ -57,19 +57,27 @@ export function useBuyerInventory(buyerPhone: string) {
       });
 
       if (rpcError) throw rpcError;
-      if (data?.success === false) throw new Error(data.error);
+
+      const summaryData = data && typeof data === 'object' ? data : null;
+      if (!summaryData) {
+        setSummary(null);
+        return;
+      }
+
+      if (summaryData.success === false) throw new Error(summaryData.error);
 
       setSummary({
-        total_items: data.total_items,
-        total_pallets: data.total_pallets,
-        total_value: data.total_value,
-        available_pallets: data.available_pallets,
-        by_type: data.by_type || [],
-        by_city: data.by_city || [],
+        total_items: summaryData.total_items || 0,
+        total_pallets: summaryData.total_pallets || 0,
+        total_value: summaryData.total_value || 0,
+        available_pallets: summaryData.available_pallets || 0,
+        by_type: summaryData.by_type || [],
+        by_city: summaryData.by_city || [],
       });
     } catch (err) {
       console.error('Error loading buyer inventory summary:', err);
       setError(err instanceof Error ? err.message : 'فشل تحميل ملخص المخزون');
+      setSummary(null);
     }
   }, [buyerPhone]);
 
