@@ -514,6 +514,7 @@ export default function BuyerDealsPage({ phone, onClose }: Props) {
         isOpen={true}
         onClose={() => setRatingDialog(null)}
         dealId={ratingDialog.dealId}
+        raterPhone={phone}
         ratedUserPhone={ratingDialog.supplierPhone}
         ratedUserName={ratingDialog.supplierName}
         userType="supplier"

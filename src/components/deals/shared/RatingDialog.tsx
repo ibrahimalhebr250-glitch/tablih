@@ -7,6 +7,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   dealId: string;
+  raterPhone: string;
   ratedUserPhone: string;
   ratedUserName: string;
   userType: 'supplier' | 'buyer';
@@ -17,6 +18,7 @@ export default function RatingDialog({
   isOpen,
   onClose,
   dealId,
+  raterPhone,
   ratedUserPhone,
   ratedUserName,
   userType,
@@ -49,12 +51,8 @@ export default function RatingDialog({
     setError('');
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData?.session) {
-        throw new Error('يجب تسجيل الدخول أولاً');
-      }
-
       const { data, error: rpcError } = await supabase.rpc('create_user_rating', {
+        p_rater_phone: raterPhone,
         p_deal_id: dealId,
         p_rated_phone: ratedUserPhone,
         p_rating: rating,
