@@ -151,6 +151,48 @@ export function useAdminBuyerInventory(adminEmail: string) {
     loadItems();
   }, [loadStats, loadItems]);
 
+  useEffect(() => {
+    if (!adminEmail) return;
+
+    const buyerInventoryChannel = supabase
+      .channel('admin-buyer-inventory-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'buyer_inventory'
+        },
+        () => {
+          loadStats();
+          loadItems();
+        }
+      )
+      .subscribe();
+
+    const dealsChannel = supabase
+      .channel('admin-deals-changes-for-buyer-inventory')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'deals',
+          filter: 'status=eq.completed'
+        },
+        () => {
+          loadStats();
+          loadItems();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(buyerInventoryChannel);
+      supabase.removeChannel(dealsChannel);
+    };
+  }, [adminEmail, loadStats, loadItems]);
+
   const refresh = useCallback(() => {
     loadStats();
     loadItems();
