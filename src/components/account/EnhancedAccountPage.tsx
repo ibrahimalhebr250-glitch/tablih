@@ -1,7 +1,5 @@
-import { useState } from 'react';
 import type { AppSession } from '../../types/session';
 import OperationsRoom from './OperationsRoom';
-import SettingsPage from './SettingsPage';
 
 interface Props {
   session: AppSession;
@@ -30,30 +28,17 @@ export default function EnhancedAccountPage({
   onAddInventory,
   onCreateOrder
 }: Props) {
-  const [currentPage, setCurrentPage] = useState<'operations' | 'settings'>('operations');
-
-  if (currentPage === 'settings') {
-    return (
-      <SettingsPage
-        session={session}
-        onClose={() => setCurrentPage('operations')}
-        onLogout={onLogout}
-        onUpdateProfile={onUpdateProfile}
-      />
-    );
-  }
-
   return (
     <OperationsRoom
       session={session}
       onClose={onClose}
+      onLogout={onLogout}
       onAddInventory={onAddInventory || (() => {})}
       onCreateOrder={onCreateOrder || (() => {})}
       onOpenSupplierDeals={onOpenSupplierDeals || (() => {})}
       onOpenBuyerDeals={onOpenBuyerDeals || (() => {})}
       onOpenSupplierInventory={onOpenSupplierInventory || (() => {})}
       onOpenPurchasedInventory={onOpenPurchasedInventory || (() => {})}
-      onOpenSettings={() => setCurrentPage('settings')}
     />
   );
 }

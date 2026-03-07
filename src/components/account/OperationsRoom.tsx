@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, RefreshCw, Plus, Package, ShoppingCart, Handshake, TrendingUp, Clock, CheckCircle, AlertCircle, Warehouse, Truck, Box } from 'lucide-react';
+import { ArrowRight, RefreshCw, Plus, Package, ShoppingCart, Handshake, TrendingUp, Clock, CheckCircle, AlertCircle, Warehouse, Truck, Box, LogOut, X } from 'lucide-react';
 import type { AppSession } from '../../types/session';
 import { supabase } from '../../lib/supabase';
 import { useDashboard } from '../../hooks/useDashboard';
@@ -8,13 +8,13 @@ import { useBuyerInventory } from '../../hooks/useBuyerInventory';
 interface Props {
   session: AppSession;
   onClose: () => void;
+  onLogout: () => void;
   onAddInventory: () => void;
   onCreateOrder: () => void;
   onOpenSupplierDeals: () => void;
   onOpenBuyerDeals: () => void;
   onOpenSupplierInventory: () => void;
   onOpenPurchasedInventory: () => void;
-  onOpenSettings: () => void;
 }
 
 interface DealCard {
@@ -32,13 +32,13 @@ interface DealCard {
 export default function OperationsRoom({
   session,
   onClose,
+  onLogout,
   onAddInventory,
   onCreateOrder,
   onOpenSupplierDeals,
   onOpenBuyerDeals,
   onOpenSupplierInventory,
-  onOpenPurchasedInventory,
-  onOpenSettings
+  onOpenPurchasedInventory
 }: Props) {
   const [activeView, setActiveView] = useState<'orders' | 'inventory' | 'deals'>('orders');
   const [loading, setLoading] = useState(false);
@@ -127,7 +127,7 @@ export default function OperationsRoom({
               onClick={onClose}
               className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/20 backdrop-blur-lg active:scale-90 transition-transform"
             >
-              <ArrowRight className="w-5 h-5 text-white" />
+              <X className="w-5 h-5 text-white" />
             </button>
 
             <button
@@ -381,19 +381,19 @@ export default function OperationsRoom({
         </div>
       </div>
 
-      {/* Settings Link */}
+      {/* Logout Button */}
       <div className="px-4 pb-24">
         <button
-          onClick={onOpenSettings}
-          className="w-full rounded-2xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 p-4 active:scale-95 transition-all"
+          onClick={onLogout}
+          className="w-full rounded-2xl bg-gradient-to-r from-red-50 to-red-100 border border-red-200 p-4 active:scale-95 transition-all"
           dir="rtl"
         >
           <div className="flex items-center justify-between">
             <div className="text-right">
-              <p className="text-[14px] font-bold text-gray-900">الإعدادات والملف الشخصي</p>
-              <p className="text-[11px] text-gray-500">إدارة الحساب والتقييمات</p>
+              <p className="text-[14px] font-bold text-red-900">تسجيل الخروج</p>
+              <p className="text-[11px] text-red-600">الخروج من الحساب</p>
             </div>
-            <ArrowRight className="w-5 h-5 text-gray-400" />
+            <LogOut className="w-5 h-5 text-red-600" />
           </div>
         </button>
       </div>
