@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff, Heart, MessageCircle, Star } from 'lucide-react';
+import { MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff, Heart, MessageCircle, Star, Home } from 'lucide-react';
 import TrustRatingBadge from '../shared/TrustRatingBadge';
 import VisitorRatingDialog from './VisitorRatingDialog';
 import { CommentsSection } from '../shared/CommentsSection';
@@ -173,17 +173,7 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
                 onError={() => {}}
               />
 
-              <button
-                onClick={onClose}
-                className="absolute top-3 left-3 w-9 h-9 flex items-center justify-center rounded-full z-10"
-                style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}
-              >
-                <X className="w-4.5 h-4.5 text-white" />
-              </button>
-
-              <div
-                className="absolute top-3 right-3 flex items-center gap-2 z-10"
-              >
+              <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
                 <span
                   className="text-[11px] font-bold px-2.5 py-1 rounded-full"
                   style={{ background: 'rgba(21,128,61,0.85)', color: 'white', backdropFilter: 'blur(8px)' }}
@@ -243,13 +233,6 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
                 <Warehouse className="w-14 h-14 text-green-300/70" />
                 <span className="text-[13px] font-semibold text-green-400/80">لا توجد صور</span>
               </div>
-              <button
-                onClick={onClose}
-                className="absolute top-3 left-3 w-9 h-9 flex items-center justify-center rounded-full z-10"
-                style={{ background: 'rgba(0,0,0,0.15)', backdropFilter: 'blur(8px)' }}
-              >
-                <X className="w-4.5 h-4.5 text-[#1a3a4a]" />
-              </button>
               <span
                 className="absolute top-3 right-3 text-[11px] font-bold px-2.5 py-1 rounded-full"
                 style={{ background: 'rgba(21,128,61,0.85)', color: 'white' }}
@@ -360,10 +343,16 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
           </div>
         </div>
 
-        <div className="flex-shrink-0 px-5 pb-6 pt-3 space-y-2.5" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+        <div
+          className="flex-shrink-0 px-4 pb-5 pt-3"
+          style={{
+            background: 'linear-gradient(to top, #ffffff 0%, #f8fafb 100%)',
+            borderTop: '1px solid rgba(0,0,0,0.06)',
+          }}
+        >
           <button
             onClick={handleWhatsAppClick}
-            className="w-full relative overflow-hidden group"
+            className="w-full relative overflow-hidden group mb-3"
           >
             <div
               className="absolute inset-0 transition-transform duration-300 group-active:scale-95"
@@ -378,7 +367,7 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
             />
             <div className="relative flex items-center justify-center gap-2.5 py-4 rounded-2xl">
               <MessageCircle className="w-5 h-5 text-white" strokeWidth={2.5} />
-              <span className="text-[15px] font-black text-white">هذا رقم الواتساب - أتشرف بتواصلكم</span>
+              <span className="text-[15px] font-black text-white">تواصل عبر الواتساب</span>
               <div
                 className="absolute left-3 w-2 h-2 rounded-full animate-pulse"
                 style={{ background: '#dcfce7', boxShadow: '0 0 8px #22c55e' }}
@@ -386,27 +375,51 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
             </div>
           </button>
 
-          <button
-            onClick={() => setShowRatingDialog(true)}
-            className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-[14px] font-bold transition-all active:scale-95 bg-amber-50 border-2 border-amber-200 text-amber-700 hover:bg-amber-100"
-          >
-            <Star className="w-4.5 h-4.5" />
-            تقييم هذا العرض
-          </button>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={onClose}
+              className="flex flex-col items-center justify-center py-3 rounded-2xl transition-all active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, #1a4a5e, #2c5f73)',
+                boxShadow: '0 4px 12px rgba(26,74,94,0.25)',
+              }}
+            >
+              <Home className="w-5 h-5 text-white mb-1" />
+              <span className="text-[11px] font-bold text-white">الرئيسية</span>
+            </button>
 
-          <button
-            onClick={handleFavorite}
-            className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-[14px] font-bold transition-all active:scale-95"
-            style={{
-              background: isFavorited ? 'linear-gradient(135deg, #DC2626, #EF4444)' : 'white',
-              color: isFavorited ? 'white' : '#1a4a5e',
-              border: isFavorited ? 'none' : '1.5px solid rgba(0,0,0,0.1)',
-              boxShadow: isFavorited ? '0 4px 16px rgba(220,38,38,0.3)' : '0 2px 8px rgba(0,0,0,0.08)',
-            }}
-          >
-            <Heart className={`w-4.5 h-4.5 ${isFavorited ? 'fill-white' : ''}`} />
-            {isFavorited ? 'تمت الإضافة للمفضلة' : 'إضافة للمفضلة'}
-          </button>
+            <button
+              onClick={() => setShowRatingDialog(true)}
+              className="flex flex-col items-center justify-center py-3 rounded-2xl transition-all active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                boxShadow: '0 4px 12px rgba(245,158,11,0.25)',
+              }}
+            >
+              <Star className="w-5 h-5 text-white mb-1" />
+              <span className="text-[11px] font-bold text-white">تقييم</span>
+            </button>
+
+            <button
+              onClick={handleFavorite}
+              className="flex flex-col items-center justify-center py-3 rounded-2xl transition-all active:scale-95"
+              style={{
+                background: isFavorited
+                  ? 'linear-gradient(135deg, #DC2626, #EF4444)'
+                  : 'linear-gradient(135deg, #ffffff, #f5f9fc)',
+                color: isFavorited ? 'white' : '#1a4a5e',
+                border: isFavorited ? 'none' : '1.5px solid rgba(0,0,0,0.08)',
+                boxShadow: isFavorited
+                  ? '0 4px 12px rgba(220,38,38,0.3)'
+                  : '0 2px 8px rgba(0,0,0,0.08)',
+              }}
+            >
+              <Heart className={`w-5 h-5 mb-1 ${isFavorited ? 'fill-white text-white' : ''}`} />
+              <span className={`text-[11px] font-bold ${isFavorited ? 'text-white' : ''}`}>
+                {isFavorited ? 'مفضل' : 'حفظ'}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
