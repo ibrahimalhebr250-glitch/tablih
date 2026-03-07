@@ -144,6 +144,7 @@ export function useBuyerInventory(buyerPhone: string) {
       const { data, error: rpcError } = await supabase.rpc('withdraw_buyer_inventory_quantity', {
         p_inventory_id: inventoryId,
         p_quantity_to_withdraw: quantityToWithdraw,
+        p_buyer_phone: buyerPhone,
       });
 
       if (rpcError) throw rpcError;
@@ -158,7 +159,7 @@ export function useBuyerInventory(buyerPhone: string) {
       console.error('Error withdrawing quantity:', err);
       throw err;
     }
-  }, [refresh]);
+  }, [refresh, buyerPhone]);
 
   return {
     items,
