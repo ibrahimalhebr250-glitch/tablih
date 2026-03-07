@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { RefreshCw, Handshake, ShoppingBag, ChevronLeft, Sparkles } from 'lucide-react';
+import { RefreshCw, Handshake, ShoppingBag, ChevronLeft, Sparkles, Warehouse } from 'lucide-react';
 import { useDashboard } from '../../hooks/useDashboard';
+import { useBuyerInventory } from '../../hooks/useBuyerInventory';
 import ActivitySummaryCard from './ActivitySummaryCard';
 import OrdersSection from './OrdersSection';
 import WarehouseSection from './WarehouseSection';
@@ -12,11 +13,13 @@ interface Props {
   onCreateOrder: () => void;
   onOpenSupplierDeals: () => void;
   onOpenBuyerDeals: () => void;
+  onOpenBuyerWarehouse: () => void;
   refreshRef?: React.MutableRefObject<(() => void) | null>;
 }
 
-export default function OperationalDashboard({ session, onAddInventory, onCreateOrder, onOpenSupplierDeals, onOpenBuyerDeals, refreshRef }: Props) {
+export default function OperationalDashboard({ session, onAddInventory, onCreateOrder, onOpenSupplierDeals, onOpenBuyerDeals, onOpenBuyerWarehouse, refreshRef }: Props) {
   const { orders, batches, deals, summary, loading, refresh, updateBatchPrice, updateBatch, deleteBatch, updateOrder } = useDashboard(session.profile.phone);
+  const { summary: buyerInventorySummary } = useBuyerInventory(session.profile.phone);
 
   useEffect(() => {
     if (refreshRef) refreshRef.current = refresh;
@@ -140,6 +143,42 @@ export default function OperationalDashboard({ session, onAddInventory, onCreate
                   </p>
                   <span className="flex items-center gap-1 text-[10px] font-bold text-[#fff] bg-[#2563eb] px-2 py-0.5 rounded-full animate-pulse">
                     <Sparkles className="w-2.5 h-2.5" />
+                    عرض
+                  </span>
+                </div>
+              </div>
+            )}
+          </button>
+        )}
+
+        {(session.roles.includes('buyer') || orders.length > 0) && (
+          <button
+            onClick={onOpenBuyerWarehouse}
+            className="relative w-full rounded-2xl border shadow-sm overflow-hidden active:opacity-75 transition-all hover:shadow-md bg-white"
+            style={{ borderColor: buyerInventorySummary && buyerInventorySummary.total_items > 0 ? '#10b981' : '#F3F4F6' }}
+          >
+            <div className="px-4 py-4 flex items-center justify-between">
+              <ChevronLeft className="w-4 h-4 text-[#2c5f7c] flex-shrink-0" />
+              <div className="text-right flex-1 mx-3">
+                <p className="text-[13px] font-bold text-[#1a4a5e]">مستودعي السحابي</p>
+                <p className="text-[11px] text-[#7a9aab] mt-0.5">المخزون المشترى من الموردين</p>
+              </div>
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: buyerInventorySummary && buyerInventorySummary.total_items > 0 ? '#D1FAE5' : '#1a4a5e14' }}
+              >
+                <Warehouse className="w-4 h-4" style={{ color: buyerInventorySummary && buyerInventorySummary.total_items > 0 ? '#10b981' : '#1a4a5e' }} />
+              </div>
+            </div>
+            {buyerInventorySummary && buyerInventorySummary.total_items > 0 && (
+              <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-t border-[#10b981]/20 bg-[#ECFDF5]">
+                <ChevronLeft className="w-3.5 h-3.5 text-[#10b981] flex-shrink-0" />
+                <div className="flex items-center gap-2 justify-end flex-1">
+                  <p className="text-[11px] font-bold text-[#065F46]">
+                    {buyerInventorySummary.total_pallets} طبلية من {buyerInventorySummary.total_items} صفقة
+                  </p>
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-[#fff] bg-[#10b981] px-2 py-0.5 rounded-full">
+                    <Warehouse className="w-2.5 h-2.5" />
                     عرض
                   </span>
                 </div>
