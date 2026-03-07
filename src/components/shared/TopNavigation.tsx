@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { Home, ShoppingCart, Warehouse, Handshake, User, ShieldCheck, Sparkles, LayoutGrid } from 'lucide-react';
 import type { AppSession } from '../../types/session';
 import { getTrustConfig } from './TrustRatingBadge';
+import { supabase } from '../../lib/supabase';
 
 interface Props {
   session: AppSession;
@@ -10,6 +12,8 @@ interface Props {
 }
 
 export default function TopNavigation({ session, currentView, onNavigate }: Props) {
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+
   const isSupplier = session.roles.includes('supplier');
   const isBuyer = session.roles.includes('buyer');
   const isCompany = session.profile.user_type === 'company';
@@ -21,6 +25,46 @@ export default function TopNavigation({ session, currentView, onNavigate }: Prop
   const initials = displayName.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('');
   const trustConfig = getTrustConfig(session.profile.trust_rating || 3);
   const TrustIcon = trustConfig.icon;
+
+  // جلب الصورة الشخصية
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      const { data } = await supabase
+        .from('platform_users')
+        .select('profile_image_url')
+        .eq('phone', session.profile.phone)
+        .maybeSingle();
+
+      if (data?.profile_image_url) {
+        setProfileImageUrl(data.profile_image_url);
+      }
+    };
+
+    fetchProfileImage();
+
+    // الاستماع للتحديثات في الوقت الفعلي
+    const channel = supabase
+      .channel('topnav_profile_image_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'platform_users',
+          filter: `phone=eq.${session.profile.phone}`,
+        },
+        (payload: any) => {
+          if (payload.new?.profile_image_url !== undefined) {
+            setProfileImageUrl(payload.new.profile_image_url);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session.profile.phone]);
 
   return (
     <header
@@ -150,49 +194,61 @@ export default function TopNavigation({ session, currentView, onNavigate }: Prop
         <button
           onClick={() => onNavigate('account')}
           className={`flex flex-col items-center justify-center w-14 h-14 rounded-2xl active:scale-95 transition-all group relative overflow-hidden ${
-            currentView === 'account' ? 'ring-2 ring-offset-2' : ''
+            currentView === 'account' ? 'ring-2 ring-offset-2 ring-[#6366f1]' : ''
           }`}
           style={{
-            background: isCompany
-              ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
-              : 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
-            border: isCompany ? '2px solid #60a5fa' : '2px solid #34d399',
-            ...(currentView === 'account' && {
-              ringColor: isCompany ? '#60a5fa' : '#34d399',
-            }),
+            background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+            border: '2px solid #cbd5e1',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
           }}
           aria-label="حسابي"
         >
           <div
-            className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity"
+            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
             style={{
-              background: isCompany
-                ? 'linear-gradient(135deg, #1a4a5e, #2c6f8a)'
-                : 'linear-gradient(135deg, #27ae60, #1e9652)',
+              background: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
             }}
           />
           <div className="relative">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center relative z-10 group-active:scale-90 transition-transform"
-              style={{
-                background: isCompany
-                  ? 'linear-gradient(135deg, #1e3a8a, #1e40af)'
-                  : 'linear-gradient(135deg, #065f46, #047857)',
-                border: '2px solid white',
-              }}
-            >
-              <span className="text-[11px] font-black text-white">{initials}</span>
-            </div>
+            {profileImageUrl ? (
+              <div
+                className="w-9 h-9 rounded-xl overflow-hidden relative z-10 group-active:scale-90 transition-transform"
+                style={{
+                  border: '2.5px solid white',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                }}
+              >
+                <img
+                  src={profileImageUrl}
+                  alt="الصورة الشخصية"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center relative z-10 group-active:scale-90 transition-transform"
+                style={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                  border: '2.5px solid white',
+                  boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
+                }}
+              >
+                <span className="text-[11px] font-black text-white">{initials}</span>
+              </div>
+            )}
             <div
               className="absolute -bottom-1 -right-1 w-5 h-5 rounded-lg flex items-center justify-center border-2 border-white z-20"
-              style={{ background: trustConfig.color }}
+              style={{
+                background: trustConfig.color,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+              }}
             >
               <TrustIcon className="w-2.5 h-2.5 text-white" />
             </div>
           </div>
           <span
-            className="text-[8px] font-bold mt-0.5 relative z-10"
-            style={{ color: isCompany ? '#1e40af' : '#047857' }}
+            className="text-[8px] font-bold mt-0.5 relative z-10 transition-colors group-hover:text-[#6366f1]"
+            style={{ color: '#64748b' }}
           >
             حسابي
           </span>
