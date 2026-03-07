@@ -27,7 +27,7 @@ function buildWhatsAppLink(phone: string, senderRole: 'supplier' | 'buyer', deal
     `النوع: ${deal.pallet_type} · ${deal.size} · درجة ${deal.quality}`,
     `الكمية: ${deal.quantity} طبلية`,
     `المدينة: ${deal.city}`,
-    `السعر: ${deal.final_price} ر.س / طبلية`,
+    `السعر: ${deal.supplier_price ?? deal.final_price} ر.س / طبلية`,
     ``,
     `انا ${myRole} في هذه الصفقة وأنت ${otherRole}`,
     ``,
@@ -59,9 +59,10 @@ function ConfirmDialog({ deal, onConfirm, onCancel, loading, error }: {
   deal: Deal; onConfirm: () => void; onCancel: () => void; loading: boolean; error: string | null;
 }) {
   const [accepted, setAccepted] = useState(false);
-  const feePerPallet = deal.platform_fee_per_pallet ?? 1;
+  const supplierPrice = deal.supplier_price ?? deal.final_price;
+  const feePerPallet = deal.platform_fee_per_pallet ?? 0.25;
   const totalFee = deal.platform_fee ?? (feePerPallet * deal.quantity);
-  const totalPrice = deal.final_price * deal.quantity;
+  const totalPrice = supplierPrice * deal.quantity;
   const grandTotal = totalPrice + totalFee;
 
   return (
@@ -96,7 +97,7 @@ function ConfirmDialog({ deal, onConfirm, onCancel, loading, error }: {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-[#7a9aab]">سعر الوحدة</span>
-                <span className="text-[11px] font-bold text-[#1a2f3e]">{deal.final_price.toLocaleString('ar-SA')} ر.س</span>
+                <span className="text-[11px] font-bold text-[#1a2f3e]">{supplierPrice.toLocaleString('ar-SA')} ر.س</span>
               </div>
               <div className="border-t border-[#f0f6fa] pt-2">
                 <div className="flex items-center justify-between">
@@ -211,9 +212,10 @@ function FailDeliveryDialog({ deal, onConfirm, onCancel, loading }: {
 }
 
 function NewRequestCard({ deal, onConfirm }: { deal: Deal; onConfirm: (d: Deal) => void }) {
-  const feePerPallet = deal.platform_fee_per_pallet ?? 1;
+  const supplierPrice = deal.supplier_price ?? deal.final_price;
+  const feePerPallet = deal.platform_fee_per_pallet ?? 0.25;
   const totalFee = deal.platform_fee ?? (feePerPallet * deal.quantity);
-  const totalPrice = deal.final_price * deal.quantity;
+  const totalPrice = supplierPrice * deal.quantity;
   const grandTotal = totalPrice + totalFee;
 
   return (
@@ -229,7 +231,7 @@ function NewRequestCard({ deal, onConfirm }: { deal: Deal; onConfirm: (d: Deal) 
         <DealInfoRow icon={<Layers className="w-3.5 h-3.5 text-[#7a9aab]" />} label="المقاس" value={deal.size} />
         <DealInfoRow icon={<Package className="w-3.5 h-3.5 text-[#7a9aab]" />} label="الحمولة" value={`${deal.pallet_type} · درجة ${deal.quality}`} />
         <DealInfoRow icon={<Hash className="w-3.5 h-3.5 text-[#7a9aab]" />} label="الكمية" value={`${deal.quantity.toLocaleString('ar-SA')} طبلية`} />
-        <DealInfoRow icon={<Banknote className="w-3.5 h-3.5 text-[#7a9aab]" />} label="سعر الوحدة" value={`${deal.final_price.toLocaleString('ar-SA')} ر.س`} />
+        <DealInfoRow icon={<Banknote className="w-3.5 h-3.5 text-[#7a9aab]" />} label="سعر الوحدة" value={`${(deal.supplier_price ?? deal.final_price).toLocaleString('ar-SA')} ر.س`} />
         <DealInfoRow icon={<Banknote className="w-3.5 h-3.5 text-[#F59E0B]" />} label="رسوم المنصة" value={`${totalFee.toLocaleString('ar-SA')} ر.س`} />
         <div className="border-t border-[#e2edf5] pt-2.5">
           <div className="flex items-center justify-between">
@@ -282,10 +284,10 @@ function ReservedDealCard({ deal, onStartDelivery, loading }: {
         <DealInfoRow icon={<MapPin className="w-3.5 h-3.5 text-[#7a9aab]" />} label="المدينة" value={deal.city} />
         <DealInfoRow icon={<Package className="w-3.5 h-3.5 text-[#7a9aab]" />} label="النوع" value={`${deal.pallet_type} · ${deal.size} · درجة ${deal.quality}`} />
         <DealInfoRow icon={<Hash className="w-3.5 h-3.5 text-[#7a9aab]" />} label="الكمية" value={`${deal.quantity.toLocaleString('ar-SA')} طبلية`} />
-        <DealInfoRow icon={<Banknote className="w-3.5 h-3.5 text-[#7a9aab]" />} label="سعر الوحدة" value={`${deal.final_price.toLocaleString('ar-SA')} ر.س`} />
+        <DealInfoRow icon={<Banknote className="w-3.5 h-3.5 text-[#7a9aab]" />} label="سعر الوحدة" value={`${(deal.supplier_price ?? deal.final_price).toLocaleString('ar-SA')} ر.س`} />
         <div className="border-t border-[#e2edf5] pt-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-[14px] font-black text-[#1a2f3e]">{((deal.final_price * deal.quantity) + (deal.platform_fee ?? deal.quantity)).toLocaleString('ar-SA')} ر.س</span>
+            <span className="text-[14px] font-black text-[#1a2f3e]">{(((deal.supplier_price ?? deal.final_price) * deal.quantity) + (deal.platform_fee ?? (deal.platform_fee_per_pallet ?? 0.25) * deal.quantity)).toLocaleString('ar-SA')} ر.س</span>
             <span className="text-[11px] font-bold text-[#4a7a94]">المبلغ الإجمالي</span>
           </div>
         </div>
@@ -349,7 +351,7 @@ function InDeliveryCard({ deal, onConfirmDelivery, onFailDelivery, loading }: {
         <DealInfoRow icon={<MapPin className="w-3.5 h-3.5 text-[#7a9aab]" />} label="المدينة" value={deal.city} />
         <DealInfoRow icon={<Package className="w-3.5 h-3.5 text-[#7a9aab]" />} label="النوع" value={`${deal.pallet_type} · ${deal.size} · درجة ${deal.quality}`} />
         <DealInfoRow icon={<Hash className="w-3.5 h-3.5 text-[#7a9aab]" />} label="الكمية" value={`${deal.quantity.toLocaleString('ar-SA')} طبلية`} />
-        <DealInfoRow icon={<Banknote className="w-3.5 h-3.5 text-[#7a9aab]" />} label="المبلغ الإجمالي" value={`${((deal.final_price * deal.quantity) + (deal.platform_fee ?? deal.quantity)).toLocaleString('ar-SA')} ر.س`} />
+        <DealInfoRow icon={<Banknote className="w-3.5 h-3.5 text-[#7a9aab]" />} label="المبلغ الإجمالي" value={`${(((deal.supplier_price ?? deal.final_price) * deal.quantity) + (deal.platform_fee ?? (deal.platform_fee_per_pallet ?? 0.25) * deal.quantity)).toLocaleString('ar-SA')} ر.س`} />
 
         {deal.delivery_started_at && (
           <div className="flex items-center justify-end gap-1 text-[10px] text-[#7a9aab]">
@@ -398,9 +400,10 @@ function InDeliveryCard({ deal, onConfirmDelivery, onFailDelivery, loading }: {
 function EndedDealCard({ deal, onRate }: { deal: Deal; onRate: () => void }) {
   const cfg = DEAL_STATUS_CONFIG[deal.status];
   const isCompleted = deal.status === 'completed';
-  const feePerPallet = deal.platform_fee_per_pallet ?? 1;
+  const supplierPrice = deal.supplier_price ?? deal.final_price;
+  const feePerPallet = deal.platform_fee_per_pallet ?? 0.25;
   const totalFee = deal.platform_fee ?? (feePerPallet * deal.quantity);
-  const totalPrice = deal.final_price * deal.quantity;
+  const totalPrice = supplierPrice * deal.quantity;
   const grandTotal = totalPrice + totalFee;
 
   let timeRemaining = '';
@@ -458,7 +461,7 @@ function EndedDealCard({ deal, onRate }: { deal: Deal; onRate: () => void }) {
           <span className="text-[11px] text-[#7a9aab]">المدينة</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-[12px] font-bold text-[#1a2f3e]">{deal.final_price.toLocaleString('ar-SA')} ر.س / طبلية</span>
+          <span className="text-[12px] font-bold text-[#1a2f3e]">{(deal.supplier_price ?? deal.final_price).toLocaleString('ar-SA')} ر.س / طبلية</span>
           <span className="text-[11px] text-[#7a9aab]">سعر الوحدة</span>
         </div>
 

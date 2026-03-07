@@ -58,8 +58,9 @@ function AwaitingDealCard({ deal, supplierInfo, onConfirm, loading }: {
   deal: Deal; supplierInfo: SupplierInfo | null; onConfirm: () => void; loading: boolean;
 }) {
   const supplierName = supplierInfo?.company_name || supplierInfo?.display_name || 'مورد';
-  const platformFee = deal.platform_fee_per_pallet ?? 1;
-  const buyerUnitPrice = deal.final_price + platformFee;
+  const supplierPrice = deal.supplier_price ?? deal.final_price;
+  const platformFee = deal.platform_fee_per_pallet ?? 0.25;
+  const buyerUnitPrice = deal.buyer_price ?? (supplierPrice + platformFee);
   const totalAmount = buyerUnitPrice * deal.quantity;
 
   return (
@@ -75,7 +76,7 @@ function AwaitingDealCard({ deal, supplierInfo, onConfirm, loading }: {
         <DealInfoRow label="المدينة" value={deal.city} />
         <DealInfoRow label="الكمية" value={`${deal.quantity.toLocaleString('ar-SA')} طبلية`} />
         <DealInfoRow label="المقاس" value={`${deal.pallet_type} · ${deal.size} · درجة ${deal.quality}`} />
-        <DealInfoRow label="سعر المورد" value={`${deal.final_price.toLocaleString('ar-SA')} ر.س / طبلية`} />
+        <DealInfoRow label="سعر المورد" value={`${supplierPrice.toLocaleString('ar-SA')} ر.س / طبلية`} />
 
         <div className="border-t border-[#f0f6fa] pt-2.5 space-y-2">
           <div className="flex items-center justify-between">
@@ -116,7 +117,9 @@ function AwaitingDealCard({ deal, supplierInfo, onConfirm, loading }: {
 
 function ActiveDealCard({ deal, supplierInfo }: { deal: Deal; supplierInfo: SupplierInfo | null }) {
   const supplierName = supplierInfo?.company_name || supplierInfo?.display_name || 'مورد';
-  const unitPrice = deal.buyer_price ?? (deal.final_price + (deal.platform_fee_per_pallet ?? 1));
+  const supplierPrice = deal.supplier_price ?? deal.final_price;
+  const platformFee = deal.platform_fee_per_pallet ?? 0.25;
+  const unitPrice = deal.buyer_price ?? (supplierPrice + platformFee);
   const totalAmount = unitPrice * deal.quantity;
   const isInDelivery = deal.status === 'in_delivery';
   const statusCfg = isInDelivery
@@ -176,7 +179,9 @@ function ActiveDealCard({ deal, supplierInfo }: { deal: Deal; supplierInfo: Supp
 function EndedDealCard({ deal, supplierInfo, onRate }: { deal: Deal; supplierInfo: SupplierInfo | null; onRate: () => void }) {
   const cfg = DEAL_STATUS_CONFIG[deal.status];
   const isCompleted = deal.status === 'completed';
-  const unitPrice = deal.buyer_price ?? (deal.final_price + (deal.platform_fee_per_pallet ?? 1));
+  const supplierPrice = deal.supplier_price ?? deal.final_price;
+  const platformFee = deal.platform_fee_per_pallet ?? 0.25;
+  const unitPrice = deal.buyer_price ?? (supplierPrice + platformFee);
   const totalAmount = unitPrice * deal.quantity;
   const supplierName = supplierInfo?.company_name || supplierInfo?.display_name || 'مورد';
 
