@@ -90,7 +90,15 @@ function App() {
 
     const next = pendingAfterAuth.current;
     pendingAfterAuth.current = null;
-    setModal(next && next !== 'none' ? next : 'none');
+
+    // إذا لم يكن هناك modal محدد بعد التسجيل، افتح صفحة الحساب
+    if (!next || next === 'none') {
+      setModal('none');
+      setFreshLogin(true);
+      setMainView('account');
+    } else {
+      setModal(next);
+    }
   };
 
   const handleLoginComplete = async (phone: string, pin: string) => {
@@ -109,7 +117,15 @@ function App() {
 
     const next = pendingAfterAuth.current;
     pendingAfterAuth.current = null;
-    setModal(next && next !== 'none' ? next : 'none');
+
+    // إذا لم يكن هناك modal محدد بعد تسجيل الدخول، افتح صفحة الحساب
+    if (!next || next === 'none') {
+      setModal('none');
+      setFreshLogin(true);
+      setMainView('account');
+    } else {
+      setModal(next);
+    }
   };
 
   const handleInlineRegister = async (data: { phone: string; name: string; userType: 'company' | 'individual'; pin: string }) => {

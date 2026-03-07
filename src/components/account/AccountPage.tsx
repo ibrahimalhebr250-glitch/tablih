@@ -389,6 +389,35 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
           background: '#f0f6fa',
         }}
       >
+        {/* Welcome Banner for Fresh Login */}
+        {freshLogin && (
+          <div
+            className="relative px-5 py-6 overflow-hidden animate-in slide-in-from-top duration-500"
+            style={{
+              background: 'linear-gradient(135deg, #27AE60 0%, #1a8448 100%)',
+            }}
+          >
+            <div className="absolute inset-0 opacity-10"
+              style={{
+                backgroundImage: 'radial-gradient(circle at 20% 30%, #fff 0%, transparent 40%), radial-gradient(circle at 80% 70%, #fff 0%, transparent 40%)',
+              }}
+            />
+            <div className="relative text-center">
+              <div className="w-16 h-16 mx-auto mb-3 rounded-2xl flex items-center justify-center"
+                style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)' }}
+              >
+                <Sparkles className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-[22px] font-black text-white mb-1">
+                أهلاً بك في حسابك!
+              </h2>
+              <p className="text-[13px] text-white/80">
+                تم تسجيل دخولك بنجاح - يمكنك الآن إدارة حسابك وطلباتك
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div
           className="relative flex-shrink-0 px-5 pt-6 pb-0 overflow-hidden"
@@ -401,7 +430,7 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
           />
 
           <div className="relative flex items-center justify-center mb-4">
-            <h2 className="text-[18px] font-black text-white tracking-tight">My Account</h2>
+            <h2 className="text-[18px] font-black text-white tracking-tight">حسابي</h2>
           </div>
 
           {/* Profile identity row */}
