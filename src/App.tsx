@@ -14,12 +14,11 @@ import BuyerDealsPage from './components/deals/buyer/BuyerDealsPage';
 import AdminPanel from './components/admin/AdminPanel';
 import AdminLoginSheet, { type AdminStaffData } from './components/admin/AdminLoginSheet';
 import SupplierInventory from './components/inventory/SupplierInventory';
-import BuyerCloudWarehouse from './components/dashboard/BuyerCloudWarehouse';
 import DesktopSidebar from './components/desktop/DesktopSidebar';
 import DesktopRightPanel from './components/desktop/DesktopRightPanel';
 import MarketSection from './components/market/MarketSection';
 
-type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'account' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'buyerWarehouse';
+type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'account' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory';
 
 function App() {
   const { session, loading, register, login, updateProfile, activateRole, logout } = useSession();
@@ -161,7 +160,7 @@ function App() {
                 onCreateOrder={openOrder}
                 onOpenSupplierDeals={() => setModal('supplierDeals')}
                 onOpenBuyerDeals={() => setModal('buyerDeals')}
-                onOpenBuyerWarehouse={() => setModal('buyerWarehouse')}
+                onOpenBuyerWarehouse={() => setModal('supplierInventory')}
                 refreshRef={dashboardRefresh}
               />
             ) : (
@@ -204,7 +203,7 @@ function App() {
               onCreateOrder={openOrder}
               onOpenSupplierDeals={() => setModal('supplierDeals')}
               onOpenBuyerDeals={() => setModal('buyerDeals')}
-              onOpenBuyerWarehouse={() => setModal('buyerWarehouse')}
+              onOpenBuyerWarehouse={() => setModal('supplierInventory')}
               refreshRef={dashboardRefresh}
             />
           ) : (
@@ -258,7 +257,7 @@ function App() {
           onOpenSupplierDeals={() => setModal('supplierDeals')}
           onOpenBuyerDeals={() => setModal('buyerDeals')}
           onOpenSupplierInventory={() => setModal('supplierInventory')}
-          onOpenBuyerWarehouse={() => setModal('buyerWarehouse')}
+          onOpenBuyerWarehouse={() => setModal('supplierInventory')}
           onExplore={() => { setModal('none'); setFreshLogin(false); pendingSession.current = null; }}
         />
       )}
@@ -324,13 +323,6 @@ function App() {
           phone={session.profile.phone}
           onClose={() => { setModal('none'); dashboardRefresh.current?.(); }}
           onAddInventory={() => setModal('inventoryBuilder')}
-        />
-      )}
-
-      {modal === 'buyerWarehouse' && session && (
-        <BuyerCloudWarehouse
-          phone={session.profile.phone}
-          onClose={() => { setModal('none'); dashboardRefresh.current?.(); }}
         />
       )}
 
