@@ -9,6 +9,7 @@ import FinanceSection from './sections/FinanceSection';
 import UsersSection from './sections/UsersSection';
 import RatingsSection from './sections/RatingsSection';
 import { CommentsModeration } from './sections/CommentsModeration';
+import BuyerInventorySection from './sections/BuyerInventorySection';
 import SettingsSection from './sections/SettingsSection';
 import type { AdminSection } from '../../types/admin';
 import type { AdminStaffData } from './AdminLoginSheet';
@@ -32,6 +33,7 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
     if (perms.users?.can_view) sections.push('users');
     if (perms.ratings?.can_view) sections.push('ratings');
     if (perms.comments?.can_view) sections.push('comments');
+    if (perms.deals?.can_view) sections.push('buyer_inventory');
     if (perms.settings?.can_view) sections.push('settings');
 
     return sections;
@@ -87,6 +89,9 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
           <div className="p-6 max-w-7xl mx-auto">
             <CommentsModeration />
           </div>
+        )}
+        {section === 'buyer_inventory' && canViewSection('buyer_inventory') && (
+          <BuyerInventorySection adminEmail={adminStaff.email} />
         )}
         {section === 'settings' && canViewSection('settings') && <SettingsSection />}
       </div>
