@@ -3,8 +3,9 @@ import {
   RefreshCw, Plus, ShoppingCart, Handshake, Warehouse,
   LogOut, ClipboardList, ChevronLeft, Package, Radar,
   CheckCircle2, Clock, Pencil, Trash2, MapPin, Eye,
-  DollarSign, PauseCircle, AlertTriangle, X
+  DollarSign, PauseCircle, AlertTriangle, X, Settings
 } from 'lucide-react';
+import SettingsPanel from './SettingsPanel';
 import type { AppSession } from '../../types/session';
 import { supabase } from '../../lib/supabase';
 import { useDashboard } from '../../hooks/useDashboard';
@@ -15,7 +16,7 @@ interface Props {
   freshLogin?: boolean;
   onClose: () => void;
   onLogout: () => void;
-  onUpdateProfile?: (updates: { company_name?: string; display_name?: string; city?: string; activity_type?: string }) => Promise<void>;
+  onUpdateProfile: (updates: { company_name?: string; display_name?: string; city?: string; activity_type?: string }) => Promise<void>;
   onOpenSupplierDeals?: () => void;
   onOpenBuyerDeals?: () => void;
   onOpenSupplierInventory?: () => void;
@@ -62,6 +63,7 @@ export default function EnhancedAccountPage({
   session,
   onClose,
   onLogout,
+  onUpdateProfile,
   onOpenSupplierDeals,
   onOpenBuyerDeals,
   onOpenSupplierInventory,
@@ -73,6 +75,7 @@ export default function EnhancedAccountPage({
   const isBuyer = session.roles.includes('buyer');
 
   const [activeRole, setActiveRole] = useState<RoleView>(isSupplier ? 'supplier' : 'buyer');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [recentDeals, setRecentDeals] = useState<DealData[]>([]);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -170,14 +173,23 @@ export default function EnhancedAccountPage({
           <div className="rounded-2xl p-5 shadow-sm border-2" style={{ background: '#fff', borderColor: '#e4edf3' }}>
             <div className="flex items-center justify-between mb-4" dir="rtl">
               <h3 className="text-[15px] font-black text-[#1a2f3e]">ملخص النشاط</h3>
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
-                style={{ background: '#f0f5f9' }}
-              >
-                <RefreshCw className={`w-4 h-4 text-[#7a9aab] ${refreshing ? 'animate-spin' : ''}`} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSettingsOpen(true)}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 hover:bg-[#e4edf3]"
+                  style={{ background: '#f0f5f9' }}
+                >
+                  <Settings className="w-4 h-4 text-[#7a9aab]" />
+                </button>
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
+                  style={{ background: '#f0f5f9' }}
+                >
+                  <RefreshCw className={`w-4 h-4 text-[#7a9aab] ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3 mb-5" dir="rtl">
@@ -597,6 +609,13 @@ export default function EnhancedAccountPage({
           )}
         </div>
       </div>
+
+      <SettingsPanel
+        session={session}
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onUpdateProfile={onUpdateProfile}
+      />
     </div>
   );
 }
