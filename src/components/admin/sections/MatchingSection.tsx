@@ -16,12 +16,12 @@ export default function MatchingSection() {
   const [activeTab, setActiveTab] = useState<TabType>('control');
 
   const tabs = [
-    { id: 'control' as TabType, label: 'Control Center', icon: Brain, color: '#7C3AED' },
-    { id: 'rules' as TabType, label: 'Matching Rules', icon: Settings, color: '#2563EB' },
-    { id: 'blacklist' as TabType, label: 'Blacklist', icon: Shield, color: '#DC2626' },
-    { id: 'performance' as TabType, label: 'Performance', icon: TrendingUp, color: '#059669' },
-    { id: 'patterns' as TabType, label: 'Patterns', icon: Activity, color: '#D97706' },
-    { id: 'manual' as TabType, label: 'Manual Tools', icon: Zap, color: '#7C3AED' },
+    { id: 'control' as TabType, label: 'مركز التحكم', icon: Brain, color: '#7C3AED' },
+    { id: 'rules' as TabType, label: 'قواعد المطابقة', icon: Settings, color: '#2563EB' },
+    { id: 'blacklist' as TabType, label: 'القائمة السوداء', icon: Shield, color: '#DC2626' },
+    { id: 'performance' as TabType, label: 'الأداء', icon: TrendingUp, color: '#059669' },
+    { id: 'patterns' as TabType, label: 'الأنماط', icon: Activity, color: '#D97706' },
+    { id: 'manual' as TabType, label: 'الأدوات اليدوية', icon: Zap, color: '#7C3AED' },
   ];
 
   return (
@@ -33,15 +33,15 @@ export default function MatchingSection() {
             <Brain className="w-7 h-7 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-gray-900">AI Matching Management</h1>
-            <p className="text-sm text-gray-600">Control and optimize intelligent matching system</p>
+            <h1 className="text-3xl font-black text-gray-900">إدارة المطابقة الذكية</h1>
+            <p className="text-sm text-gray-600">التحكم وتحسين نظام المطابقة بالذكاء الاصطناعي</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="px-4 py-2 rounded-xl bg-green-50 border border-green-200 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-sm font-bold text-green-700">AI Active</span>
+            <span className="text-sm font-bold text-green-700">الذكاء الاصطناعي نشط</span>
           </div>
         </div>
       </div>

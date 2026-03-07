@@ -39,7 +39,7 @@ export default function MatchingBlacklist() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Remove from blacklist?')) return;
+    if (!confirm('إزالة من القائمة السوداء؟')) return;
     try {
       await supabase.from('matching_blacklist').delete().eq('id', id);
       fetchEntries();
@@ -55,7 +55,10 @@ export default function MatchingBlacklist() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Shield className="w-6 h-6 text-red-600" />
-          <h3 className="text-lg font-bold">Matching Blacklist</h3>
+          <div>
+            <h3 className="text-lg font-bold">القائمة السوداء</h3>
+            <p className="text-xs text-gray-600">منع مطابقات معينة</p>
+          </div>
         </div>
       </div>
 
@@ -70,7 +73,7 @@ export default function MatchingBlacklist() {
                   </span>
                   {entry.is_active && (
                     <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-600">
-                      Active
+                      نشط
                     </span>
                   )}
                 </div>
@@ -78,7 +81,7 @@ export default function MatchingBlacklist() {
                 {entry.expires_at && (
                   <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    Expires: {new Date(entry.expires_at).toLocaleDateString()}
+                    ينتهي: {new Date(entry.expires_at).toLocaleDateString('ar-SA')}
                   </p>
                 )}
               </div>

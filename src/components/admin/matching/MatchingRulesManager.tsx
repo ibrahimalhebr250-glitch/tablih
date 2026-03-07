@@ -150,13 +150,13 @@ export default function MatchingRulesManager() {
   const getRuleTypeLabel = (type: string) => {
     switch (type) {
       case 'weight_adjustment':
-        return 'Weight Adjustment';
+        return 'تعديل الأوزان';
       case 'score_threshold':
-        return 'Score Threshold';
+        return 'عتبة الدرجة';
       case 'priority':
-        return 'Priority Rule';
+        return 'قاعدة الأولوية';
       case 'exclusion':
-        return 'Exclusion Rule';
+        return 'قاعدة الاستبعاد';
       default:
         return type;
     }
@@ -190,8 +190,8 @@ export default function MatchingRulesManager() {
             <Settings className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-900">Matching Rules</h3>
-            <p className="text-xs text-gray-600">Configure AI matching behavior</p>
+            <h3 className="text-lg font-bold text-gray-900">قواعد المطابقة</h3>
+            <p className="text-xs text-gray-600">ضبط سلوك الذكاء الاصطناعي</p>
           </div>
         </div>
 
@@ -204,7 +204,7 @@ export default function MatchingRulesManager() {
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-all"
         >
           <Plus className="w-4 h-4" />
-          Add Rule
+          إضافة قاعدة
         </button>
       </div>
 
@@ -213,7 +213,7 @@ export default function MatchingRulesManager() {
         {rules.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center border border-gray-100">
             <Settings className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-sm text-gray-600">No matching rules configured</p>
+            <p className="text-sm text-gray-600">لا توجد قواعد مطابقة مضبوطة</p>
           </div>
         ) : (
           rules.map((rule) => {
@@ -235,24 +235,24 @@ export default function MatchingRulesManager() {
                       </span>
                       {rule.is_active ? (
                         <span className="text-xs font-bold px-3 py-1 rounded-full bg-green-100 text-green-600">
-                          Active
+                          نشط
                         </span>
                       ) : (
                         <span className="text-xs font-bold px-3 py-1 rounded-full bg-gray-100 text-gray-600">
-                          Inactive
+                          معطّل
                         </span>
                       )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-gray-600 mb-1">Priority:</p>
+                        <p className="text-gray-600 mb-1">الأولوية:</p>
                         <p className="font-bold text-gray-900">{rule.priority}</p>
                       </div>
                       <div>
-                        <p className="text-gray-600 mb-1">Conditions:</p>
+                        <p className="text-gray-600 mb-1">الشروط:</p>
                         <p className="font-bold text-gray-900">
-                          {Object.keys(rule.conditions).filter(k => rule.conditions[k]).length || 'Any'}
+                          {Object.keys(rule.conditions).filter(k => rule.conditions[k]).length || 'أي'}
                         </p>
                       </div>
                     </div>
@@ -300,7 +300,7 @@ export default function MatchingRulesManager() {
             <div className="sticky top-0 bg-white border-b border-gray-100 p-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-gray-900">
-                  {editingRule ? 'Edit Rule' : 'Add New Rule'}
+                  {editingRule ? 'تعديل القاعدة' : 'إضافة قاعدة جديدة'}
                 </h3>
                 <button
                   onClick={() => {
@@ -318,7 +318,7 @@ export default function MatchingRulesManager() {
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-2">
-                  Rule Name
+                  اسم القاعدة
                 </label>
                 <input
                   type="text"
@@ -326,12 +326,13 @@ export default function MatchingRulesManager() {
                   onChange={(e) => setFormData({ ...formData, rule_name: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                   required
+                  placeholder="مثال: زيادة أهمية الجودة للطبليات الخشبية"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-2">
-                  Rule Type
+                  نوع القاعدة
                 </label>
                 <select
                   value={formData.rule_type}
@@ -343,16 +344,16 @@ export default function MatchingRulesManager() {
                   }
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                 >
-                  <option value="weight_adjustment">Weight Adjustment</option>
-                  <option value="score_threshold">Score Threshold</option>
-                  <option value="priority">Priority Rule</option>
-                  <option value="exclusion">Exclusion Rule</option>
+                  <option value="weight_adjustment">تعديل الأوزان</option>
+                  <option value="score_threshold">عتبة الدرجة</option>
+                  <option value="priority">قاعدة الأولوية</option>
+                  <option value="exclusion">قاعدة الاستبعاد</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-2">
-                  Priority (Higher = Applied First)
+                  الأولوية (الأعلى يُطبق أولاً)
                 </label>
                 <input
                   type="number"
@@ -361,13 +362,14 @@ export default function MatchingRulesManager() {
                     setFormData({ ...formData, priority: parseInt(e.target.value) || 0 })
                   }
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                  placeholder="0"
                 />
               </div>
 
               {formData.rule_type === 'weight_adjustment' && (
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">
-                    Score Multiplier
+                    معامل الضرب للدرجة
                   </label>
                   <input
                     type="number"
@@ -383,6 +385,7 @@ export default function MatchingRulesManager() {
                       })
                     }
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                    placeholder="1.0"
                   />
                 </div>
               )}
@@ -393,7 +396,7 @@ export default function MatchingRulesManager() {
                   className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-all"
                 >
                   <Save className="w-4 h-4" />
-                  {editingRule ? 'Update Rule' : 'Create Rule'}
+                  {editingRule ? 'تحديث القاعدة' : 'إنشاء القاعدة'}
                 </button>
                 <button
                   type="button"
@@ -404,7 +407,7 @@ export default function MatchingRulesManager() {
                   }}
                   className="px-6 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-all"
                 >
-                  Cancel
+                  إلغاء
                 </button>
               </div>
             </form>
@@ -417,15 +420,15 @@ export default function MatchingRulesManager() {
         <div className="flex items-start gap-4">
           <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div>
-            <h4 className="text-sm font-bold text-gray-900 mb-2">About Matching Rules</h4>
+            <h4 className="text-sm font-bold text-gray-900 mb-2">حول قواعد المطابقة</h4>
             <p className="text-xs text-gray-700 mb-2">
-              Rules are applied in priority order (highest first) to adjust match scores and behavior:
+              يتم تطبيق القواعد حسب الأولوية (الأعلى أولاً) لتعديل درجات المطابقة والسلوك:
             </p>
             <ul className="text-xs text-gray-700 space-y-1 list-disc list-inside">
-              <li><strong>Weight Adjustment:</strong> Multiply scores by a factor</li>
-              <li><strong>Score Threshold:</strong> Set min/max score limits</li>
-              <li><strong>Priority:</strong> Boost certain match types</li>
-              <li><strong>Exclusion:</strong> Block specific combinations</li>
+              <li><strong>تعديل الأوزان:</strong> ضرب الدرجات بمعامل</li>
+              <li><strong>عتبة الدرجة:</strong> تحديد حدود دنيا/عليا للدرجة</li>
+              <li><strong>الأولوية:</strong> تعزيز أنواع معينة من المطابقة</li>
+              <li><strong>الاستبعاد:</strong> منع مجموعات معينة</li>
             </ul>
           </div>
         </div>

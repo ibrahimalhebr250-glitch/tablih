@@ -37,36 +37,39 @@ export default function MatchingPerformance() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <TrendingUp className="w-6 h-6 text-green-600" />
-          <h3 className="text-lg font-bold">Performance Metrics</h3>
+          <div>
+            <h3 className="text-lg font-bold">مقاييس الأداء</h3>
+            <p className="text-xs text-gray-600">تحليل أداء المطابقة</p>
+          </div>
         </div>
         <select
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
           className="px-4 py-2 rounded-xl border border-gray-200"
         >
-          <option value={7}>Last 7 days</option>
-          <option value={14}>Last 14 days</option>
-          <option value={30}>Last 30 days</option>
+          <option value={7}>آخر 7 أيام</option>
+          <option value={14}>آخر 14 يوم</option>
+          <option value={30}>آخر 30 يوم</option>
         </select>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl p-6 border border-gray-100">
-          <p className="text-sm text-gray-600 mb-1">Total Attempts</p>
+          <p className="text-sm text-gray-600 mb-1">إجمالي المحاولات</p>
           <h3 className="text-3xl font-black text-gray-900">{totalAttempts}</h3>
         </div>
         <div className="bg-white rounded-xl p-6 border border-gray-100">
-          <p className="text-sm text-gray-600 mb-1">Successful</p>
+          <p className="text-sm text-gray-600 mb-1">الناجحة</p>
           <h3 className="text-3xl font-black text-green-600">{totalSuccess}</h3>
         </div>
         <div className="bg-white rounded-xl p-6 border border-gray-100">
-          <p className="text-sm text-gray-600 mb-1">Success Rate</p>
+          <p className="text-sm text-gray-600 mb-1">معدل النجاح</p>
           <h3 className="text-3xl font-black text-blue-600">{Math.round(avgSuccessRate)}%</h3>
         </div>
       </div>
 
       <div className="bg-white rounded-xl p-6 border border-gray-100">
-        <h4 className="font-bold text-gray-900 mb-4">Daily Performance</h4>
+        <h4 className="font-bold text-gray-900 mb-4">الأداء اليومي</h4>
         <div className="space-y-3">
           {metrics.map((metric) => (
             <div key={metric.metric_date} className="flex items-center gap-4">

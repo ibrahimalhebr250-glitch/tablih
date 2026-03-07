@@ -97,36 +97,36 @@ export default function MatchingControlCenter() {
 
   const metrics = [
     {
-      label: 'Pending Orders',
+      label: 'الطلبات المعلقة',
       value: stats?.pending_orders || 0,
       icon: Clock,
       color: '#D97706',
       bg: '#FEF3C7',
-      trend: 'Orders waiting for matches',
+      trend: 'طلبات في انتظار المطابقة',
     },
     {
-      label: 'Available Inventory',
+      label: 'المخزون المتاح',
       value: stats?.available_inventory || 0,
       icon: Activity,
       color: '#2563EB',
       bg: '#DBEAFE',
-      trend: 'Active batches ready',
+      trend: 'دفعات نشطة جاهزة',
     },
     {
-      label: 'Active Matches',
+      label: 'المطابقات النشطة',
       value: stats?.active_matches || 0,
       icon: Zap,
       color: '#7C3AED',
       bg: '#EDE9FE',
-      trend: 'Currently matched deals',
+      trend: 'صفقات مطابقة حالياً',
     },
     {
-      label: 'Success Rate (24h)',
+      label: 'معدل النجاح (24 ساعة)',
       value: `${Math.round(stats?.today_success_rate || 0)}%`,
       icon: Target,
       color: '#059669',
       bg: '#D1FAE5',
-      trend: 'Match acceptance rate',
+      trend: 'نسبة قبول المطابقة',
     },
   ];
 
@@ -140,8 +140,8 @@ export default function MatchingControlCenter() {
               <Zap className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900">System Control</h3>
-              <p className="text-xs text-gray-600">Manage AI matching behavior</p>
+              <h3 className="text-lg font-bold text-gray-900">التحكم بالنظام</h3>
+              <p className="text-xs text-gray-600">إدارة سلوك المطابقة الذكية</p>
             </div>
           </div>
 
@@ -170,7 +170,7 @@ export default function MatchingControlCenter() {
                 ) : (
                   <Pause className="w-5 h-5 text-red-600" />
                 )}
-                <span className="font-bold text-gray-900">Auto-Matching</span>
+                <span className="font-bold text-gray-900">المطابقة التلقائية</span>
               </div>
               <span
                 className={`text-xs font-bold px-3 py-1 rounded-full ${
@@ -179,20 +179,20 @@ export default function MatchingControlCenter() {
                     : 'bg-red-200 text-red-700'
                 }`}
               >
-                {isAutoMatchEnabled ? 'Enabled' : 'Disabled'}
+                {isAutoMatchEnabled ? 'مفعّل' : 'معطّل'}
               </span>
             </div>
-            <p className="text-xs text-gray-600 text-left">
+            <p className="text-xs text-gray-600 text-right">
               {isAutoMatchEnabled
-                ? 'AI automatically matches new inventory with orders'
-                : 'Manual matching only - AI is paused'}
+                ? 'الذكاء الاصطناعي يطابق المخزون الجديد تلقائياً'
+                : 'المطابقة اليدوية فقط - الذكاء الاصطناعي متوقف'}
             </p>
           </button>
 
           <div className="p-4 rounded-xl border-2 border-blue-200 bg-blue-50">
             <div className="flex items-center gap-2 mb-3">
               <BarChart3 className="w-5 h-5 text-blue-600" />
-              <span className="font-bold text-gray-900">Average Score</span>
+              <span className="font-bold text-gray-900">متوسط الدرجة</span>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-black text-blue-600">
@@ -200,7 +200,7 @@ export default function MatchingControlCenter() {
               </span>
               <span className="text-sm text-gray-600">/ 100</span>
             </div>
-            <p className="text-xs text-gray-600 mt-2">Last 24 hours average</p>
+            <p className="text-xs text-gray-600 mt-2">متوسط آخر 24 ساعة</p>
           </div>
         </div>
       </div>
@@ -229,8 +229,8 @@ export default function MatchingControlCenter() {
             <Activity className="w-5 h-5 text-purple-600" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-900">Recent Matches</h3>
-            <p className="text-xs text-gray-600">Last 5 matching attempts</p>
+            <h3 className="text-lg font-bold text-gray-900">النشاط الأخير</h3>
+            <p className="text-xs text-gray-600">آخر 5 محاولات مطابقة</p>
           </div>
         </div>
 
@@ -255,7 +255,7 @@ export default function MatchingControlCenter() {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-gray-900">
-                      Match {match.was_accepted ? 'Accepted' : 'Rejected'}
+                      مطابقة {match.was_accepted ? 'مقبولة' : 'مرفوضة'}
                     </p>
                     <p className="text-xs text-gray-600">
                       {new Date(match.created_at).toLocaleString('ar-SA')}
@@ -276,7 +276,7 @@ export default function MatchingControlCenter() {
                   >
                     {Math.round(match.score)}%
                   </div>
-                  <p className="text-xs text-gray-600">Score</p>
+                  <p className="text-xs text-gray-600">الدرجة</p>
                 </div>
               </div>
             ))}
@@ -284,7 +284,7 @@ export default function MatchingControlCenter() {
         ) : (
           <div className="text-center py-8">
             <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-sm text-gray-600">No recent matches found</p>
+            <p className="text-sm text-gray-600">لا توجد مطابقات حديثة</p>
           </div>
         )}
       </div>
@@ -296,24 +296,24 @@ export default function MatchingControlCenter() {
             <Brain className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">System Health</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">صحة النظام</h3>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span className="text-sm text-gray-700">AI Engine: Operational</span>
+                <span className="text-sm text-gray-700">محرك الذكاء الاصطناعي: يعمل</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span className="text-sm text-gray-700">Database: Connected</span>
+                <span className="text-sm text-gray-700">قاعدة البيانات: متصلة</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span className="text-sm text-gray-700">Notifications: Active</span>
+                <span className="text-sm text-gray-700">الإشعارات: نشطة</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
                 <span className="text-sm text-gray-700">
-                  Performance: {stats?.avg_match_score && stats.avg_match_score >= 70 ? 'Excellent' : 'Good'}
+                  الأداء: {stats?.avg_match_score && stats.avg_match_score >= 70 ? 'ممتاز' : 'جيد'}
                 </span>
               </div>
             </div>

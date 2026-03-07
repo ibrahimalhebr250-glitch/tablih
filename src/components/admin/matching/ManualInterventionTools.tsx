@@ -88,48 +88,51 @@ export default function ManualInterventionTools() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Zap className="w-6 h-6 text-purple-600" />
-        <h3 className="text-lg font-bold">Manual Intervention Tools</h3>
+        <div>
+          <h3 className="text-lg font-bold">أدوات التدخل اليدوي</h3>
+          <p className="text-xs text-gray-600">تحكم مباشر في المطابقة</p>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl p-6 border border-gray-100 space-y-6">
         <div>
-          <label className="block text-sm font-bold text-gray-900 mb-2">Select Order</label>
+          <label className="block text-sm font-bold text-gray-900 mb-2">اختر الطلب</label>
           <select
             value={selectedOrder}
             onChange={(e) => setSelectedOrder(e.target.value)}
             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 outline-none"
           >
-            <option value="">-- Choose Order --</option>
+            <option value="">-- اختر طلب --</option>
             {orders.map((order) => (
               <option key={order.id} value={order.id}>
-                {order.pallet_type} - {order.quality} - {order.city} ({order.quantity} pallets)
+                {order.pallet_type} - {order.quality} - {order.city} ({order.quantity} طبلية)
               </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-gray-900 mb-2">Select Inventory Batch</label>
+          <label className="block text-sm font-bold text-gray-900 mb-2">اختر دفعة المخزون</label>
           <select
             value={selectedBatch}
             onChange={(e) => setSelectedBatch(e.target.value)}
             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 outline-none"
           >
-            <option value="">-- Choose Batch --</option>
+            <option value="">-- اختر دفعة --</option>
             {batches.map((batch) => (
               <option key={batch.id} value={batch.id}>
-                {batch.pallet_type} - {batch.quality} - {batch.city} ({batch.available_quantity} available)
+                {batch.pallet_type} - {batch.quality} - {batch.city} ({batch.available_quantity} متاح)
               </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-gray-900 mb-2">Reason</label>
+          <label className="block text-sm font-bold text-gray-900 mb-2">السبب</label>
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Explain why manual intervention is needed..."
+            placeholder="اشرح لماذا التدخل اليدوي مطلوب..."
             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 outline-none resize-none"
             rows={3}
           />
@@ -142,7 +145,7 @@ export default function ManualInterventionTools() {
             className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <CheckCircle2 className="w-5 h-5" />
-            Force Match
+            فرض المطابقة
           </button>
           <button
             onClick={handleBlockMatch}
@@ -150,14 +153,14 @@ export default function ManualInterventionTools() {
             className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <XCircle className="w-5 h-5" />
-            Block Match
+            حظر المطابقة
           </button>
         </div>
       </div>
 
       <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
         <p className="text-sm text-amber-900 font-semibold">
-          ⚠️ Use manual intervention carefully. These actions override AI matching decisions and are logged for audit purposes.
+          ⚠️ استخدم التدخل اليدوي بحذر. هذه الإجراءات تتجاوز قرارات الذكاء الاصطناعي ويتم تسجيلها للمراجعة.
         </p>
       </div>
     </div>
