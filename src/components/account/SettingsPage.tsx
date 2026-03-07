@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, User, Building2, MapPin, Briefcase, LogOut, Save, X, Edit3, Star, MessageSquare, Shield } from 'lucide-react';
+import { ArrowRight, User, Building2, MapPin, Briefcase, LogOut, Save, X, CreditCard as Edit3, Star, MessageSquare, Shield } from 'lucide-react';
 import type { AppSession } from '../../types/session';
 import { SAUDI_CITIES } from '../../types/inventory';
 import { supabase } from '../../lib/supabase';
