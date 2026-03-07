@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
-import {
-  Settings, Plus, Edit2, Trash2, Power, PowerOff,
-  Save, X, TrendingUp, AlertCircle, CheckCircle2
-} from 'lucide-react';
+import { Settings, Plus, CreditCard as Edit2, Trash2, Power, PowerOff, Save, X, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
 import LoadingSkeleton from '../../shared/LoadingSkeleton';
 
 interface MatchingRule {
