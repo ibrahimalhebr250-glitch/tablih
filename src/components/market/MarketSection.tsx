@@ -43,6 +43,8 @@ export interface DemandCard {
   accept_partial_delivery: boolean;
   created_at: string;
   trust_rating?: number;
+  matched_quantity?: number;
+  status?: string;
 }
 
 type MarketCard = SupplyCard | DemandCard;
@@ -210,6 +212,8 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
 function DemandCardItem({ card, onClick }: { card: DemandCard; onClick: () => void }) {
   const q = QUALITY_COLORS[card.quality] || QUALITY_COLORS.C;
   const flexCount = [card.accept_close_quality, card.accept_close_city, card.accept_partial_delivery].filter(Boolean).length;
+  const isPartiallyMatched = card.status === 'partially_matched';
+  const remainingQty = isPartiallyMatched ? card.quantity - (card.matched_quantity || 0) : card.quantity;
 
   return (
     <button
@@ -239,9 +243,16 @@ function DemandCardItem({ card, onClick }: { card: DemandCard; onClick: () => vo
             <ShoppingBag className="w-5 h-5 text-amber-500" />
           </div>
           <div className="flex items-baseline gap-0.5">
-            <span className="text-[20px] font-black text-amber-700">{card.quantity.toLocaleString()}</span>
+            <span className="text-[20px] font-black text-amber-700">{remainingQty.toLocaleString()}</span>
           </div>
-          <span className="text-[8px] font-bold text-amber-600/50 -mt-1">طبلية</span>
+          <span className="text-[8px] font-bold text-amber-600/50 -mt-1">
+            {isPartiallyMatched ? 'متبقي' : 'طبلية'}
+          </span>
+          {isPartiallyMatched && (
+            <div className="absolute top-2 right-2 bg-green-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full">
+              {((card.matched_quantity! / card.quantity) * 100).toFixed(0)}% مؤمن
+            </div>
+          )}
         </div>
 
         <div className="flex-1 min-w-0 flex flex-col justify-between p-3">
@@ -279,9 +290,11 @@ function DemandCardItem({ card, onClick }: { card: DemandCard; onClick: () => vo
           <div className="flex items-center justify-between mt-2.5 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
             <div className="flex items-center gap-2">
               <span className="text-[9px] text-[#a0b5c0]">{timeAgo(card.created_at)}</span>
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg" style={{ background: '#fff7ed' }}>
-                <span className="text-[12px] font-black text-[#b45309]">{card.quantity.toLocaleString()}</span>
-                <Package className="w-3 h-3 text-amber-500/70" />
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg" style={{ background: isPartiallyMatched ? '#f0fdf4' : '#fff7ed' }}>
+                <span className="text-[12px] font-black" style={{ color: isPartiallyMatched ? '#15803d' : '#b45309' }}>
+                  {remainingQty.toLocaleString()}
+                </span>
+                <Package className="w-3 h-3" style={{ color: isPartiallyMatched ? '#22c55e' : '#f59e0b' }} />
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -300,8 +313,14 @@ function DemandCardItem({ card, onClick }: { card: DemandCard; onClick: () => vo
         </div>
       </div>
 
-      {(card.accept_close_quality || card.accept_close_city || card.accept_partial_delivery) && (
+      {(isPartiallyMatched || card.accept_close_quality || card.accept_close_city || card.accept_partial_delivery) && (
         <div className="flex gap-1.5 flex-wrap px-3 pb-2.5 pt-0.5">
+          {isPartiallyMatched && (
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #22c55e' }}>
+              <Package className="w-2.5 h-2.5" />
+              مطابق جزئياً: {card.matched_quantity!.toLocaleString()} من {card.quantity.toLocaleString()}
+            </span>
+          )}
           {card.accept_close_quality && (
             <span className="text-[9px] font-medium px-2 py-0.5 rounded-full" style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
               جودة قريبة
@@ -618,8 +637,8 @@ export default function MarketSection({
         .limit(30),
       supabase
         .from('orders')
-        .select('id, phone, pallet_type, size, quality, quantity, city, accept_close_quality, accept_close_city, accept_partial_delivery, created_at')
-        .in('status', ['pending', 'unmatched'])
+        .select('id, phone, pallet_type, size, quality, quantity, city, accept_close_quality, accept_close_city, accept_partial_delivery, created_at, matched_quantity, status')
+        .in('status', ['pending', 'unmatched', 'partially_matched'])
         .order('created_at', { ascending: false })
         .limit(30),
     ]);
@@ -670,6 +689,8 @@ export default function MarketSection({
       accept_partial_delivery: o.accept_partial_delivery,
       created_at: o.created_at,
       trust_rating: userRatings.get(o.phone) ?? 3,
+      matched_quantity: o.matched_quantity || 0,
+      status: o.status,
     }));
 
     setItems([...supply, ...demand]);
