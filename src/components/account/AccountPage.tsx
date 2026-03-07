@@ -546,7 +546,7 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 pt-3 pb-6 space-y-3" style={{ scrollbarWidth: 'thin', scrollbarColor: '#b8d0e0 transparent' }}>
+        <div className="flex-1 overflow-y-auto px-4 pt-3 pb-20 space-y-3" style={{ scrollbarWidth: 'thin', scrollbarColor: '#b8d0e0 transparent' }}>
 
           {/* ── HOME TAB ── */}
           {activeTab === 'home' && (
