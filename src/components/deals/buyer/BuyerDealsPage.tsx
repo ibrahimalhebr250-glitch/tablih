@@ -419,15 +419,6 @@ export default function BuyerDealsPage({ phone, onClose }: Props) {
           </div>
         </div>
 
-        {isCreatingPendingDeal && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }}>
-            <div className="bg-white rounded-2xl p-6 flex flex-col items-center gap-3 shadow-2xl">
-              <Loader2 className="w-10 h-10 text-[#15803d] animate-spin" />
-              <p className="text-[14px] font-bold text-[#1a3a4a]">جاري إنشاء الصفقة...</p>
-            </div>
-          </div>
-        )}
-
         <div className="flex-shrink-0 px-4 pt-3 pb-0">
           <div className="flex gap-1 p-1 bg-white/60 rounded-2xl backdrop-blur-sm border border-white/80">
             {TABS.map(({ id, label, icon: Icon }) => {
