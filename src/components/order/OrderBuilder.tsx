@@ -10,6 +10,7 @@ import SizeSelector from './SizeSelector';
 import QualitySelector from './QualitySelector';
 import QuantityInput from './QuantityInput';
 import CitySelector from './CitySelector';
+import ConditionSelector from './ConditionSelector';
 import FlexibilityToggle from './FlexibilityToggle';
 import OrderSummaryBar from './OrderSummaryBar';
 import AuthSheet from '../account/AuthSheet';
@@ -203,6 +204,10 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
                   onSelect={builder.setCity}
                 />
               )}
+              <ConditionSelector
+                selected={builder.form.condition || 'new'}
+                onSelect={builder.setCondition}
+              />
               <FlexibilityToggle
                 flexibilityOptions={dynamicData.flexibilityOptions}
                 selectedOptions={flexibilitySelections}

@@ -9,6 +9,7 @@ export interface OrderFormData {
   quality: PalletQuality | null;
   quantity: number;
   city: string;
+  condition?: string;
   acceptCloseQuality: boolean;
   acceptCloseCity: boolean;
   acceptPartialDelivery: boolean;

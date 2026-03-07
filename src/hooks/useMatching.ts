@@ -68,6 +68,7 @@ export function useMatching() {
             quality: form.quality,
             quantity: form.quantity,
             city: form.city,
+            pallet_condition: form.condition || 'new',
             accept_close_quality: form.acceptCloseQuality,
             accept_close_city: form.acceptCloseCity,
             accept_partial_delivery: form.acceptPartialDelivery,

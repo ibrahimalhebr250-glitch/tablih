@@ -17,6 +17,7 @@ const initialFormData: OrderFormData = {
   quality: null,
   quantity: 1000,
   city: '',
+  condition: 'new',
   acceptCloseQuality: false,
   acceptCloseCity: false,
   acceptPartialDelivery: false,
@@ -124,6 +125,11 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
     setForm((prev) => ({ ...prev, city }));
   }, []);
 
+  const setCondition = useCallback((condition: string) => {
+    setForm((prev) => ({ ...prev, condition }));
+    logOperation('change_condition', { condition });
+  }, []);
+
   const setFlexibility = useCallback(
     (key: 'acceptCloseQuality' | 'acceptCloseCity' | 'acceptPartialDelivery', value: boolean) => {
       setForm((prev) => ({ ...prev, [key]: value }));
@@ -193,6 +199,7 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
     setQuality,
     setQuantity,
     setCity,
+    setCondition,
     setFlexibility,
     handleCompleteOrder,
     handleAuthComplete,
