@@ -50,7 +50,8 @@ export function useSession() {
           .maybeSingle();
 
         if (user) {
-          await buildSession(user);
+          const s = await buildSession(user);
+          setSession(s);
           setLoading(false);
           return;
         }
@@ -239,6 +240,12 @@ export function useSession() {
       if (!newUser) {
         return { success: false, error: 'حدث خطأ أثناء التسجيل. يرجى المحاولة مرة أخرى.' };
       }
+
+      await sessionManager.createSession({
+        phone: formattedPhone,
+        user_type: data.userType === 'company' ? 'supplier' : 'buyer',
+        user_name: data.name
+      });
 
       const s = await buildSession(newUser);
       return { success: true, session: s };

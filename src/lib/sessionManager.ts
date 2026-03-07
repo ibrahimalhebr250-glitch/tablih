@@ -19,6 +19,7 @@ export interface CreateSessionParams {
 export const sessionManager = {
   async createSession(params: CreateSessionParams): Promise<{ success: boolean; error?: string }> {
     try {
+      console.log('🔐 Creating new session for:', params.phone);
       const { data, error } = await supabase.rpc('create_user_session', {
         p_phone: params.phone,
         p_user_type: params.user_type,
@@ -31,12 +32,14 @@ export const sessionManager = {
 
       if (data?.success && data?.session_token) {
         localStorage.setItem(SESSION_TOKEN_KEY, data.session_token);
+        console.log('✅ Session created successfully. Expires at:', data.expires_at);
+        console.log('⏱️ Session duration:', data.duration_hours, 'hours');
         return { success: true };
       }
 
       return { success: false, error: data?.error || 'فشل إنشاء الجلسة' };
     } catch (error) {
-      console.error('Error creating session:', error);
+      console.error('❌ Error creating session:', error);
       return { success: false, error: 'فشل إنشاء الجلسة' };
     }
   },
@@ -46,9 +49,11 @@ export const sessionManager = {
       const token = localStorage.getItem(SESSION_TOKEN_KEY);
 
       if (!token) {
+        console.log('ℹ️ No active session token found');
         return { success: false, error: 'لا توجد جلسة نشطة' };
       }
 
+      console.log('🔍 Validating session...');
       const { data, error } = await supabase.rpc('validate_user_session', {
         p_session_token: token
       });
@@ -56,6 +61,8 @@ export const sessionManager = {
       if (error) throw error;
 
       if (data?.success) {
+        console.log('✅ Session valid for user:', data.user_name);
+        console.log('⏱️ Expires at:', data.expires_at);
         return {
           success: true,
           data: {
@@ -68,10 +75,11 @@ export const sessionManager = {
         };
       }
 
+      console.log('⚠️ Session invalid:', data?.error);
       this.clearSession();
       return { success: false, error: data?.error || 'جلسة غير صالحة' };
     } catch (error) {
-      console.error('Error validating session:', error);
+      console.error('❌ Error validating session:', error);
       this.clearSession();
       return { success: false, error: 'خطأ في التحقق من الجلسة' };
     }
