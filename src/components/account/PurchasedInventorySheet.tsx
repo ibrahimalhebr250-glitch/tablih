@@ -143,8 +143,11 @@ export default function PurchasedInventorySheet({ phone, onClose }: Props) {
                         </div>
                       </div>
                       <div className="text-left">
-                        <p className="text-xs text-slate-500">الكمية</p>
-                        <p className="text-lg font-bold text-slate-900">{item.quantity}</p>
+                        <p className="text-xs text-slate-500">الكمية المتاحة</p>
+                        <p className="text-lg font-bold text-slate-900">{item.quantity_available}</p>
+                        {item.quantity_available < item.quantity && (
+                          <p className="text-[10px] text-orange-600">من أصل {item.quantity}</p>
+                        )}
                       </div>
                     </div>
 
@@ -163,8 +166,15 @@ export default function PurchasedInventorySheet({ phone, onClose }: Props) {
                       <div className="text-xs text-slate-500">
                         صفقة #{item.deal_ref}
                       </div>
-                      <div className="text-sm font-bold text-emerald-600">
-                        {item.total_paid.toLocaleString()} ر.س
+                      <div className="text-left">
+                        <div className="text-sm font-bold text-emerald-600">
+                          {(item.quantity_available * item.unit_price).toLocaleString()} ر.س
+                        </div>
+                        {item.quantity_available < item.quantity && (
+                          <div className="text-[10px] text-slate-400 line-through">
+                            {item.total_paid.toLocaleString()} ر.س
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
