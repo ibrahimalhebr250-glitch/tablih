@@ -391,7 +391,7 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
       >
         {/* Header */}
         <div
-          className="relative flex-shrink-0 px-5 pt-4 pb-0 overflow-hidden"
+          className="relative flex-shrink-0 px-5 pt-6 pb-0 overflow-hidden"
           style={{ background: 'linear-gradient(135deg, #0a1f2e 0%, #0f3654 50%, #1a5073 100%)' }}
         >
           <div className="absolute inset-0 opacity-[0.05]"
@@ -400,16 +400,8 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
             }}
           />
 
-          <div className="relative flex items-center justify-between mb-3">
-            <button
-              onClick={onClose}
-              className="flex items-center gap-2 px-3 py-2 bg-white/12 hover:bg-white/20 rounded-xl transition-all active:scale-95"
-            >
-              <ArrowRight className="w-4 h-4 text-white" />
-              <span className="text-sm font-semibold text-white">Go to Marketplace</span>
-            </button>
-            <h2 className="text-[16px] font-black text-white tracking-tight">حسابي</h2>
-            <div className="w-8 h-8" />
+          <div className="relative flex items-center justify-center mb-4">
+            <h2 className="text-[18px] font-black text-white tracking-tight">My Account</h2>
           </div>
 
           {/* Profile identity row */}

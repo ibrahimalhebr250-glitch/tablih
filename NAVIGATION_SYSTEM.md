@@ -130,6 +130,45 @@ Login → Marketplace (with nav bar)
 4. **Clear Context** - Always know current location
 5. **Efficient Workflow** - Move between tasks easily
 
+## Enhanced Features (v2)
+
+### 1. Advanced Design
+- Color-coded navigation items
+- Gradient backgrounds for active items
+- Smooth hover animations with scale effects
+- Modern rounded corners and shadows
+
+### 2. Smart Notifications
+- Real-time badge counters for:
+  - Active Orders
+  - Active Deals
+  - Available Inventory
+- Live updates via Supabase subscriptions
+- Visual indicators on both desktop and mobile
+
+### 3. User Experience
+- Smooth fade and slide transitions between views
+- Animated dropdown menu
+- Click-to-navigate logo
+- Responsive user info display
+- Role badges (Buyer/Supplier)
+
+### 4. Mobile Optimization
+- Compact navigation with dropdown menu
+- Current view indicator with colored badge
+- Full navigation access from user menu
+- Touch-optimized interactions
+
+### 5. Visual Polish
+- Professional color scheme:
+  - Marketplace: Blue (#0369A1)
+  - Orders: Purple (#7C3AED)
+  - Inventory: Red (#DC2626)
+  - Deals: Green (#059669)
+  - Account: Teal (#1a4a5e)
+- Active state indicators
+- Subtle animations and transitions
+
 ## Future Enhancements
 
 - Add breadcrumb navigation
@@ -137,3 +176,4 @@ Login → Marketplace (with nav bar)
 - Add keyboard shortcuts
 - Mobile gesture navigation
 - Remember last visited view
+- Push notifications for important events

@@ -198,39 +198,41 @@ function App() {
                 onLogout={handleLogout}
               />
               <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#b8d0e0 transparent' }}>
-                {mainView === 'marketplace' ? (
-                  <div className="pb-10">
-                    <HeroSection desktop />
-                    <MarketSection
-                      onCreateOrder={openOrder}
-                      onAddInventory={openInventory}
-                      isAuthenticated={true}
-                      onShowAuth={() => openAuth('none')}
-                      onDetailSheetChange={setIsDetailSheetOpen}
+                <div key={mainView} className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  {mainView === 'marketplace' ? (
+                    <div className="pb-10">
+                      <HeroSection desktop />
+                      <MarketSection
+                        onCreateOrder={openOrder}
+                        onAddInventory={openInventory}
+                        isAuthenticated={true}
+                        onShowAuth={() => openAuth('none')}
+                        onDetailSheetChange={setIsDetailSheetOpen}
+                      />
+                    </div>
+                  ) : mainView === 'account' ? (
+                    <AccountPage
+                      session={session}
+                      freshLogin={freshLogin}
+                      onClose={() => setMainView('marketplace')}
+                      onLogout={handleLogout}
+                      onUpdateProfile={updateProfile}
+                      onOpenSupplierDeals={() => setModal('supplierDeals')}
+                      onOpenBuyerDeals={() => setModal('buyerDeals')}
+                      onOpenSupplierInventory={() => setModal('supplierInventory')}
+                      onOpenPurchasedInventory={() => setModal('purchasedInventory')}
                     />
-                  </div>
-                ) : mainView === 'account' ? (
-                  <AccountPage
-                    session={session}
-                    freshLogin={freshLogin}
-                    onClose={() => setMainView('marketplace')}
-                    onLogout={handleLogout}
-                    onUpdateProfile={updateProfile}
-                    onOpenSupplierDeals={() => setModal('supplierDeals')}
-                    onOpenBuyerDeals={() => setModal('buyerDeals')}
-                    onOpenSupplierInventory={() => setModal('supplierInventory')}
-                    onOpenPurchasedInventory={() => setModal('purchasedInventory')}
-                  />
-                ) : (
-                  <OperationalDashboard
-                    session={session}
-                    onAddInventory={openInventory}
-                    onCreateOrder={openOrder}
-                    onOpenSupplierDeals={() => setModal('supplierDeals')}
-                    onOpenBuyerDeals={() => setModal('buyerDeals')}
-                    refreshRef={dashboardRefresh}
-                  />
-                )}
+                  ) : (
+                    <OperationalDashboard
+                      session={session}
+                      onAddInventory={openInventory}
+                      onCreateOrder={openOrder}
+                      onOpenSupplierDeals={() => setModal('supplierDeals')}
+                      onOpenBuyerDeals={() => setModal('buyerDeals')}
+                      refreshRef={dashboardRefresh}
+                    />
+                  )}
+                </div>
               </div>
             </div>
 
@@ -300,40 +302,42 @@ function App() {
               onNavigate={handleNavigation}
               onLogout={handleLogout}
             />
-            <div className="overflow-y-auto" style={{ height: 'calc(100vh - 64px)' }}>
-              {mainView === 'marketplace' ? (
-                <>
-                  <HeroSection />
-                  <MarketSection
-                    onCreateOrder={openOrder}
-                    onAddInventory={openInventory}
-                    isAuthenticated={true}
-                    onShowAuth={() => openAuth('none')}
-                    onDetailSheetChange={setIsDetailSheetOpen}
+            <div className="overflow-y-auto" style={{ height: 'calc(100vh - 56px)' }}>
+              <div key={mainView} className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                {mainView === 'marketplace' ? (
+                  <>
+                    <HeroSection />
+                    <MarketSection
+                      onCreateOrder={openOrder}
+                      onAddInventory={openInventory}
+                      isAuthenticated={true}
+                      onShowAuth={() => openAuth('none')}
+                      onDetailSheetChange={setIsDetailSheetOpen}
+                    />
+                  </>
+                ) : mainView === 'account' ? (
+                  <AccountPage
+                    session={session}
+                    freshLogin={freshLogin}
+                    onClose={() => setMainView('marketplace')}
+                    onLogout={handleLogout}
+                    onUpdateProfile={updateProfile}
+                    onOpenSupplierDeals={() => setModal('supplierDeals')}
+                    onOpenBuyerDeals={() => setModal('buyerDeals')}
+                    onOpenSupplierInventory={() => setModal('supplierInventory')}
+                    onOpenPurchasedInventory={() => setModal('purchasedInventory')}
                   />
-                </>
-              ) : mainView === 'account' ? (
-                <AccountPage
-                  session={session}
-                  freshLogin={freshLogin}
-                  onClose={() => setMainView('marketplace')}
-                  onLogout={handleLogout}
-                  onUpdateProfile={updateProfile}
-                  onOpenSupplierDeals={() => setModal('supplierDeals')}
-                  onOpenBuyerDeals={() => setModal('buyerDeals')}
-                  onOpenSupplierInventory={() => setModal('supplierInventory')}
-                  onOpenPurchasedInventory={() => setModal('purchasedInventory')}
-                />
-              ) : (
-                <OperationalDashboard
-                  session={session}
-                  onAddInventory={openInventory}
-                  onCreateOrder={openOrder}
-                  onOpenSupplierDeals={() => setModal('supplierDeals')}
-                  onOpenBuyerDeals={() => setModal('buyerDeals')}
-                  refreshRef={dashboardRefresh}
-                />
-              )}
+                ) : (
+                  <OperationalDashboard
+                    session={session}
+                    onAddInventory={openInventory}
+                    onCreateOrder={openOrder}
+                    onOpenSupplierDeals={() => setModal('supplierDeals')}
+                    onOpenBuyerDeals={() => setModal('buyerDeals')}
+                    refreshRef={dashboardRefresh}
+                  />
+                )}
+              </div>
             </div>
           </>
         ) : (
