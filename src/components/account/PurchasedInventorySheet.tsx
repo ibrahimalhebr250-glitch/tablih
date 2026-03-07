@@ -124,8 +124,7 @@ export default function PurchasedInventorySheet({ phone, onClose }: Props) {
                 {purchasedItems.map((item) => (
                   <div
                     key={item.id}
-                    onClick={() => setSelectedItem(item)}
-                    className="bg-white rounded-2xl border border-gray-100 p-4 hover:shadow-lg transition-all cursor-pointer"
+                    className="bg-white rounded-2xl border border-gray-100 p-4 hover:shadow-md transition-all"
                     dir="rtl"
                   >
                     <div className="flex items-start justify-between mb-3">
@@ -134,7 +133,7 @@ export default function PurchasedInventorySheet({ phone, onClose }: Props) {
                           <Package className="w-4 h-4 text-emerald-600" />
                           <h3 className="font-bold text-slate-900">{item.pallet_type}</h3>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-600">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
                           <span className="bg-slate-100 px-2 py-0.5 rounded">{item.size}</span>
                           <span className="bg-slate-100 px-2 py-0.5 rounded">درجة {item.quality}</span>
                           {item.condition && (
@@ -143,10 +142,10 @@ export default function PurchasedInventorySheet({ phone, onClose }: Props) {
                         </div>
                       </div>
                       <div className="text-left">
-                        <p className="text-xs text-slate-500">الكمية المتاحة</p>
-                        <p className="text-lg font-bold text-slate-900">{item.quantity_available}</p>
+                        <p className="text-xs text-slate-500">المتاح</p>
+                        <p className="text-xl font-bold text-emerald-600">{item.quantity_available}</p>
                         {item.quantity_available < item.quantity && (
-                          <p className="text-[10px] text-orange-600">من أصل {item.quantity}</p>
+                          <p className="text-[10px] text-orange-600">من {item.quantity}</p>
                         )}
                       </div>
                     </div>
@@ -162,7 +161,7 @@ export default function PurchasedInventorySheet({ phone, onClose }: Props) {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                    <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-100">
                       <div className="text-xs text-slate-500">
                         صفقة #{item.deal_ref}
                       </div>
@@ -176,6 +175,27 @@ export default function PurchasedInventorySheet({ phone, onClose }: Props) {
                           </div>
                         )}
                       </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSelectedItem(item)}
+                        className="flex-1 bg-slate-100 text-slate-700 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors"
+                      >
+                        عرض التفاصيل
+                      </button>
+                      {item.quantity_available > 0 && (
+                        <button
+                          onClick={() => {
+                            setSelectedItem(item);
+                            setShowWithdrawDialog(true);
+                          }}
+                          className="flex-1 bg-gradient-to-l from-orange-500 to-orange-600 text-white py-2.5 rounded-xl text-sm font-medium hover:from-orange-600 hover:to-orange-700 transition-all flex items-center justify-center gap-2 shadow-md"
+                        >
+                          <TrendingDown className="w-4 h-4" />
+                          سحب كمية
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -263,19 +283,9 @@ export default function PurchasedInventorySheet({ phone, onClose }: Props) {
                 />
               </div>
 
-              {selectedItem.quantity_available > 0 && (
-                <button
-                  onClick={() => setShowWithdrawDialog(true)}
-                  className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium hover:bg-orange-600 flex items-center justify-center gap-2 transition-colors"
-                >
-                  <TrendingDown className="w-5 h-5" />
-                  سحب كمية من المخزون
-                </button>
-              )}
-
               <button
                 onClick={() => setSelectedItem(null)}
-                className="w-full bg-slate-200 text-slate-700 py-3 rounded-xl font-medium hover:bg-slate-300"
+                className="w-full bg-emerald-600 text-white py-3 rounded-xl font-medium hover:bg-emerald-700 transition-colors"
               >
                 إغلاق
               </button>
