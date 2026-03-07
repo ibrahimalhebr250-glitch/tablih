@@ -304,7 +304,7 @@ export default function EnhancedGeneralSettings() {
 
         <SettingRow
           label="مهلة الجلسة"
-          hint="المدة بالدقائق قبل تسجيل الخروج التلقائي"
+          hint="المدة بالدقائق قبل تسجيل الخروج التلقائي (للنظام القديم)"
         >
           <div className="flex items-center gap-2">
             {[30, 60, 120, 240].map(n => (

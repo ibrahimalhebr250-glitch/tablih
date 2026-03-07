@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { sessionManager } from '../lib/sessionManager';
 import type { AppSession, UserProfile, UserRole } from '../types/session';
 
 const SESSION_KEY = 'tbl_session';
@@ -30,6 +31,7 @@ function saveSession(s: AppSession) {
 
 function clearSession() {
   localStorage.removeItem(SESSION_KEY);
+  sessionManager.clearSession();
 }
 
 export function useSession() {
@@ -37,15 +39,35 @@ export function useSession() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = loadStoredSession();
-    if (stored) {
-      refreshIfNeeded(stored).then((s) => {
-        setSession(s);
+    const initSession = async () => {
+      const validationResult = await sessionManager.validateSession();
+
+      if (validationResult.success && validationResult.data) {
+        const { data: user } = await supabase
+          .from('platform_users')
+          .select('*')
+          .eq('phone', validationResult.data.phone)
+          .maybeSingle();
+
+        if (user) {
+          await buildSession(user);
+          setLoading(false);
+          return;
+        }
+      }
+
+      const stored = loadStoredSession();
+      if (stored) {
+        refreshIfNeeded(stored).then((s) => {
+          setSession(s);
+          setLoading(false);
+        });
+      } else {
         setLoading(false);
-      });
-    } else {
-      setLoading(false);
-    }
+      }
+    };
+
+    initSession();
   }, []);
 
   const refreshIfNeeded = async (s: AppSession): Promise<AppSession | null> => {
@@ -249,6 +271,20 @@ export function useSession() {
         .update({ last_active: new Date().toISOString() })
         .eq('id', user.id);
 
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('phone', formattedPhone);
+
+      const roles = (rolesData ?? []).map((r: { role: UserRole }) => r.role);
+      const userType = roles.includes('supplier') ? 'supplier' : roles.includes('buyer') ? 'buyer' : 'buyer';
+
+      await sessionManager.createSession({
+        phone: formattedPhone,
+        user_type: userType,
+        user_name: user.display_name || user.company_name || formattedPhone
+      });
+
       const s = await buildSession(user);
       return { success: true, session: s };
     },
@@ -301,6 +337,7 @@ export function useSession() {
         .update({ expires_at: new Date().toISOString() })
         .eq('access_token', session.accessToken);
     }
+    await sessionManager.invalidateSession();
     clearSession();
     setSession(null);
   }, [session]);
