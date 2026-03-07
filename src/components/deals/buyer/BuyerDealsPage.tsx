@@ -180,6 +180,21 @@ function EndedDealCard({ deal, supplierInfo, onRate }: { deal: Deal; supplierInf
   const totalAmount = unitPrice * deal.quantity;
   const supplierName = supplierInfo?.company_name || supplierInfo?.display_name || 'مورد';
 
+  let timeRemaining = '';
+  if (isCompleted && deal.completed_at) {
+    const completedTime = new Date(deal.completed_at).getTime();
+    const now = Date.now();
+    const elapsed = now - completedTime;
+    const remaining = (24 * 60 * 60 * 1000) - elapsed;
+    const hoursLeft = Math.floor(remaining / (60 * 60 * 1000));
+    const minutesLeft = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+    if (hoursLeft > 0) {
+      timeRemaining = `${hoursLeft} ساعة و ${minutesLeft} دقيقة`;
+    } else {
+      timeRemaining = `${minutesLeft} دقيقة`;
+    }
+  }
+
   return (
     <div
       className="bg-white rounded-2xl shadow-sm overflow-hidden"
@@ -238,6 +253,17 @@ function EndedDealCard({ deal, supplierInfo, onRate }: { deal: Deal; supplierInf
         {deal.cancel_reason && (
           <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2">
             <p className="text-[11px] text-red-600 font-bold">{deal.cancel_reason}</p>
+          </div>
+        )}
+
+        {isCompleted && timeRemaining && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+            <p className="text-[11px] text-amber-800 font-bold text-center">
+              ستختفي هذه الصفقة بعد {timeRemaining}
+            </p>
+            <p className="text-[10px] text-amber-600 text-center mt-0.5">
+              يمكنك التقييم والتواصل عبر واتساب خلال هذه المدة فقط
+            </p>
           </div>
         )}
 

@@ -68,9 +68,19 @@ export function useBuyerDeals(phone: string) {
     };
   }, [fetchDeals, phone]);
 
+  const now = Date.now();
+  const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+
   const awaitingDeals = deals.filter(d => d.status === 'awaiting_buyer' || d.status === 'pending_supplier' || d.status === 'matched' || d.status === 'supplier_confirmed');
   const activeDeals = deals.filter(d => d.status === 'inventory_reserved' || d.status === 'in_delivery');
-  const endedDeals = deals.filter(d => d.status === 'completed' || d.status === 'cancelled');
+  const endedDeals = deals.filter(d => {
+    if (d.status === 'cancelled') return true;
+    if (d.status === 'completed' && d.completed_at) {
+      const completedTime = new Date(d.completed_at).getTime();
+      return now - completedTime < TWENTY_FOUR_HOURS;
+    }
+    return false;
+  });
 
   const confirmPurchase = useCallback(async (dealId: string) => {
     setActionLoading(dealId);
