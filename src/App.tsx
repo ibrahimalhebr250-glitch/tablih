@@ -257,12 +257,6 @@ function App() {
           onOpenBuyerDeals={() => setModal('buyerDeals')}
           onOpenSupplierInventory={() => setModal('supplierInventory')}
           onOpenPurchasedInventory={() => setModal('purchasedInventory')}
-          onExplore={() => {
-            setModal('none');
-            setFreshLogin(false);
-            pendingSession.current = null;
-            dashboardRefresh.current?.();
-          }}
         />
       )}
 

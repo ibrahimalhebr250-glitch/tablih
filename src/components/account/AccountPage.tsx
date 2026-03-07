@@ -26,7 +26,6 @@ interface Props {
   onOpenBuyerDeals?: () => void;
   onOpenSupplierInventory?: () => void;
   onOpenPurchasedInventory?: () => void;
-  onExplore?: () => void;
 }
 
 const ACTIVITY_TYPES = [
@@ -308,7 +307,7 @@ function EditableField({
 
 type TabView = 'home' | 'profile' | 'ratings';
 
-export default function AccountPage({ session, freshLogin = false, onClose, onLogout, onUpdateProfile, onOpenSupplierDeals, onOpenBuyerDeals, onOpenSupplierInventory, onOpenPurchasedInventory, onExplore }: Props) {
+export default function AccountPage({ session, freshLogin = false, onClose, onLogout, onUpdateProfile, onOpenSupplierDeals, onOpenBuyerDeals, onOpenSupplierInventory, onOpenPurchasedInventory }: Props) {
   const [activeTab, setActiveTab] = useState<TabView>('home');
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState(session.profile.display_name ?? '');
@@ -381,9 +380,6 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
     setEditing(false);
   };
 
-  const handleExplore = () => {
-    onExplore?.();
-  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center">
@@ -856,24 +852,6 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
                 </div>
               )}
 
-              {/* Explore platform */}
-              <div dir="rtl">
-                <p className="text-[11px] font-bold text-[#7a9aab] px-1 mb-2">استكشاف</p>
-                <button
-                  onClick={handleExplore}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white border border-[#e8f0f5] shadow-sm hover:shadow-md hover:border-[#1a4a5e]/20 active:scale-[0.98] transition-all"
-                >
-                  <div className="flex-1 text-right">
-                    <p className="text-[13px] font-bold text-[#1a2f3e]">استكشف المنصة</p>
-                    <p className="text-[10px] text-[#9ab0bf] mt-0.5">تصفح الفرص والسوق</p>
-                  </div>
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'linear-gradient(135deg, #e8f0f5, #d8e8f2)' }}>
-                    <LayoutDashboard className="w-4 h-4 text-[#1a4a5e]" />
-                  </div>
-                  <ChevronLeft className="w-4 h-4 text-[#c0d5e0] flex-shrink-0" />
-                </button>
-              </div>
 
               {/* Logout button - prominent */}
               <div dir="rtl" className="pt-2">
