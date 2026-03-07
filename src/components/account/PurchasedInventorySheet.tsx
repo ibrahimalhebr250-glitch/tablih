@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ArrowRight, Package, MapPin, DollarSign, Warehouse, X, Image as ImageIcon } from 'lucide-react';
+import { ArrowRight, Package, MapPin, DollarSign, Warehouse, X, Image as ImageIcon, TrendingDown } from 'lucide-react';
 import { useBuyerInventory } from '../../hooks/useBuyerInventory';
+import { ActionToast } from '../shared/ActionToast';
 
 interface Props {
   phone: string;
@@ -17,11 +18,56 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 export default function PurchasedInventorySheet({ phone, onClose }: Props) {
-  const { items: purchasedItems, summary, loading } = useBuyerInventory(phone);
+  const { items: purchasedItems, summary, loading, withdrawQuantity } = useBuyerInventory(phone);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [toast, setToast] = useState<{ title: string; message: string; variant: 'success' | 'info' } | null>(null);
+
+  const handleWithdraw = async () => {
+    if (!selectedItem) return;
+
+    const amount = parseInt(withdrawAmount);
+    if (isNaN(amount) || amount <= 0) {
+      setToast({ title: 'خطأ', message: 'الرجاء إدخال كمية صحيحة', variant: 'info' });
+      return;
+    }
+
+    if (amount > selectedItem.quantity_available) {
+      setToast({ title: 'خطأ', message: `الكمية المتاحة فقط ${selectedItem.quantity_available} طبلية`, variant: 'info' });
+      return;
+    }
+
+    setIsWithdrawing(true);
+    try {
+      const result = await withdrawQuantity(selectedItem.id, amount);
+      setToast({ title: 'تم بنجاح', message: result.message || 'تم سحب الكمية بنجاح', variant: 'success' });
+      setShowWithdrawDialog(false);
+      setWithdrawAmount('');
+      setSelectedItem(null);
+    } catch (error) {
+      setToast({
+        title: 'خطأ',
+        message: error instanceof Error ? error.message : 'فشل سحب الكمية',
+        variant: 'info'
+      });
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
 
   return (
     <>
+      {toast && (
+        <ActionToast
+          title={toast.title}
+          message={toast.message}
+          variant={toast.variant}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center">
         <div className="absolute inset-0 bg-black/50 backdrop-blur-md" onClick={onClose} />
 
@@ -190,7 +236,8 @@ export default function PurchasedInventorySheet({ phone, onClose }: Props) {
                 {selectedItem.condition && (
                   <DetailRow label="الحالة" value={selectedItem.condition} />
                 )}
-                <DetailRow label="الكمية" value={`${selectedItem.quantity} طبلية`} />
+                <DetailRow label="الكمية المشتراة" value={`${selectedItem.quantity} طبلية`} />
+                <DetailRow label="المتاحة للتصرف" value={`${selectedItem.quantity_available} طبلية`} />
                 <DetailRow label="المدينة" value={selectedItem.city} />
                 <DetailRow label="سعر الوحدة" value={`${selectedItem.unit_price} ر.س`} />
                 <DetailRow label="المبلغ الإجمالي" value={`${selectedItem.total_paid} ر.س`} />
@@ -206,11 +253,90 @@ export default function PurchasedInventorySheet({ phone, onClose }: Props) {
                 />
               </div>
 
+              {selectedItem.quantity_available > 0 && (
+                <button
+                  onClick={() => setShowWithdrawDialog(true)}
+                  className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium hover:bg-orange-600 flex items-center justify-center gap-2 transition-colors"
+                >
+                  <TrendingDown className="w-5 h-5" />
+                  سحب كمية من المخزون
+                </button>
+              )}
+
               <button
                 onClick={() => setSelectedItem(null)}
                 className="w-full bg-slate-200 text-slate-700 py-3 rounded-xl font-medium hover:bg-slate-300"
               >
                 إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWithdrawDialog && selectedItem && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
+          onClick={() => !isWithdrawing && setShowWithdrawDialog(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                <TrendingDown className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">سحب كمية</h3>
+                <p className="text-xs text-slate-500">المتاح: {selectedItem.quantity_available} طبلية</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="text-sm font-medium text-slate-700 mb-2 block">
+                الكمية المراد سحبها
+              </label>
+              <input
+                type="number"
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+                placeholder="مثال: 300"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-semibold text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-orange-500"
+                disabled={isWithdrawing}
+                min="1"
+                max={selectedItem.quantity_available}
+              />
+              <p className="text-xs text-slate-500 mt-2 text-center">
+                سيتم خصم الكمية من المخزون المشترى
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowWithdrawDialog(false)}
+                disabled={isWithdrawing}
+                className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-medium hover:bg-slate-200 disabled:opacity-50"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleWithdraw}
+                disabled={isWithdrawing}
+                className="flex-1 bg-orange-500 text-white py-3 rounded-xl font-medium hover:bg-orange-600 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isWithdrawing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    جاري السحب...
+                  </>
+                ) : (
+                  <>
+                    <TrendingDown className="w-4 h-4" />
+                    تأكيد السحب
+                  </>
+                )}
               </button>
             </div>
           </div>

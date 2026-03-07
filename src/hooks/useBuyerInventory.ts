@@ -139,6 +139,27 @@ export function useBuyerInventory(buyerPhone: string) {
     };
   }, [buyerPhone, refresh]);
 
+  const withdrawQuantity = useCallback(async (inventoryId: string, quantityToWithdraw: number) => {
+    try {
+      const { data, error: rpcError } = await supabase.rpc('withdraw_buyer_inventory_quantity', {
+        p_inventory_id: inventoryId,
+        p_quantity_to_withdraw: quantityToWithdraw,
+      });
+
+      if (rpcError) throw rpcError;
+
+      const result = data && typeof data === 'object' ? data : null;
+      if (!result) throw new Error('لم يتم استلام رد من الخادم');
+      if (result.success === false) throw new Error(result.error);
+
+      await refresh();
+      return { success: true, message: result.message };
+    } catch (err) {
+      console.error('Error withdrawing quantity:', err);
+      throw err;
+    }
+  }, [refresh]);
+
   return {
     items,
     summary,
@@ -146,5 +167,6 @@ export function useBuyerInventory(buyerPhone: string) {
     error,
     refresh,
     loadItems,
+    withdrawQuantity,
   };
 }
