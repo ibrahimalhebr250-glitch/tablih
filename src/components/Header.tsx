@@ -1,55 +1,80 @@
-import { User, ShieldCheck, LayoutGrid } from 'lucide-react';
+import { ShieldCheck, LayoutGrid, Sparkles } from 'lucide-react';
 import type { AppSession } from '../types/session';
+import AccountDropdown from './Header/AccountDropdown';
 
 interface Props {
   session: AppSession | null;
   onOpenAccount: () => void;
   onOpenAdmin: () => void;
+  onOpenSupplierDeals?: () => void;
+  onOpenBuyerDeals?: () => void;
+  onOpenSupplierInventory?: () => void;
+  onOpenPurchasedInventory?: () => void;
+  onOpenDashboard?: () => void;
+  onLogout: () => void;
 }
 
-export default function Header({ session, onOpenAccount, onOpenAdmin }: Props) {
-  const initials = session?.profile.company_name
-    ? session.profile.company_name.slice(0, 2)
-    : '';
-
+export default function Header({
+  session,
+  onOpenAccount,
+  onOpenAdmin,
+  onOpenSupplierDeals,
+  onOpenBuyerDeals,
+  onOpenSupplierInventory,
+  onOpenPurchasedInventory,
+  onOpenDashboard,
+  onLogout
+}: Props) {
   return (
-    <header className="flex items-center justify-between px-4 py-2.5 bg-white sticky top-0 z-50 border-b border-gray-100">
-      <button
-        onClick={onOpenAccount}
-        className="relative w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform border"
-        style={{
-          background: session ? 'linear-gradient(135deg, #1a4a5e, #2c6f8a)' : '#f5f8fa',
-          borderColor: session ? '#1a4a5e' : '#e5e9ec',
-        }}
-        aria-label="حسابي"
-      >
-        {session && initials ? (
-          <span className="text-[12px] font-bold text-white leading-none">{initials}</span>
-        ) : (
-          <User className={`w-5 h-5 ${session ? 'text-white' : 'text-[#7a9aab]'}`} />
-        )}
-        {session && (
-          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#22c55e] rounded-full border-2 border-white" />
-        )}
-      </button>
+    <header
+      className="flex items-center justify-between px-4 py-3 sticky top-0 z-50 border-b-2"
+      style={{
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+        borderColor: '#e2e8f0',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+      }}
+    >
+      <AccountDropdown
+        session={session}
+        onOpenAccount={onOpenAccount}
+        onOpenSupplierDeals={onOpenSupplierDeals}
+        onOpenBuyerDeals={onOpenBuyerDeals}
+        onOpenSupplierInventory={onOpenSupplierInventory}
+        onOpenPurchasedInventory={onOpenPurchasedInventory}
+        onOpenDashboard={onOpenDashboard}
+        onLogout={onLogout}
+      />
 
-      <div className="flex items-center gap-2.5">
-        <span className="text-[16px] font-bold text-[#1a3a4a]">شبكة الطبليات</span>
+      <div className="flex items-center gap-3">
+        <div className="text-right">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[17px] font-black text-[#0a1f2e] tracking-tight">شبكة الطبليات</span>
+            <Sparkles className="w-4 h-4 text-[#F59E0B]" />
+          </div>
+          <p className="text-[9px] text-[#64748b] font-medium">منصة توريد الطبليات</p>
+        </div>
         <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, #1a4a5e, #2c6f8a)' }}
+          className="w-12 h-12 rounded-2xl flex items-center justify-center"
+          style={{
+            background: 'linear-gradient(135deg, #0f2535 0%, #1a4a5e 50%, #2c6f8a 100%)',
+            boxShadow: '0 6px 20px rgba(15,37,53,0.25)',
+          }}
         >
-          <LayoutGrid className="w-4 h-4 text-white" />
+          <LayoutGrid className="w-5 h-5 text-white" />
         </div>
       </div>
 
       <button
         onClick={onOpenAdmin}
-        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-95 transition-all border"
-        style={{ background: '#0f2535', borderColor: '#1a4a5e' }}
+        className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 active:scale-95 transition-all border-2 group"
+        style={{
+          background: 'linear-gradient(135deg, #7f1d1d, #991b1b)',
+          borderColor: '#7f1d1d',
+          boxShadow: '0 4px 12px rgba(127,29,29,0.3)',
+        }}
         aria-label="لوحة التحكم"
       >
-        <ShieldCheck className="w-4.5 h-4.5 text-[#e74c3c]" />
+        <ShieldCheck className="w-5 h-5 text-white group-active:scale-90 transition-transform" />
       </button>
     </header>
   );

@@ -6,7 +6,7 @@ import BottomNavigation from './components/BottomNavigation';
 import OrderBuilder from './components/order/OrderBuilder';
 import InventoryBuilder from './components/inventory/InventoryBuilder';
 import OperationalDashboard from './components/dashboard/OperationalDashboard';
-import AccountPage from './components/account/AccountPage';
+import EnhancedAccountPage from './components/account/EnhancedAccountPage';
 import PhoneRegistration from './components/account/PhoneRegistration';
 import LoginPage from './components/account/LoginPage';
 import SupplierDealsPage from './components/deals/supplier/SupplierDealsPage';
@@ -227,7 +227,7 @@ function App() {
                       />
                     </div>
                   ) : mainView === 'account' ? (
-                    <AccountPage
+                    <EnhancedAccountPage
                       session={session}
                       freshLogin={freshLogin}
                       onClose={() => setMainView('marketplace')}
@@ -332,7 +332,7 @@ function App() {
                     />
                   </>
                 ) : mainView === 'account' ? (
-                  <AccountPage
+                  <EnhancedAccountPage
                     session={session}
                     freshLogin={freshLogin}
                     onClose={() => setMainView('marketplace')}
@@ -362,8 +362,14 @@ function App() {
               session={session}
               onOpenAccount={() => openAuth('none')}
               onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
+              onOpenSupplierDeals={() => setModal('supplierDeals')}
+              onOpenBuyerDeals={() => setModal('buyerDeals')}
+              onOpenSupplierInventory={() => setModal('supplierInventory')}
+              onOpenPurchasedInventory={() => setModal('purchasedInventory')}
+              onOpenDashboard={() => setMainView('dashboard')}
+              onLogout={handleLogout}
             />
-            <div className="overflow-y-auto" style={{ height: 'calc(100vh - 57px)' }}>
+            <div className="overflow-y-auto" style={{ height: 'calc(100vh - 65px)' }}>
               <HeroSection />
               <MarketSection
                 onCreateOrder={openOrder}
