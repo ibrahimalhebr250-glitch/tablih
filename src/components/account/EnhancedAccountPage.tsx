@@ -1,5 +1,5 @@
 import type { AppSession } from '../../types/session';
-import OperationsRoom from './OperationsRoom';
+import EnhancedOperationsRoom from './EnhancedOperationsRoom';
 
 interface Props {
   session: AppSession;
@@ -29,7 +29,7 @@ export default function EnhancedAccountPage({
   onCreateOrder
 }: Props) {
   return (
-    <OperationsRoom
+    <EnhancedOperationsRoom
       session={session}
       onClose={onClose}
       onLogout={onLogout}
