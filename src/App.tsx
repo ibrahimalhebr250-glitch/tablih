@@ -14,11 +14,12 @@ import BuyerDealsPage from './components/deals/buyer/BuyerDealsPage';
 import AdminPanel from './components/admin/AdminPanel';
 import AdminLoginSheet, { type AdminStaffData } from './components/admin/AdminLoginSheet';
 import SupplierInventory from './components/inventory/SupplierInventory';
+import PurchasedInventorySheet from './components/account/PurchasedInventorySheet';
 import DesktopSidebar from './components/desktop/DesktopSidebar';
 import DesktopRightPanel from './components/desktop/DesktopRightPanel';
 import MarketSection from './components/market/MarketSection';
 
-type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'account' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory';
+type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'account' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'purchasedInventory';
 
 function App() {
   const { session, loading, register, login, updateProfile, activateRole, logout } = useSession();
@@ -255,6 +256,7 @@ function App() {
           onOpenSupplierDeals={() => setModal('supplierDeals')}
           onOpenBuyerDeals={() => setModal('buyerDeals')}
           onOpenSupplierInventory={() => setModal('supplierInventory')}
+          onOpenPurchasedInventory={() => setModal('purchasedInventory')}
           onExplore={() => { setModal('none'); setFreshLogin(false); pendingSession.current = null; }}
         />
       )}
@@ -320,6 +322,13 @@ function App() {
           phone={session.profile.phone}
           onClose={() => { setModal('none'); dashboardRefresh.current?.(); }}
           onAddInventory={() => setModal('inventoryBuilder')}
+        />
+      )}
+
+      {modal === 'purchasedInventory' && session && (
+        <PurchasedInventorySheet
+          phone={session.profile.phone}
+          onClose={() => { setModal('none'); dashboardRefresh.current?.(); }}
         />
       )}
 

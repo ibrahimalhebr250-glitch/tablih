@@ -25,6 +25,7 @@ interface Props {
   onOpenSupplierDeals?: () => void;
   onOpenBuyerDeals?: () => void;
   onOpenSupplierInventory?: () => void;
+  onOpenPurchasedInventory?: () => void;
   onExplore?: () => void;
 }
 
@@ -307,7 +308,7 @@ function EditableField({
 
 type TabView = 'home' | 'profile' | 'ratings';
 
-export default function AccountPage({ session, freshLogin = false, onClose, onLogout, onUpdateProfile, onOpenSupplierDeals, onOpenBuyerDeals, onOpenSupplierInventory, onExplore }: Props) {
+export default function AccountPage({ session, freshLogin = false, onClose, onLogout, onUpdateProfile, onOpenSupplierDeals, onOpenBuyerDeals, onOpenSupplierInventory, onOpenPurchasedInventory, onExplore }: Props) {
   const [activeTab, setActiveTab] = useState<TabView>('home');
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState(session.profile.display_name ?? '');
@@ -616,7 +617,7 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
                       <ChevronLeft className="w-4 h-4 text-[#c0d5e0] flex-shrink-0" />
                       <div className="flex-1 text-right">
                         <p className="text-[14px] font-black text-[#1a2f3e] mb-0.5">مستودعي السحابي</p>
-                        <p className="text-[10px] text-[#9ab0bf]">مخزون التوريد والمشتريات</p>
+                        <p className="text-[10px] text-[#9ab0bf]">مخزون التوريد</p>
                       </div>
                       <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
                         style={{ background: 'linear-gradient(135deg, #E3F2FD, #BBDEFB)' }}>
@@ -640,6 +641,31 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
                       </div>
                     </button>
                   )}
+                </div>
+              )}
+
+              {/* Buyer purchased inventory */}
+              {isBuyer && onOpenPurchasedInventory && (
+                <div className="space-y-2" dir="rtl">
+                  <div className="flex items-center gap-2 px-1 mb-2">
+                    <div className="flex-1 h-px bg-gradient-to-l from-[#10b981]/20 to-transparent" />
+                    <p className="text-[11px] font-black text-[#10b981]">مخزوني</p>
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
+                  </div>
+                  <button
+                    onClick={() => { onClose(); onOpenPurchasedInventory(); }}
+                    className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-white border-2 border-[#e4f0f5] shadow-sm active:scale-[0.98] transition-all hover:border-[#10b981]/30 hover:shadow-lg"
+                  >
+                    <ChevronLeft className="w-4 h-4 text-[#c0d5e0] flex-shrink-0" />
+                    <div className="flex-1 text-right">
+                      <p className="text-[14px] font-black text-[#1a2f3e] mb-0.5">مشترياتي من المنصة</p>
+                      <p className="text-[10px] text-[#9ab0bf]">مخزون مُشترى من الموردين</p>
+                    </div>
+                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'linear-gradient(135deg, #D1FAE5, #A7F3D0)' }}>
+                      <ShoppingBag className="w-5 h-5 text-[#059669]" />
+                    </div>
+                  </button>
                 </div>
               )}
 
