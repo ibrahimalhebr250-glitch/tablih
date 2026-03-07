@@ -237,6 +237,8 @@ function App() {
                       onOpenBuyerDeals={() => setModal('buyerDeals')}
                       onOpenSupplierInventory={() => setModal('supplierInventory')}
                       onOpenPurchasedInventory={() => setModal('purchasedInventory')}
+                      onAddInventory={openInventory}
+                      onCreateOrder={openOrder}
                     />
                   ) : (
                     <OperationalDashboard
@@ -342,6 +344,8 @@ function App() {
                     onOpenBuyerDeals={() => setModal('buyerDeals')}
                     onOpenSupplierInventory={() => setModal('supplierInventory')}
                     onOpenPurchasedInventory={() => setModal('purchasedInventory')}
+                    onAddInventory={openInventory}
+                    onCreateOrder={openOrder}
                   />
                 ) : (
                   <OperationalDashboard
