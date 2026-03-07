@@ -379,7 +379,11 @@ function App() {
                 onDetailSheetChange={setIsDetailSheetOpen}
               />
               {!isDetailSheetOpen && (
-                <BottomNavigation onAddInventory={openInventory} onCreateOrder={openOrder} />
+                <BottomNavigation
+                  onAddInventory={openInventory}
+                  onCreateOrder={openOrder}
+                  onOpenAccount={() => openAuth('none')}
+                />
               )}
             </div>
           </>
