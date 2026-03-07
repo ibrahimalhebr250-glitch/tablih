@@ -34,6 +34,9 @@ const PERFORMED_BY_LABELS: Record<string, string> = {
 };
 
 export default function OperationsLogTab({ operations, onRefresh }: Props) {
+  console.log('📝 OperationsLogTab - عدد العمليات:', operations.length);
+  console.log('📝 بيانات العمليات:', operations);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [operationFilter, setOperationFilter] = useState<string>('all');
 

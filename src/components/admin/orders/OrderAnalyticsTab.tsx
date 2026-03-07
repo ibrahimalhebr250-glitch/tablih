@@ -7,6 +7,9 @@ interface Props {
 }
 
 export default function OrderAnalyticsTab({ analytics, onRefresh }: Props) {
+  console.log('📊 OrderAnalyticsTab - عدد سجلات التحليلات:', analytics.length);
+  console.log('📊 بيانات التحليلات:', analytics);
+
   const latestAnalytics = analytics[0];
 
   const totalOrders = analytics.reduce((sum, a) => sum + a.total_orders, 0);

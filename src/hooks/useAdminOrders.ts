@@ -236,8 +236,10 @@ export function useAdminOrders() {
         .limit(30);
 
       if (fetchError) throw fetchError;
+      console.log('✅ تم جلب التحليلات:', data?.length || 0, 'سجل');
       setAnalytics(data || []);
     } catch (err: any) {
+      console.error('❌ خطأ في جلب التحليلات:', err.message);
       setError(err.message);
     }
   };
@@ -251,8 +253,10 @@ export function useAdminOrders() {
         .limit(limit);
 
       if (fetchError) throw fetchError;
+      console.log('✅ تم جلب سجل العمليات:', data?.length || 0, 'عملية');
       setOperations(data || []);
     } catch (err: any) {
+      console.error('❌ خطأ في جلب سجل العمليات:', err.message);
       setError(err.message);
     }
   };
