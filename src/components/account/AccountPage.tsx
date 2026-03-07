@@ -25,7 +25,6 @@ interface Props {
   onOpenSupplierDeals?: () => void;
   onOpenBuyerDeals?: () => void;
   onOpenSupplierInventory?: () => void;
-  onOpenBuyerWarehouse?: () => void;
   onExplore?: () => void;
 }
 
@@ -616,12 +615,12 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
                     >
                       <ChevronLeft className="w-4 h-4 text-[#c0d5e0] flex-shrink-0" />
                       <div className="flex-1 text-right">
-                        <p className="text-[14px] font-black text-[#1a2f3e] mb-0.5">مخزوني</p>
-                        <p className="text-[10px] text-[#9ab0bf]">إدارة المخزون المعروض في السوق</p>
+                        <p className="text-[14px] font-black text-[#1a2f3e] mb-0.5">مستودعي السحابي</p>
+                        <p className="text-[10px] text-[#9ab0bf]">مخزون التوريد والمشتريات</p>
                       </div>
                       <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
                         style={{ background: 'linear-gradient(135deg, #E3F2FD, #BBDEFB)' }}>
-                        <ClipboardList className="w-5 h-5 text-[#1565C0]" />
+                        <Warehouse className="w-5 h-5 text-[#1565C0]" />
                       </div>
                     </button>
                   )}
@@ -663,24 +662,6 @@ export default function AccountPage({ session, freshLogin = false, onClose, onLo
                       <div className="flex-1 h-px bg-gradient-to-r from-[#2196F3]/20 to-transparent" />
                     </div>
                   </div>
-
-                  {/* Buyer Warehouse Button */}
-                  {onOpenBuyerWarehouse && (
-                    <button
-                      onClick={() => { onClose(); onOpenBuyerWarehouse(); }}
-                      className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-white border-2 border-[#e4f0f5] shadow-sm active:scale-[0.98] transition-all hover:border-[#10b981]/30 hover:shadow-lg mb-2"
-                    >
-                      <ChevronLeft className="w-4 h-4 text-[#c0d5e0] flex-shrink-0" />
-                      <div className="flex-1 text-right">
-                        <p className="text-[14px] font-black text-[#1a2f3e] mb-0.5">مستودعي السحابي</p>
-                        <p className="text-[10px] text-[#9ab0bf]">المخزون المشترى من الموردين</p>
-                      </div>
-                      <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg, #D1FAE5, #A7F3D0)' }}>
-                        <Warehouse className="w-5 h-5 text-[#10b981]" />
-                      </div>
-                    </button>
-                  )}
 
                   <div className="bg-white rounded-2xl border-2 border-[#e4f0f5] shadow-sm overflow-hidden">
                     {ordersLoading ? (
