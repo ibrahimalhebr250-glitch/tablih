@@ -135,6 +135,16 @@ function BuyerNegotiationRequests({ phone }: { phone: string }) {
                 <p className="text-[11px] text-green-700">وافق المورد! توجّه إلى <span className="font-black">صفقاتي</span> لمتابعة الصفقة.</p>
               </div>
             )}
+
+            {req.status === 'deal_created' && (
+              <div
+                className="rounded-xl p-2.5 flex items-center gap-2"
+                style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}
+              >
+                <Handshake className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                <p className="text-[11px] text-blue-700">الصفقة أُنشئت! توجّه إلى <span className="font-black">صفقاتي</span> لمتابعة التسليم.</p>
+              </div>
+            )}
           </div>
         );
       })}
