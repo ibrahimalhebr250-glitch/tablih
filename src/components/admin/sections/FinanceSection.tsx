@@ -1,13 +1,15 @@
 import { useState, useCallback } from 'react';
-import { LayoutDashboard, Receipt, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Receipt, BarChart3, FileText } from 'lucide-react';
 import type { FinanceTab } from '../../../types/admin';
 import EnhancedFinancialOverview from '../finance/EnhancedFinancialOverview';
 import EnhancedCommissionCollection from '../finance/EnhancedCommissionCollection';
 import SupplierFinancialProfile from '../finance/SupplierFinancialProfile';
 import EnhancedMarketStatistics from '../finance/EnhancedMarketStatistics';
+import InvoicesTab from '../finance/InvoicesTab';
 
 const navItems: { id: FinanceTab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'نظرة عامة', icon: LayoutDashboard },
+  { id: 'invoices', label: 'الفواتير', icon: FileText },
   { id: 'commissions', label: 'تحصيل العمولات', icon: Receipt },
   { id: 'market_stats', label: 'إحصائيات السوق', icon: BarChart3 },
 ];
@@ -53,6 +55,8 @@ export default function FinanceSection() {
       )}
 
       {activeTab === 'dashboard' && <EnhancedFinancialOverview />}
+
+      {activeTab === 'invoices' && <InvoicesTab />}
 
       {activeTab === 'commissions' && <EnhancedCommissionCollection onViewSupplier={handleViewSupplier} />}
 

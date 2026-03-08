@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { Settings, Clock } from 'lucide-react';
+import { Settings, Clock, Globe } from 'lucide-react';
 import EnhancedGeneralSettings from '../settings/EnhancedGeneralSettings';
 import SessionSettings from '../settings/SessionSettings';
+import LanguageSettings from '../settings/LanguageSettings';
 
-type Tab = 'general' | 'sessions';
+type Tab = 'general' | 'sessions' | 'languages';
 
 export default function SettingsSection() {
   const [activeTab, setActiveTab] = useState<Tab>('general');
 
   const tabs = [
     { id: 'general' as Tab, label: 'الإعدادات العامة', icon: Settings },
+    { id: 'languages' as Tab, label: 'اللغات المتعددة', icon: Globe },
     { id: 'sessions' as Tab, label: 'إدارة الجلسات', icon: Clock },
   ];
 
@@ -38,6 +40,7 @@ export default function SettingsSection() {
       </div>
 
       {activeTab === 'general' && <EnhancedGeneralSettings />}
+      {activeTab === 'languages' && <LanguageSettings />}
       {activeTab === 'sessions' && <SessionSettings />}
     </div>
   );

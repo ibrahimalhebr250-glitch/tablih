@@ -1,8 +1,8 @@
-export type AdminSection = 'dashboard' | 'matching' | 'inventory' | 'market' | 'orders' | 'deals' | 'finance' | 'users' | 'ratings' | 'comments' | 'buyer_inventory' | 'settings';
+export type AdminSection = 'dashboard' | 'analytics' | 'matching' | 'inventory' | 'market' | 'orders' | 'deals' | 'finance' | 'users' | 'ratings' | 'comments' | 'buyer_inventory' | 'settings';
 
 export type MarketTab = 'cities' | 'inventory' | 'requests';
 export type InventoryTab = 'published' | 'drafts' | 'settings' | 'types' | 'sizes' | 'quality' | 'conditions' | 'operations';
-export type FinanceTab = 'dashboard' | 'commissions' | 'supplier_profile' | 'market_stats';
+export type FinanceTab = 'dashboard' | 'invoices' | 'commissions' | 'supplier_profile' | 'market_stats';
 export type CommissionTab = 'due' | 'overdue' | 'settled';
 export type SettingsTab = 'general';
 export type UsersTab = 'users' | 'analytics' | 'staff' | 'roles';
