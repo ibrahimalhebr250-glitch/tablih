@@ -8,6 +8,7 @@ import {
   Warehouse,
   ShoppingCart,
   Camera,
+  Pencil,
 } from 'lucide-react';
 import type { AppSession } from '../../types/session';
 import { supabase } from '../../lib/supabase';
@@ -17,6 +18,7 @@ import CloudWarehouseTab from './tabs/CloudWarehouseTab';
 import DealsTab from './tabs/DealsTab';
 import MyOrdersTab from './tabs/MyOrdersTab';
 import SettingsTab from './tabs/SettingsTab';
+import AccountEditSheet from './AccountEditSheet';
 
 type AccountTab = 'warehouse' | 'deals' | 'orders' | 'settings';
 
@@ -46,13 +48,15 @@ const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Cloud }[] = [
 export default function AccountPage({ session, onClose, onAddInventory, onCreateOrder, onLogout }: Props) {
   const [activeTab, setActiveTab] = useState<AccountTab>('warehouse');
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [showEditSheet, setShowEditSheet] = useState(false);
+  const [localSession, setLocalSession] = useState(session);
   const [stats, setStats] = useState({ inventory: 0, purchases: 0, activeDeals: 0, orders: 0 });
 
-  const isCompany = session.profile.user_type === 'company';
+  const isCompany = localSession.profile.user_type === 'company';
   const displayName = isCompany
-    ? (session.profile.company_name || 'مستخدم')
-    : (session.profile.display_name || 'مستخدم');
-  const initials = displayName.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('');
+    ? (localSession.profile.company_name || 'مستخدم')
+    : (localSession.profile.display_name || 'مستخدم');
+  const initials = displayName.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const trustConfig = getTrustConfig(3);
   const TrustIcon = trustConfig.icon;
 
@@ -85,16 +89,38 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
     fetchData();
   }, [session.profile.phone]);
 
+  const handleEditSaved = (updates: {
+    display_name?: string;
+    company_name?: string;
+    city?: string;
+    activity_type?: string;
+    profile_image_url?: string | null;
+  }) => {
+    if (updates.profile_image_url !== undefined) {
+      setProfileImageUrl(updates.profile_image_url);
+    }
+    setLocalSession(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        display_name: updates.display_name ?? prev.profile.display_name,
+        company_name: updates.company_name ?? prev.profile.company_name,
+        city: updates.city ?? prev.profile.city,
+        activity_type: updates.activity_type ?? prev.profile.activity_type,
+      },
+    }));
+  };
+
   const renderTab = () => {
     switch (activeTab) {
       case 'warehouse':
-        return <CloudWarehouseTab phone={session.profile.phone} onAddInventory={onAddInventory} onAddInventoryWithPrefill={onAddInventory} />;
+        return <CloudWarehouseTab phone={localSession.profile.phone} onAddInventory={onAddInventory} onAddInventoryWithPrefill={onAddInventory} />;
       case 'deals':
-        return <DealsTab phone={session.profile.phone} />;
+        return <DealsTab phone={localSession.profile.phone} />;
       case 'orders':
-        return <MyOrdersTab phone={session.profile.phone} onCreateOrder={onCreateOrder} onGoToDeals={() => setActiveTab('deals')} onGoToWarehouse={() => setActiveTab('warehouse')} />;
+        return <MyOrdersTab phone={localSession.profile.phone} onCreateOrder={onCreateOrder} onGoToDeals={() => setActiveTab('deals')} onGoToWarehouse={() => setActiveTab('warehouse')} />;
       case 'settings':
-        return <SettingsTab session={session} onLogout={onLogout} />;
+        return <SettingsTab session={localSession} onLogout={onLogout} />;
       default:
         return null;
     }
@@ -102,12 +128,19 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: 'linear-gradient(180deg, #e8eff5 0%, #dce6ef 50%, #d0dce8 100%)' }}>
+      {showEditSheet && (
+        <AccountEditSheet
+          session={localSession}
+          profileImageUrl={profileImageUrl}
+          onClose={() => setShowEditSheet(false)}
+          onSaved={handleEditSaved}
+        />
+      )}
+
       {/* Header */}
       <header
         className="flex-shrink-0 relative overflow-hidden"
-        style={{
-          background: 'linear-gradient(135deg, #0f2535 0%, #1a4a5e 50%, #1e5c75 100%)',
-        }}
+        style={{ background: 'linear-gradient(135deg, #0f2535 0%, #1a4a5e 50%, #1e5c75 100%)' }}
       >
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-40 h-40 rounded-full" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
@@ -123,13 +156,19 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
               <ArrowRight className="w-5 h-5 text-white" />
             </button>
             <h1 className="text-[16px] font-bold text-white">حسابي</h1>
-            <div className="w-10" />
+            <button
+              onClick={() => setShowEditSheet(true)}
+              className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center active:scale-95 transition-transform backdrop-blur-sm border border-white/10"
+            >
+              <Pencil className="w-4 h-4 text-white" />
+            </button>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div
-                className="w-[68px] h-[68px] rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center"
+              <button
+                onClick={() => setShowEditSheet(true)}
+                className="w-[68px] h-[68px] rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center active:scale-95 transition-transform"
                 style={{
                   background: profileImageUrl ? 'transparent' : 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
                   border: '3px solid rgba(255,255,255,0.25)',
@@ -141,9 +180,10 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
                 ) : (
                   <span className="text-[22px] font-black text-white">{initials}</span>
                 )}
-              </div>
+              </button>
               <button
-                className="absolute -bottom-1 -left-1 w-7 h-7 rounded-lg flex items-center justify-center border-2 border-[#1a4a5e]"
+                onClick={() => setShowEditSheet(true)}
+                className="absolute -bottom-1 -left-1 w-7 h-7 rounded-lg flex items-center justify-center border-2 border-[#1a4a5e] active:scale-95 transition-transform"
                 style={{ background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', boxShadow: '0 2px 8px rgba(14,165,233,0.3)' }}
               >
                 <Camera className="w-3.5 h-3.5 text-white" />
@@ -157,20 +197,25 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
             </div>
 
             <div className="flex-1 min-w-0">
-              <h2 className="text-[18px] font-bold text-white truncate">{displayName}</h2>
-              <p className="text-[12px] text-white/50 mt-0.5" dir="ltr">{session.profile.phone}</p>
+              <div className="flex items-center gap-2">
+                <h2 className="text-[18px] font-bold text-white truncate">{displayName}</h2>
+              </div>
+              <p className="text-[12px] text-white/50 mt-0.5" dir="ltr">{localSession.profile.phone}</p>
               <div className="flex items-center gap-2 mt-2">
-                {session.roles.includes('supplier') && (
+                {localSession.roles.includes('supplier') && (
                   <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg" style={{ background: 'rgba(34,197,94,0.2)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)' }}>
                     <Warehouse className="w-3 h-3 inline-block ml-1" />
                     مورّد
                   </span>
                 )}
-                {session.roles.includes('buyer') && (
+                {localSession.roles.includes('buyer') && (
                   <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg" style={{ background: 'rgba(59,130,246,0.2)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.3)' }}>
                     <ShoppingCart className="w-3 h-3 inline-block ml-1" />
                     مشتري
                   </span>
+                )}
+                {localSession.profile.city && (
+                  <span className="text-[10px] text-white/40">{localSession.profile.city}</span>
                 )}
               </div>
             </div>
