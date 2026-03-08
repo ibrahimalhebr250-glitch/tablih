@@ -20,10 +20,18 @@ import SettingsTab from './tabs/SettingsTab';
 
 type AccountTab = 'warehouse' | 'deals' | 'orders' | 'settings';
 
+interface InventoryPrefill {
+  pallet_type?: string;
+  size?: string;
+  quality?: string;
+  quantity?: number;
+  city?: string;
+}
+
 interface Props {
   session: AppSession;
   onClose: () => void;
-  onAddInventory: () => void;
+  onAddInventory: (prefill?: InventoryPrefill, source?: 'supplier_added' | 'purchase_transfer') => void;
   onCreateOrder: () => void;
   onLogout: () => void;
 }
@@ -80,7 +88,7 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
   const renderTab = () => {
     switch (activeTab) {
       case 'warehouse':
-        return <CloudWarehouseTab phone={session.profile.phone} onAddInventory={onAddInventory} />;
+        return <CloudWarehouseTab phone={session.profile.phone} onAddInventory={onAddInventory} onAddInventoryWithPrefill={onAddInventory} />;
       case 'deals':
         return <DealsTab phone={session.profile.phone} />;
       case 'orders':

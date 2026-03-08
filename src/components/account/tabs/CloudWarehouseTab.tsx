@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Warehouse,
   ShoppingBag,
@@ -9,6 +9,14 @@ import {
   CloudOff,
   Package,
   ArrowUpFromLine,
+  MapPin,
+  Ruler,
+  Minus,
+  X,
+  Check,
+  Calendar,
+  Image as ImageIcon,
+  AlertCircle,
 } from 'lucide-react';
 import { useMyInventory } from '../../../hooks/useMyInventory';
 import type { InventoryFilter, MyInventoryItem } from '../../../hooks/useMyInventory';
@@ -18,21 +26,39 @@ import { supabase } from '../../../lib/supabase';
 
 type SubTab = 'inventory' | 'purchases';
 
-interface BuyerPurchase {
+interface BuyerPurchaseItem {
   id: string;
+  buyer_phone: string;
+  original_deal_id: string;
   pallet_type: string;
   size: string;
   quality: string;
+  condition: string | null;
   quantity: number;
-  total_cost: number;
+  quantity_available: number;
+  unit_price: number;
+  total_paid: number;
+  original_supplier_phone: string;
+  original_supplier_name: string | null;
   city: string;
+  images: string[] | null;
+  description: string | null;
+  acquired_at: string;
   created_at: string;
-  supplier_phone: string;
+}
+
+interface InventoryPrefill {
+  pallet_type?: string;
+  size?: string;
+  quality?: string;
+  quantity?: number;
+  city?: string;
 }
 
 interface Props {
   phone: string;
   onAddInventory: () => void;
+  onAddInventoryWithPrefill?: (prefill?: InventoryPrefill, source?: 'supplier_added' | 'purchase_transfer') => void;
 }
 
 const FILTER_CONFIG: { key: InventoryFilter; label: string; color: string; icon: typeof Eye }[] = [
@@ -42,27 +68,53 @@ const FILTER_CONFIG: { key: InventoryFilter; label: string; color: string; icon:
   { key: 'in_deal', label: 'قيد الصفقة', color: '#d97706', icon: Clock },
 ];
 
-export default function CloudWarehouseTab({ phone, onAddInventory }: Props) {
+const QUALITY_STYLE: Record<string, { label: string; color: string; bg: string }> = {
+  A: { label: 'ممتازة', color: '#059669', bg: '#ECFDF5' },
+  B: { label: 'جيدة', color: '#0369a1', bg: '#EFF6FF' },
+  C: { label: 'مقبولة', color: '#b45309', bg: '#FFFBEB' },
+  Scrap: { label: 'خردة', color: '#6b7280', bg: '#F3F4F6' },
+};
+
+const CONDITION_LABELS: Record<string, string> = {
+  new: 'جديدة',
+  used: 'مستعملة',
+  repairable: 'قابلة للإصلاح',
+};
+
+export default function CloudWarehouseTab({ phone, onAddInventory, onAddInventoryWithPrefill }: Props) {
   const [subTab, setSubTab] = useState<SubTab>('inventory');
-  const [purchases, setPurchases] = useState<BuyerPurchase[]>([]);
+  const [purchases, setPurchases] = useState<BuyerPurchaseItem[]>([]);
   const [loadingPurch, setLoadingPurch] = useState(true);
 
   const inventory = useMyInventory(phone);
   const counts = inventory.getCounts();
 
-  useEffect(() => {
-    const fetchPurchases = async () => {
-      setLoadingPurch(true);
-      const { data } = await supabase
-        .from('buyer_inventory')
-        .select('*')
-        .eq('buyer_phone', phone)
-        .order('created_at', { ascending: false });
-      setPurchases(data || []);
-      setLoadingPurch(false);
-    };
-    fetchPurchases();
+  const fetchPurchases = useCallback(async () => {
+    setLoadingPurch(true);
+    const { data } = await supabase
+      .from('buyer_inventory')
+      .select('*')
+      .eq('buyer_phone', phone)
+      .order('created_at', { ascending: false });
+    setPurchases((data as BuyerPurchaseItem[]) || []);
+    setLoadingPurch(false);
   }, [phone]);
+
+  useEffect(() => {
+    fetchPurchases();
+
+    const channel = supabase
+      .channel('buyer_purchases_live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'buyer_inventory', filter: `buyer_phone=eq.${phone}` }, () => {
+        fetchPurchases();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchPurchases, phone]);
+
+  const purchasesWithAvailable = purchases.filter(p => p.quantity_available > 0);
+  const totalAvailablePallets = purchases.reduce((s, p) => s + (p.quantity_available || 0), 0);
 
   return (
     <div className="space-y-4" dir="rtl">
@@ -95,11 +147,11 @@ export default function CloudWarehouseTab({ phone, onAddInventory }: Props) {
         >
           <ShoppingBag className="w-4 h-4" />
           مشترياتي
-          {purchases.length > 0 && (
+          {purchasesWithAvailable.length > 0 && (
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
               subTab === 'purchases' ? 'bg-[#0369a1] text-white' : 'bg-gray-200 text-gray-500'
             }`}>
-              {purchases.length}
+              {purchasesWithAvailable.length}
             </span>
           )}
         </button>
@@ -108,7 +160,27 @@ export default function CloudWarehouseTab({ phone, onAddInventory }: Props) {
       {subTab === 'inventory' ? (
         <MyInventorySection inventory={inventory} counts={counts} onAddInventory={onAddInventory} />
       ) : (
-        <PurchasesSubTab purchases={purchases} loading={loadingPurch} />
+        <PurchasesSubTab
+          purchases={purchases}
+          loading={loadingPurch}
+          totalAvailable={totalAvailablePallets}
+          onWithdrawToInventory={(item, qty) => {
+            if (onAddInventoryWithPrefill) {
+              onAddInventoryWithPrefill(
+                {
+                  pallet_type: item.pallet_type,
+                  size: item.size,
+                  quality: item.quality,
+                  quantity: qty,
+                  city: item.city,
+                },
+                'purchase_transfer'
+              );
+            }
+          }}
+          onRefresh={fetchPurchases}
+          buyerPhone={phone}
+        />
       )}
     </div>
   );
@@ -163,7 +235,6 @@ function MyInventorySection({
         {FILTER_CONFIG.map(f => {
           const count = getCount(f.key);
           const isActive = filter === f.key;
-          const Icon = f.icon;
           return (
             <button
               key={f.key}
@@ -300,17 +371,41 @@ function EmptyInventory({ onAddInventory }: { onAddInventory: () => void }) {
   );
 }
 
-function PurchasesSubTab({ purchases, loading }: { purchases: BuyerPurchase[]; loading: boolean }) {
+function PurchasesSubTab({
+  purchases,
+  loading,
+  totalAvailable,
+  onWithdrawToInventory,
+  onRefresh,
+  buyerPhone,
+}: {
+  purchases: BuyerPurchaseItem[];
+  loading: boolean;
+  totalAvailable: number;
+  onWithdrawToInventory: (item: BuyerPurchaseItem, qty: number) => void;
+  onRefresh: () => void;
+  buyerPhone: string;
+}) {
+  const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
+  const [withdrawQty, setWithdrawQty] = useState(0);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawError, setWithdrawError] = useState('');
+  const [withdrawSuccess, setWithdrawSuccess] = useState('');
+
   if (loading) {
     return (
       <div className="space-y-3">
         {[1, 2, 3].map(i => (
           <div key={i} className="bg-white/60 rounded-2xl p-4 animate-pulse">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gray-200" />
-              <div className="flex-1 space-y-2">
-                <div className="h-3 bg-gray-200 rounded w-2/3" />
-                <div className="h-2 bg-gray-200 rounded w-1/2" />
+              <div className="w-[72px] h-[72px] rounded-xl bg-gray-200" />
+              <div className="flex-1 space-y-2.5">
+                <div className="h-4 bg-gray-200 rounded w-2/3" />
+                <div className="h-3 bg-gray-200 rounded w-1/3" />
+                <div className="flex gap-2">
+                  <div className="h-3 bg-gray-200 rounded w-20" />
+                  <div className="h-3 bg-gray-200 rounded w-14" />
+                </div>
               </div>
             </div>
           </div>
@@ -333,46 +428,289 @@ function PurchasesSubTab({ purchases, loading }: { purchases: BuyerPurchase[]; l
         </div>
         <h3 className="text-[15px] font-bold text-[#1a3a4a] mb-1.5">لا توجد مشتريات بعد</h3>
         <p className="text-[12px] text-[#7a9aab] leading-relaxed max-w-[240px] mx-auto">
-          عند اكتمال صفقاتك ستظهر مشترياتك هنا ويمكنك إدارتها
+          عند اكتمال صفقاتك ستظهر مشترياتك هنا ويمكنك سحبها إلى مخزونك للبيع
         </p>
       </div>
     );
   }
 
+  const handleWithdrawStart = (item: BuyerPurchaseItem) => {
+    setWithdrawingId(item.id);
+    setWithdrawQty(Math.min(100, item.quantity_available));
+    setWithdrawError('');
+    setWithdrawSuccess('');
+  };
+
+  const handleWithdrawConfirm = async (item: BuyerPurchaseItem) => {
+    if (withdrawQty <= 0) {
+      setWithdrawError('يجب تحديد كمية أكبر من صفر');
+      return;
+    }
+    if (withdrawQty > item.quantity_available) {
+      setWithdrawError(`الكمية المتاحة ${item.quantity_available.toLocaleString('ar-SA')} فقط`);
+      return;
+    }
+
+    setWithdrawing(true);
+    setWithdrawError('');
+
+    try {
+      const { data, error } = await supabase.rpc('withdraw_buyer_inventory_quantity', {
+        p_inventory_id: item.id,
+        p_quantity_to_withdraw: withdrawQty,
+        p_buyer_phone: buyerPhone,
+      });
+
+      if (error) throw error;
+
+      const result = data && typeof data === 'object' ? data : null;
+      if (result?.success === false) throw new Error(result.error);
+
+      setWithdrawSuccess(`تم سحب ${withdrawQty.toLocaleString('ar-SA')} طبلية بنجاح`);
+
+      setTimeout(() => {
+        setWithdrawingId(null);
+        setWithdrawSuccess('');
+        onWithdrawToInventory(item, withdrawQty);
+        onRefresh();
+      }, 800);
+    } catch (err: any) {
+      setWithdrawError(err.message || 'حدث خطأ أثناء السحب');
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
   return (
-    <div className="space-y-2">
-      {purchases.map(purchase => (
+    <div className="space-y-3">
+      {totalAvailable > 0 && (
         <div
-          key={purchase.id}
-          className="bg-white rounded-2xl p-4"
-          style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.04)' }}
+          className="flex items-center justify-between px-4 py-3 rounded-xl"
+          style={{ background: 'linear-gradient(135deg, rgba(3,105,161,0.06) 0%, rgba(3,105,161,0.03) 100%)', border: '1px solid rgba(3,105,161,0.1)' }}
         >
-          <div className="flex items-start gap-3">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', border: '1px solid #bfdbfe' }}
-            >
-              <ShoppingBag className="w-5 h-5 text-[#0369a1]" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-bold text-[#1a3a4a]">{purchase.pallet_type} - {purchase.size}</p>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-[10px] text-[#7a9aab]">{purchase.city}</span>
-                <span className="text-[12px] font-bold text-[#0369a1]">{purchase.quantity.toLocaleString('ar-SA')} طبلية</span>
+          <div className="flex items-center gap-2">
+            <ShoppingBag className="w-4 h-4 text-[#0369a1]" />
+            <span className="text-[12px] font-bold text-[#0369a1]">إجمالي المتاح للسحب</span>
+          </div>
+          <span className="text-[16px] font-black text-[#0369a1]">
+            {totalAvailable.toLocaleString('ar-SA')} <span className="text-[10px] font-normal text-[#0369a1]/60">طبلية</span>
+          </span>
+        </div>
+      )}
+
+      {purchases.map(item => {
+        const quality = QUALITY_STYLE[item.quality] || QUALITY_STYLE.B;
+        const condition = CONDITION_LABELS[item.condition || 'used'] || item.condition || '-';
+        const hasAvailable = item.quantity_available > 0;
+        const isWithdrawOpen = withdrawingId === item.id;
+        const acquiredDate = new Date(item.acquired_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
+        const primaryImage = Array.isArray(item.images) && item.images.length > 0
+          ? (typeof item.images[0] === 'string' ? item.images[0] : (item.images[0] as any)?.url)
+          : null;
+
+        return (
+          <div
+            key={item.id}
+            className="bg-white rounded-2xl overflow-hidden transition-all"
+            style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.05), 0 0 1px rgba(0,0,0,0.08)' }}
+          >
+            <div className="flex gap-3.5 p-3.5">
+              <div className="w-[72px] h-[72px] rounded-xl overflow-hidden flex-shrink-0 relative">
+                {primaryImage ? (
+                  <img src={primaryImage} alt="" className="w-full h-full object-cover" loading="lazy" />
+                ) : (
+                  <div
+                    className="w-full h-full flex items-center justify-center"
+                    style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' }}
+                  >
+                    <Package className="w-7 h-7 text-[#93c5fd]" />
+                  </div>
+                )}
+                {Array.isArray(item.images) && item.images.length > 1 && (
+                  <div className="absolute bottom-1 left-1 flex items-center gap-0.5 bg-black/50 backdrop-blur-sm rounded px-1.5 py-0.5">
+                    <ImageIcon className="w-2.5 h-2.5 text-white" />
+                    <span className="text-[8px] font-bold text-white">{item.images.length}</span>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
-                <button className="flex items-center gap-1 text-[10px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-1 rounded-lg">
-                  <ArrowUpFromLine className="w-3 h-3" />
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-[14px] font-bold text-[#1a3a4a] truncate">{item.pallet_type}</h3>
+                  <span
+                    className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      background: hasAvailable ? '#EFF6FF' : '#F3F4F6',
+                      color: hasAvailable ? '#0369a1' : '#9ca3af',
+                      border: `1px solid ${hasAvailable ? '#BFDBFE' : '#E5E7EB'}`,
+                    }}
+                  >
+                    <ShoppingBag className="w-3 h-3" />
+                    {hasAvailable ? 'متاح للسحب' : 'تم سحب الكل'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                  <span
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: quality.bg, color: quality.color }}
+                  >
+                    {quality.label}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-50 text-[#5a7a8a] font-semibold">
+                    {condition}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 text-[11px]">
+                  <div className="flex items-center gap-1 text-[#1565C0]">
+                    <MapPin className="w-3 h-3" />
+                    <span className="font-semibold">{item.city}</span>
+                  </div>
+                  <span className="text-gray-300">|</span>
+                  <div className="flex items-center gap-1 text-[#5a7a8a]">
+                    <Ruler className="w-3 h-3" />
+                    <span>{item.size}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[13px] font-bold text-[#0369a1]">
+                      {(item.quantity_available || 0).toLocaleString('ar-SA')} <span className="text-[10px] font-normal text-[#7a9aab]">متاح</span>
+                    </span>
+                    {item.quantity !== item.quantity_available && (
+                      <span className="text-[10px] text-[#b0c4d0]">
+                        من {item.quantity.toLocaleString('ar-SA')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px] text-[#b0c4d0]">
+                    <Calendar className="w-3 h-3" />
+                    {acquiredDate}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {isWithdrawOpen && (
+              <div className="px-3.5 pb-3">
+                <div className="rounded-xl border border-[#0369a1]/15 p-3" style={{ background: 'linear-gradient(135deg, #f0f7ff 0%, #e8f2ff 100%)' }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-[12px] font-bold text-[#0369a1]">تحديد كمية السحب</p>
+                    <button
+                      onClick={() => { setWithdrawingId(null); setWithdrawError(''); }}
+                      className="w-7 h-7 rounded-lg bg-white flex items-center justify-center"
+                    >
+                      <X className="w-3.5 h-3.5 text-gray-400" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-1 flex-1 bg-white rounded-xl border border-[#0369a1]/20 px-2">
+                      <button
+                        onClick={() => setWithdrawQty(Math.max(1, withdrawQty - 100))}
+                        className="w-9 h-9 flex items-center justify-center text-[#0369a1]"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <input
+                        type="number"
+                        value={withdrawQty}
+                        onChange={(e) => setWithdrawQty(Math.max(1, Math.min(item.quantity_available, parseInt(e.target.value, 10) || 0)))}
+                        className="flex-1 text-center py-2 text-[15px] font-bold text-[#0369a1] bg-transparent outline-none"
+                        min={1}
+                        max={item.quantity_available}
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => setWithdrawQty(Math.min(item.quantity_available, withdrawQty + 100))}
+                        className="w-9 h-9 flex items-center justify-center text-[#0369a1]"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] text-[#7a9aab]">المتاح: {item.quantity_available.toLocaleString('ar-SA')}</span>
+                    <div className="flex gap-1.5">
+                      {[100, 500, item.quantity_available].map((q, i) => {
+                        if (q > item.quantity_available) return null;
+                        const label = i === 2 ? 'الكل' : q.toLocaleString('ar-SA');
+                        return (
+                          <button
+                            key={q + '-' + i}
+                            onClick={() => setWithdrawQty(q)}
+                            className="px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all"
+                            style={withdrawQty === q
+                              ? { background: '#0369a1', color: 'white' }
+                              : { background: 'white', color: '#0369a1', border: '1px solid #BFDBFE' }
+                            }
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {withdrawError && (
+                    <div className="flex items-center gap-1.5 mb-2 text-[11px] text-red-600 bg-red-50 rounded-lg px-3 py-2">
+                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                      {withdrawError}
+                    </div>
+                  )}
+
+                  {withdrawSuccess && (
+                    <div className="flex items-center gap-1.5 mb-2 text-[11px] text-[#059669] bg-green-50 rounded-lg px-3 py-2">
+                      <Check className="w-3.5 h-3.5 flex-shrink-0" />
+                      {withdrawSuccess}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => handleWithdrawConfirm(item)}
+                    disabled={withdrawing || withdrawQty <= 0 || !!withdrawSuccess}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold text-white active:scale-[0.98] transition-transform disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, #059669, #047857)', boxShadow: '0 3px 10px rgba(5,150,105,0.25)' }}
+                  >
+                    {withdrawing ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <ArrowUpFromLine className="w-4 h-4" />
+                        سحب {withdrawQty.toLocaleString('ar-SA')} طبلية إلى مخزوني
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {hasAvailable && !isWithdrawOpen && (
+              <div className="border-t border-gray-100">
+                <button
+                  onClick={() => handleWithdrawStart(item)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 text-[12px] font-bold text-[#059669] hover:bg-green-50/50 transition-colors active:scale-[0.98]"
+                >
+                  <ArrowUpFromLine className="w-3.5 h-3.5" />
                   سحب إلى مخزوني
                 </button>
-                <span className="text-[9px] text-[#b0c4d0]">
-                  {new Date(purchase.created_at).toLocaleDateString('ar-SA')}
-                </span>
               </div>
-            </div>
+            )}
+
+            {!hasAvailable && (
+              <div className="border-t border-gray-100 px-4 py-2.5">
+                <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
+                  <Check className="w-3.5 h-3.5" />
+                  تم سحب الكمية بالكامل إلى مخزونك
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

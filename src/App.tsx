@@ -55,6 +55,8 @@ function App() {
   const pendingSession = useRef<import('./types/session').AppSession | null>(null);
   const [isDetailSheetOpen, setIsDetailSheetOpen] = useState(false);
   const [adminStaff, setAdminStaff] = useState<AdminStaffData | null>(null);
+  const [inventoryPrefill, setInventoryPrefill] = useState<{ pallet_type?: string; size?: string; quality?: string; quantity?: number; city?: string } | undefined>();
+  const [inventorySource, setInventorySource] = useState<'supplier_added' | 'purchase_transfer'>('supplier_added');
 
   useEffect(() => {
     const storedAdminData = sessionStorage.getItem('adminStaffData');
@@ -71,7 +73,11 @@ function App() {
     return <LoadingFallback />;
   }
 
-  const openInventory = () => setModal('inventoryBuilder');
+  const openInventory = (prefill?: { pallet_type?: string; size?: string; quality?: string; quantity?: number; city?: string }, source?: 'supplier_added' | 'purchase_transfer') => {
+    setInventoryPrefill(prefill);
+    setInventorySource(source || 'supplier_added');
+    setModal('inventoryBuilder');
+  };
   const openOrder = () => setModal('orderBuilder');
 
   const handleRegisterComplete = async (data: { phone: string; name: string; userType: 'company' | 'individual'; pin: string }) => {
@@ -384,12 +390,14 @@ function App() {
 
         {modal === 'inventoryBuilder' && (
           <InventoryBuilder
-            onClose={() => { setModal('none'); setAuthError(''); dashboardRefresh.current?.(); }}
+            onClose={() => { setModal('none'); setAuthError(''); setInventoryPrefill(undefined); setInventorySource('supplier_added'); dashboardRefresh.current?.(); }}
             phone={session?.profile.phone}
             onDepositComplete={() => activateRole('supplier')}
             authError={authError}
             onRegisterComplete={async (data) => { await handleInlineRegister(data); await activateRole('supplier'); }}
             onLoginComplete={async (phone, pin) => { await handleInlineLogin(phone, pin); await activateRole('supplier'); }}
+            prefillOpportunity={inventoryPrefill}
+            inventorySource={inventorySource}
           />
         )}
 
@@ -461,7 +469,7 @@ function App() {
           <AccountPage
             session={session}
             onClose={() => { setModal('none'); }}
-            onAddInventory={() => setModal('inventoryBuilder')}
+            onAddInventory={openInventory}
             onCreateOrder={() => setModal('orderBuilder')}
             onLogout={handleLogout}
           />
