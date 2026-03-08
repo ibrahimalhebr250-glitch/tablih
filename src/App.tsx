@@ -225,6 +225,7 @@ function App() {
                           onCreateOrder={openOrder}
                           onAddInventory={openInventory}
                           isAuthenticated={true}
+                          userPhone={session?.profile?.phone}
                           onShowAuth={() => openAuth('none')}
                           onDetailSheetChange={setIsDetailSheetOpen}
                           onGoToDeals={() => setModal('buyerDeals')}
@@ -320,6 +321,7 @@ function App() {
                         onCreateOrder={openOrder}
                         onAddInventory={openInventory}
                         isAuthenticated={true}
+                        userPhone={session?.profile?.phone}
                         onShowAuth={() => openAuth('none')}
                         onDetailSheetChange={setIsDetailSheetOpen}
                         onGoToDeals={() => setModal('buyerDeals')}

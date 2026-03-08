@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff, Heart, Star, Home, Handshake, CheckCircle, LogIn, X } from 'lucide-react';
+import { MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff, Heart, Star, Home, Handshake, CheckCircle, LogIn, X, Send, Clock, CheckCircle2, XCircle, MessageSquare } from 'lucide-react';
 import TrustRatingBadge from '../shared/TrustRatingBadge';
 import VisitorRatingDialog from './VisitorRatingDialog';
 import { CommentsSection } from '../shared/CommentsSection';
@@ -132,7 +132,7 @@ function WelcomeMessageDialog({ card, onClose, onLogin }: {
                   يسعدني إتمام الصفقة معك.
                 </p>
                 <p className="text-[13px] text-[#1a3a4a] leading-relaxed mt-1">
-                  يرجى تسجيل الدخول للمنصة لبدء عقد الصفقة.
+                  يرجى تسجيل الدخول للمنصة لبدء طلب التفاوض.
                 </p>
               </div>
             </div>
@@ -150,7 +150,7 @@ function WelcomeMessageDialog({ card, onClose, onLogin }: {
           >
             <CheckCircle className="w-4 h-4 text-[#1d4ed8] flex-shrink-0 mt-0.5" />
             <p className="text-[11px] text-[#1e40af] leading-relaxed">
-              بعد تسجيل الدخول ستُنشأ الصفقة تلقائياً وستجدها في <span className="font-black">حسابي ← صفقاتي</span>
+              بعد تسجيل الدخول يمكنك إرسال طلب تفاوض للمورد وستُنشأ الصفقة بعد موافقته في <span className="font-black">حسابي ← طلباتي</span>
             </p>
           </div>
 
@@ -163,7 +163,7 @@ function WelcomeMessageDialog({ card, onClose, onLogin }: {
             }}
           >
             <LogIn className="w-5 h-5" />
-            تسجيل الدخول وبدء الصفقة
+            تسجيل الدخول وإرسال طلب التفاوض
           </button>
 
           <button
@@ -179,36 +179,284 @@ function WelcomeMessageDialog({ card, onClose, onLogin }: {
   );
 }
 
+function NegotiationRequestDialog({ card, buyerPhone, existingRequest, onClose, onSent }: {
+  card: SupplyCard;
+  buyerPhone: string;
+  existingRequest: { id: string; status: string; created_at: string; supplier_response?: string } | null;
+  onClose: () => void;
+  onSent: () => void;
+}) {
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSend = async () => {
+    if (loading) return;
+    setLoading(true);
+    setError('');
+    try {
+      const { error: err } = await supabase.from('negotiation_requests').insert({
+        inventory_batch_id: card.id,
+        buyer_phone: buyerPhone,
+        supplier_phone: card.phone,
+        pallet_type: card.pallet_type,
+        size: card.size,
+        quality: card.quality,
+        pallet_condition: card.pallet_condition,
+        available_quantity: card.available_quantity,
+        city: card.city,
+        price_per_pallet: card.price_per_pallet,
+        buyer_message: message.trim() || null,
+        status: 'pending',
+      });
+      if (err) throw err;
+      onSent();
+    } catch {
+      setError('حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const statusConfig = {
+    pending: { label: 'قيد الانتظار', color: '#b45309', bg: '#FFFBEB', icon: <Clock className="w-4 h-4" /> },
+    accepted: { label: 'تم القبول', color: '#059669', bg: '#ECFDF5', icon: <CheckCircle2 className="w-4 h-4" /> },
+    rejected: { label: 'تم الرفض', color: '#dc2626', bg: '#FEF2F2', icon: <XCircle className="w-4 h-4" /> },
+    deal_created: { label: 'تم إنشاء الصفقة', color: '#1d4ed8', bg: '#EFF6FF', icon: <Handshake className="w-4 h-4" /> },
+    cancelled: { label: 'ملغي', color: '#6b7280', bg: '#f3f4f6', icon: <XCircle className="w-4 h-4" /> },
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-end justify-center"
+      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full rounded-t-3xl overflow-hidden"
+        style={{ maxWidth: 480, background: 'white' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="h-1 w-12 rounded-full mx-auto mt-3" style={{ background: '#d1d5db' }} />
+
+        <div className="px-5 pt-4 pb-6 space-y-4" dir="rtl">
+          <div className="flex items-start justify-between">
+            <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
+              <X className="w-3.5 h-3.5 text-gray-500" />
+            </button>
+            <div className="flex items-center gap-2">
+              <div>
+                <p className="text-[15px] font-black text-[#1a3a4a]">طلب التفاوض</p>
+                <p className="text-[11px] text-[#7a9aab]">{card.pallet_type} — {card.city}</p>
+              </div>
+              <div
+                className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg, #059669, #10b981)' }}
+              >
+                <Handshake className="w-5 h-5 text-white" />
+              </div>
+            </div>
+          </div>
+
+          {existingRequest ? (
+            <div className="space-y-3">
+              <div
+                className="rounded-2xl p-4"
+                style={{ background: statusConfig[existingRequest.status as keyof typeof statusConfig]?.bg || '#f3f4f6', border: '1px solid rgba(0,0,0,0.06)' }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span style={{ color: statusConfig[existingRequest.status as keyof typeof statusConfig]?.color || '#6b7280' }}>
+                    {statusConfig[existingRequest.status as keyof typeof statusConfig]?.icon}
+                  </span>
+                  <span className="text-[13px] font-black" style={{ color: statusConfig[existingRequest.status as keyof typeof statusConfig]?.color || '#6b7280' }}>
+                    {statusConfig[existingRequest.status as keyof typeof statusConfig]?.label}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#7a9aab]">أُرسل {timeAgo(existingRequest.created_at)}</p>
+                {existingRequest.supplier_response && (
+                  <div className="mt-3 p-3 rounded-xl" style={{ background: 'white', border: '1px solid rgba(0,0,0,0.06)' }}>
+                    <p className="text-[11px] font-bold text-[#4a6a7e] mb-1">رد المورد:</p>
+                    <p className="text-[12px] text-[#1a3a4a] leading-relaxed">{existingRequest.supplier_response}</p>
+                  </div>
+                )}
+              </div>
+              {existingRequest.status === 'pending' && (
+                <div
+                  className="rounded-2xl p-3.5 flex items-start gap-3"
+                  style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}
+                >
+                  <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-[#92400E] leading-relaxed">
+                    طلبك قيد الانتظار. ستصلك إشعار عند رد المورد. يمكنك متابعة الطلب في <span className="font-black">حسابي ← طلباتي</span>
+                  </p>
+                </div>
+              )}
+              {existingRequest.status === 'accepted' && (
+                <div
+                  className="rounded-2xl p-3.5 flex items-start gap-3"
+                  style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}
+                >
+                  <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-[#065F46] leading-relaxed">
+                    وافق المورد على طلبك! توجّه إلى <span className="font-black">حسابي ← صفقاتي</span> لمتابعة الصفقة.
+                  </p>
+                </div>
+              )}
+              {existingRequest.status === 'rejected' && (
+                <div
+                  className="rounded-2xl p-3.5 flex items-start gap-3"
+                  style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}
+                >
+                  <XCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-[#991B1B] leading-relaxed">
+                    رفض المورد طلبك. يمكنك البحث عن عروض أخرى في السوق.
+                  </p>
+                </div>
+              )}
+              <button
+                onClick={onClose}
+                className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]"
+                style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}
+              >
+                إغلاق
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-2xl p-3.5 space-y-2" style={{ background: '#f8fbfd', border: '1px solid #e2edf5' }}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] font-bold text-[#15803d]">{card.available_quantity} طبلية</span>
+                  <span className="text-[11px] text-[#7a9aab]">الكمية المتاحة</span>
+                </div>
+                {card.price_per_pallet > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-bold text-[#1a3a4a]">{card.price_per_pallet} ريال/طبلية</span>
+                    <span className="text-[11px] text-[#7a9aab]">السعر</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] font-bold text-[#1a3a4a]">{card.city}</span>
+                  <span className="text-[11px] text-[#7a9aab]">المدينة</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">
+                  رسالة للمورد (اختياري)
+                </label>
+                <div className="relative">
+                  <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="أضف ملاحظاتك أو متطلباتك الخاصة..."
+                    rows={3}
+                    maxLength={300}
+                    dir="rtl"
+                    className="w-full rounded-2xl px-4 py-3 text-[13px] text-[#1a3a4a] resize-none outline-none"
+                    style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
+                  />
+                  <span className="absolute bottom-2 left-3 text-[10px] text-[#a0b5c0]">
+                    {message.length}/300
+                  </span>
+                </div>
+              </div>
+
+              {error && (
+                <p className="text-[12px] text-red-600 text-center font-semibold">{error}</p>
+              )}
+
+              <div
+                className="rounded-2xl p-3.5 flex items-start gap-3"
+                style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}
+              >
+                <CheckCircle className="w-4 h-4 text-[#1d4ed8] flex-shrink-0 mt-0.5" />
+                <p className="text-[11px] text-[#1e40af] leading-relaxed">
+                  سيصل طلبك إلى المورد وسيظهر في <span className="font-black">طلباتي</span>. بعد موافقة المورد تُنشأ الصفقة تلقائياً.
+                </p>
+              </div>
+
+              <button
+                onClick={handleSend}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-70"
+                style={{
+                  background: 'linear-gradient(135deg, #059669, #10b981)',
+                  boxShadow: '0 6px 20px rgba(5,150,105,0.3)',
+                }}
+              >
+                {loading ? (
+                  <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+                {loading ? 'جاري الإرسال...' : 'إرسال طلب التفاوض'}
+              </button>
+
+              <button
+                onClick={onClose}
+                className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]"
+                style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}
+              >
+                إلغاء
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   card: SupplyCard;
   onClose: () => void;
   isAuthenticated: boolean;
+  buyerPhone?: string;
   onShowAuthPrompt: () => void;
-  onStartDeal?: (card: SupplyCard) => void;
 }
 
-export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onShowAuthPrompt, onStartDeal }: Props) {
+export default function SupplyDetailSheet({ card, onClose, isAuthenticated, buyerPhone, onShowAuthPrompt }: Props) {
   const [imgIndex, setImgIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
   const [showRatingDialog, setShowRatingDialog] = useState(false);
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
+  const [showNegotiationDialog, setShowNegotiationDialog] = useState(false);
   const [ratingSummary, setRatingSummary] = useState<{ average_rating: number; total_ratings: number } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [existingRequest, setExistingRequest] = useState<{ id: string; status: string; created_at: string; supplier_response?: string } | null>(null);
+  const [requestSent, setRequestSent] = useState(false);
+
+  const isSelf = isAuthenticated && buyerPhone === card.phone;
 
   useEffect(() => {
     loadRatingSummary();
   }, [card.phone]);
 
+  useEffect(() => {
+    if (isAuthenticated && buyerPhone && !isSelf) {
+      loadExistingRequest();
+    }
+  }, [isAuthenticated, buyerPhone, card.id]);
+
   const loadRatingSummary = async () => {
     try {
-      const { data, error } = await supabase.rpc('get_visitor_ratings_summary', {
-        p_user_phone: card.phone
-      });
-      if (error) throw error;
+      const { data } = await supabase.rpc('get_visitor_ratings_summary', { p_user_phone: card.phone });
       setRatingSummary(data);
-    } catch (err) {
-      console.error('Error loading rating summary:', err);
-    }
+    } catch {}
+  };
+
+  const loadExistingRequest = async () => {
+    if (!buyerPhone) return;
+    const { data } = await supabase
+      .from('negotiation_requests')
+      .select('id, status, created_at, supplier_response')
+      .eq('inventory_batch_id', card.id)
+      .eq('buyer_phone', buyerPhone)
+      .neq('status', 'cancelled')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setExistingRequest(data);
   };
 
   const q = QUALITY_COLORS[card.quality] || QUALITY_COLORS.C;
@@ -229,10 +477,10 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
   const handleStartDeal = () => {
     if (!isAuthenticated) {
       setShowWelcomeMessage(true);
+    } else if (isSelf) {
+      return;
     } else {
-      if (onStartDeal) {
-        onStartDeal(card);
-      }
+      setShowNegotiationDialog(true);
     }
   };
 
@@ -241,6 +489,25 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
     onClose();
     onShowAuthPrompt();
   };
+
+  const handleRequestSent = () => {
+    setRequestSent(true);
+    loadExistingRequest();
+  };
+
+  const getButtonState = () => {
+    if (isSelf) return { label: 'عرضك الخاص', disabled: true, color: '#6b7280', bg: '#f3f4f6' };
+    if (!isAuthenticated) return { label: 'بدء الصفقة', disabled: false, color: 'white', bg: 'linear-gradient(135deg, #0369A1, #0284C7)' };
+    if (existingRequest || requestSent) {
+      const status = existingRequest?.status;
+      if (status === 'pending') return { label: 'طلب التفاوض قيد الانتظار', disabled: false, color: 'white', bg: 'linear-gradient(135deg, #b45309, #d97706)' };
+      if (status === 'accepted' || status === 'deal_created') return { label: 'تم القبول — تابع في صفقاتك', disabled: false, color: 'white', bg: 'linear-gradient(135deg, #059669, #10b981)' };
+      if (status === 'rejected') return { label: 'تم الرفض — إرسال طلب جديد', disabled: false, color: 'white', bg: 'linear-gradient(135deg, #dc2626, #ef4444)' };
+    }
+    return { label: 'طلب التفاوض', disabled: false, color: 'white', bg: 'linear-gradient(135deg, #059669, #10b981)' };
+  };
+
+  const btnState = getButtonState();
 
   return (
     <div
@@ -447,6 +714,30 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
               </div>
             )}
 
+            {isAuthenticated && !isSelf && (existingRequest || requestSent) && (
+              <div
+                className="rounded-2xl p-3.5 flex items-start gap-3"
+                style={{
+                  background: existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#ECFDF5' : '#FFFBEB',
+                  border: `1px solid ${existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#A7F3D0' : '#FDE68A'}`,
+                }}
+                dir="rtl"
+              >
+                <MessageSquare className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#059669' : '#b45309' }} />
+                <div>
+                  <p className="text-[12px] font-black" style={{ color: existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#059669' : '#b45309' }}>
+                    {existingRequest?.status === 'pending' && 'طلب تفاوض مرسل — بانتظار رد المورد'}
+                    {(existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created') && 'وافق المورد! الصفقة جارية'}
+                    {existingRequest?.status === 'rejected' && 'رفض المورد طلبك'}
+                    {requestSent && !existingRequest && 'تم إرسال طلب التفاوض'}
+                  </p>
+                  <p className="text-[10px] mt-0.5" style={{ color: existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#065F46' : '#92400E' }}>
+                    تابع التفاصيل في حسابي ← طلباتي
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div
               className="rounded-2xl p-3.5 flex items-start gap-3"
               style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}
@@ -472,27 +763,23 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
           }}
         >
           <button
-            onClick={handleStartDeal}
-            className="w-full relative overflow-hidden group mb-3 rounded-2xl"
+            onClick={btnState.disabled ? undefined : handleStartDeal}
+            disabled={btnState.disabled}
+            className="w-full relative overflow-hidden group mb-3 rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <div
               className="absolute inset-0 rounded-2xl transition-transform duration-300 group-active:scale-95"
-              style={{
-                background: 'linear-gradient(135deg, #0369A1, #0284C7)',
-                boxShadow: '0 6px 20px rgba(3,105,161,0.35)',
-              }}
-            />
-            <div
-              className="absolute inset-0 rounded-2xl opacity-0 group-active:opacity-100 transition-opacity duration-200"
-              style={{ background: 'linear-gradient(135deg, #025e8f, #0272b0)' }}
+              style={{ background: btnState.bg, boxShadow: '0 6px 20px rgba(5,150,105,0.3)' }}
             />
             <div className="relative flex items-center justify-center gap-2.5 py-4">
-              <Handshake className="w-5 h-5 text-white" strokeWidth={2.5} />
-              <span className="text-[15px] font-black text-white">بدء الصفقة</span>
-              <div
-                className="absolute left-3 w-2 h-2 rounded-full animate-pulse"
-                style={{ background: '#bfdbfe', boxShadow: '0 0 8px #60b4e0' }}
-              />
+              <Handshake className="w-5 h-5" style={{ color: btnState.color }} strokeWidth={2.5} />
+              <span className="text-[15px] font-black" style={{ color: btnState.color }}>{btnState.label}</span>
+              {!btnState.disabled && !existingRequest && !requestSent && (
+                <div
+                  className="absolute left-3 w-2 h-2 rounded-full animate-pulse"
+                  style={{ background: '#bfdbfe', boxShadow: '0 0 8px #60b4e0' }}
+                />
+              )}
             </div>
           </button>
 
@@ -565,6 +852,16 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
           card={card}
           onClose={() => setShowWelcomeMessage(false)}
           onLogin={handleLoginFromWelcome}
+        />
+      )}
+
+      {showNegotiationDialog && (
+        <NegotiationRequestDialog
+          card={card}
+          buyerPhone={buyerPhone!}
+          existingRequest={existingRequest}
+          onClose={() => setShowNegotiationDialog(false)}
+          onSent={handleRequestSent}
         />
       )}
     </div>

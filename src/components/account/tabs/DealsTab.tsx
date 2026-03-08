@@ -5,7 +5,13 @@ import {
   XCircle,
   RefreshCw,
   Zap,
+  MessageSquare,
+  Clock,
+  Check,
+  X,
 } from 'lucide-react';
+import { useEffect } from 'react';
+import { supabase } from '../../../lib/supabase';
 import { useAccountDeals } from '../../../hooks/useAccountDeals';
 import { ActiveDealCard, CompletedDealCard, CancelledDealCard } from '../deals/DealCards';
 import DealDetailSheet from '../deals/DealDetailSheet';
@@ -25,6 +31,164 @@ const FILTERS: { key: DealFilter; label: string; icon: typeof Handshake; color: 
   { key: 'completed', label: 'المكتملة', icon: CheckCircle2, color: '#059669', activeColor: '#ECFDF5' },
   { key: 'cancelled', label: 'الملغاة', icon: XCircle, color: '#dc2626', activeColor: '#FEF2F2' },
 ];
+
+interface NegotiationRequest {
+  id: string;
+  inventory_batch_id: string;
+  buyer_phone: string;
+  pallet_type: string;
+  size: string;
+  quality: string;
+  city: string;
+  available_quantity: number;
+  price_per_pallet: number;
+  buyer_message?: string;
+  status: string;
+  created_at: string;
+}
+
+function SupplierNegotiationRequests({ phone }: { phone: string }) {
+  const [requests, setRequests] = useState<NegotiationRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionId, setActionId] = useState<string | null>(null);
+  const [responseText, setResponseText] = useState<Record<string, string>>({});
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from('negotiation_requests')
+      .select('id, inventory_batch_id, buyer_phone, pallet_type, size, quality, city, available_quantity, price_per_pallet, buyer_message, status, created_at')
+      .eq('supplier_phone', phone)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+    setRequests(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [phone]);
+
+  const handleAccept = async (req: NegotiationRequest) => {
+    setActionId(req.id);
+    try {
+      const { error } = await supabase
+        .from('negotiation_requests')
+        .update({ status: 'accepted', supplier_response: responseText[req.id] || null, updated_at: new Date().toISOString() })
+        .eq('id', req.id);
+      if (!error) load();
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const handleReject = async (req: NegotiationRequest) => {
+    setActionId(req.id);
+    try {
+      const { error } = await supabase
+        .from('negotiation_requests')
+        .update({ status: 'rejected', supplier_response: responseText[req.id] || null, updated_at: new Date().toISOString() })
+        .eq('id', req.id);
+      if (!error) load();
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  if (loading) return null;
+  if (requests.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+        <h3 className="text-[13px] font-black text-[#1a3a4a]">طلبات تفاوض واردة</h3>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FFFBEB', color: '#b45309', border: '1px solid #FDE68A' }}>
+          {requests.length}
+        </span>
+      </div>
+      {requests.map(req => (
+        <div
+          key={req.id}
+          className="rounded-2xl p-4 space-y-3"
+          style={{ background: 'white', border: '1.5px solid #FDE68A', boxShadow: '0 2px 8px rgba(245,158,11,0.08)' }}
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-amber-500" />
+              <span className="text-[10px] text-[#a0b5c0]">
+                {new Date(req.created_at).toLocaleDateString('ar-SA', { day: 'numeric', month: 'short' })}
+              </span>
+            </div>
+            <div className="text-right">
+              <p className="text-[14px] font-black text-[#1a3a4a]">{req.pallet_type}</p>
+              <p className="text-[10px] text-[#7a9aab]">{req.city} — {req.size}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 justify-end flex-wrap">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#f0f9f4', color: '#15803d' }}>
+              {req.available_quantity} طبلية
+            </span>
+            {req.price_per_pallet > 0 && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#f0f9f4', color: '#15803d' }}>
+                {req.price_per_pallet} ر.س
+              </span>
+            )}
+            <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#f0f4f8', color: '#4a7a8a' }}>
+              {req.buyer_phone}
+            </span>
+          </div>
+
+          {req.buyer_message && (
+            <div className="rounded-xl p-2.5 text-right" style={{ background: '#f8fbfd', border: '1px solid #e2edf5' }}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <MessageSquare className="w-3 h-3 text-[#7a9aab]" />
+                <span className="text-[10px] font-bold text-[#7a9aab]">رسالة المشتري</span>
+              </div>
+              <p className="text-[12px] text-[#1a3a4a] leading-relaxed">{req.buyer_message}</p>
+            </div>
+          )}
+
+          <textarea
+            value={responseText[req.id] || ''}
+            onChange={(e) => setResponseText(prev => ({ ...prev, [req.id]: e.target.value }))}
+            placeholder="رد اختياري للمشتري..."
+            rows={2}
+            maxLength={200}
+            dir="rtl"
+            className="w-full rounded-xl px-3 py-2 text-[12px] text-[#1a3a4a] resize-none outline-none"
+            style={{ background: '#f8fbfd', border: '1px solid #e2edf5' }}
+          />
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleReject(req)}
+              disabled={actionId === req.id}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-bold text-[#dc2626] disabled:opacity-50"
+              style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}
+            >
+              <X className="w-3.5 h-3.5" />
+              رفض
+            </button>
+            <button
+              onClick={() => handleAccept(req)}
+              disabled={actionId === req.id}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black text-white disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 3px 10px rgba(5,150,105,0.25)' }}
+            >
+              {actionId === req.id ? (
+                <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              ) : (
+                <Check className="w-3.5 h-3.5" />
+              )}
+              قبول وبدء الصفقة
+            </button>
+          </div>
+        </div>
+      ))}
+      <div className="h-px" style={{ background: '#e2edf5' }} />
+    </div>
+  );
+}
 
 export default function DealsTab({ phone }: Props) {
   const {
@@ -98,6 +262,8 @@ export default function DealsTab({ phone }: Props) {
           onClose={() => setToast(null)}
         />
       )}
+
+      <SupplierNegotiationRequests phone={phone} />
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

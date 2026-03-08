@@ -583,6 +583,7 @@ interface Props {
   onCreateOrder: () => void;
   onAddInventory: () => void;
   isAuthenticated: boolean;
+  userPhone?: string;
   onShowAuth: () => void;
   onDetailSheetChange?: (isOpen: boolean) => void;
   onGoToDeals?: () => void;
@@ -592,6 +593,7 @@ export default function MarketSection({
   onCreateOrder,
   onAddInventory,
   isAuthenticated,
+  userPhone,
   onShowAuth,
   onDetailSheetChange,
   onGoToDeals,
@@ -859,11 +861,8 @@ export default function MarketSection({
         card={selectedSupply}
         onClose={() => setSelectedSupply(null)}
         isAuthenticated={isAuthenticated}
+        buyerPhone={userPhone}
         onShowAuthPrompt={() => setShowAuthPrompt(true)}
-        onStartDeal={() => {
-          setSelectedSupply(null);
-          if (onGoToDeals) onGoToDeals();
-        }}
       />
     )}
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ClipboardList,
   Clock,
@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Radar,
   XCircle,
+  MessageSquare,
 } from 'lucide-react';
 import { useAccountOrders } from '../../../hooks/useAccountOrders';
 import { ActiveOrderCard, MatchedOrderCard, CompletedOrderCard } from '../orders/OrderCards';
@@ -15,6 +16,7 @@ import OrderDetailSheet from '../orders/OrderDetailSheet';
 import { ActionToast } from '../../shared/ActionToast';
 import type { ToastConfig } from '../../shared/ActionToast';
 import type { AccountOrder } from '../../../hooks/useAccountOrders';
+import { supabase } from '../../../lib/supabase';
 
 type OrderFilter = 'active' | 'matched' | 'completed';
 
@@ -30,6 +32,109 @@ const FILTERS: { key: OrderFilter; label: string; icon: typeof Clock; color: str
   { key: 'matched', label: 'تمت المطابقة', icon: Handshake, color: '#059669' },
   { key: 'completed', label: 'المكتملة', icon: CheckCircle2, color: '#6b7280' },
 ];
+
+const STATUS_MAP: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  pending:      { label: 'قيد الانتظار', color: '#b45309', bg: '#FFFBEB', border: '#FDE68A' },
+  accepted:     { label: 'تم القبول', color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' },
+  rejected:     { label: 'مرفوض', color: '#dc2626', bg: '#FEF2F2', border: '#FECACA' },
+  deal_created: { label: 'الصفقة أُنشئت', color: '#1d4ed8', bg: '#EFF6FF', border: '#BFDBFE' },
+  cancelled:    { label: 'ملغي', color: '#6b7280', bg: '#f3f4f6', border: '#e5e7eb' },
+};
+
+function BuyerNegotiationRequests({ phone }: { phone: string }) {
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from('negotiation_requests')
+      .select('id, pallet_type, size, quality, city, available_quantity, price_per_pallet, supplier_phone, supplier_response, status, created_at')
+      .eq('buyer_phone', phone)
+      .neq('status', 'cancelled')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    setRequests(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [phone]);
+
+  if (loading || requests.length === 0) return null;
+
+  return (
+    <div className="space-y-2 mb-4">
+      <div className="flex items-center justify-between">
+        <button onClick={load} className="w-6 h-6 rounded-lg bg-white/80 border border-[#e2edf5] flex items-center justify-center">
+          <RefreshCw className="w-3 h-3 text-[#7a9aab]" />
+        </button>
+        <div className="flex items-center gap-2">
+          <h3 className="text-[13px] font-black text-[#1a3a4a]">طلبات التفاوض</h3>
+          <MessageSquare className="w-4 h-4 text-[#4a7a8a]" />
+        </div>
+      </div>
+      {requests.map(req => {
+        const s = STATUS_MAP[req.status] || STATUS_MAP.pending;
+        return (
+          <div
+            key={req.id}
+            className="rounded-2xl p-4 space-y-2.5"
+            style={{ background: 'white', border: `1.5px solid ${s.border}`, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+            dir="rtl"
+          >
+            <div className="flex items-start justify-between">
+              <span
+                className="text-[10px] font-bold px-2.5 py-1 rounded-full"
+                style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}
+              >
+                {s.label}
+              </span>
+              <div className="text-right">
+                <p className="text-[14px] font-black text-[#1a3a4a]">{req.pallet_type}</p>
+                <p className="text-[10px] text-[#7a9aab]">{req.city} — {req.size}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 justify-end flex-wrap">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#f0f9f4', color: '#15803d' }}>
+                {req.available_quantity} طبلية
+              </span>
+              {req.price_per_pallet > 0 && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#f0f9f4', color: '#15803d' }}>
+                  {req.price_per_pallet} ر.س
+                </span>
+              )}
+              <span className="text-[10px] text-[#a0b5c0]">
+                {new Date(req.created_at).toLocaleDateString('ar-SA', { day: 'numeric', month: 'short' })}
+              </span>
+            </div>
+
+            {req.supplier_response && (
+              <div className="rounded-xl p-2.5" style={{ background: s.bg, border: `1px solid ${s.border}` }}>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <MessageSquare className="w-3 h-3" style={{ color: s.color }} />
+                  <span className="text-[10px] font-bold" style={{ color: s.color }}>رد المورد</span>
+                </div>
+                <p className="text-[12px] text-[#1a3a4a] leading-relaxed">{req.supplier_response}</p>
+              </div>
+            )}
+
+            {req.status === 'accepted' && (
+              <div
+                className="rounded-xl p-2.5 flex items-center gap-2"
+                style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
+                <p className="text-[11px] text-green-700">وافق المورد! توجّه إلى <span className="font-black">صفقاتي</span> لمتابعة الصفقة.</p>
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <div className="h-px" style={{ background: '#e2edf5' }} />
+    </div>
+  );
+}
 
 export default function MyOrdersTab({ phone, onCreateOrder, onGoToDeals, onGoToWarehouse }: Props) {
   const {
@@ -71,6 +176,8 @@ export default function MyOrdersTab({ phone, onCreateOrder, onGoToDeals, onGoToW
           onClose={() => setToast(null)}
         />
       )}
+
+      <BuyerNegotiationRequests phone={phone} />
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
