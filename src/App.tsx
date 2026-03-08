@@ -98,7 +98,7 @@ function App() {
     pendingAfterAuth.current = null;
 
     if (!next || next === 'none') {
-      setModal('none');
+      setModal('account');
       setFreshLogin(true);
       setMainView('marketplace');
     } else {
@@ -124,7 +124,7 @@ function App() {
     pendingAfterAuth.current = null;
 
     if (!next || next === 'none') {
-      setModal('none');
+      setModal('account');
       setFreshLogin(true);
       setMainView('marketplace');
     } else {
