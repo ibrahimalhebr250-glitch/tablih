@@ -31,7 +31,7 @@ export default function DealsTab({ phone }: Props) {
     activeDeals, completedDeals, cancelledDeals,
     loading, actionLoading,
     getCounterparty, isBuyer,
-    supplierConfirm, buyerConfirm,
+    supplierConfirm, buyerConfirm, buyerConfirmWithDeadline,
     startDelivery, confirmDelivery, failDelivery, cancelDeal,
     refresh,
   } = useAccountDeals(phone);
@@ -62,6 +62,15 @@ export default function DealsTab({ phone }: Props) {
     const result = await action(dealId);
     if (result.success) {
       setToast({ ...successMsg, variant: 'success' });
+      setSelectedDeal(null);
+    }
+    return result;
+  };
+
+  const handleBuyerConfirmDeadline = async (dealId: string, hours: number) => {
+    const result = await buyerConfirmWithDeadline(dealId, hours);
+    if (result.success) {
+      setToast({ title: 'تم تأكيد الشراء', message: `بدأ مؤقت ${hours} ساعة — تواصل مع المورد عبر واتساب`, variant: 'success' });
       setSelectedDeal(null);
     }
     return result;
@@ -206,8 +215,9 @@ export default function DealsTab({ phone }: Props) {
           counterparty={getCounterparty(selectedDeal)}
           actionLoading={actionLoading}
           onClose={() => setSelectedDeal(null)}
-          onSupplierConfirm={(id) => handleAction(supplierConfirm, id, { title: 'تم تأكيد الصفقة', message: 'في انتظار موافقة المشتري على الفاتورة' })}
+          onSupplierConfirm={(id) => handleAction(supplierConfirm, id, { title: 'تم اعتماد الصفقة', message: 'في انتظار تأكيد المشتري واختيار المهلة' })}
           onBuyerConfirm={(id) => handleAction(buyerConfirm, id, { title: 'تم تأكيد الشراء', message: 'سيتواصل معك المورد لإتمام التسليم' })}
+          onBuyerConfirmWithDeadline={handleBuyerConfirmDeadline}
           onStartDelivery={(id) => handleAction(startDelivery, id, { title: 'تم بدء التسليم', message: 'تواصل مع المشتري عبر واتساب لتنسيق الاستلام' })}
           onConfirmDelivery={(id) => handleAction(confirmDelivery, id, { title: 'تم تأكيد التسليم', message: 'الصفقة مكتملة — شكرا لتعاملك مع منصة العاديات' })}
           onFailDelivery={(id) => handleAction(failDelivery, id, { title: 'تم تسجيل فشل التسليم', message: 'تم إلغاء الصفقة وإعادة المخزون' })}

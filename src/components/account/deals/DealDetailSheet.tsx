@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   X,
   Handshake,
@@ -8,17 +8,18 @@ import {
   Hash,
   Banknote,
   MessageCircle,
-  Truck,
   CheckCircle2,
   XCircle,
   Clock,
-  ShieldCheck,
   AlertTriangle,
   Star,
   Loader2,
   CreditCard,
   CheckSquare,
   Square,
+  Timer,
+  Play,
+  ShieldCheck,
 } from 'lucide-react';
 import type { Deal } from '../../../types/deal';
 import { DEAL_STATUS_CONFIG } from '../../../types/deal';
@@ -33,6 +34,7 @@ interface Props {
   onClose: () => void;
   onSupplierConfirm: (dealId: string) => Promise<{ success: boolean; error?: string }>;
   onBuyerConfirm: (dealId: string) => Promise<{ success: boolean; error?: string }>;
+  onBuyerConfirmWithDeadline: (dealId: string, hours: number) => Promise<{ success: boolean; error?: string }>;
   onStartDelivery: (dealId: string) => Promise<{ success: boolean; error?: string }>;
   onConfirmDelivery: (dealId: string) => Promise<{ success: boolean; error?: string }>;
   onFailDelivery: (dealId: string) => Promise<{ success: boolean; error?: string }>;
@@ -52,13 +54,146 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   );
 }
 
+function DealTimeline({ deal }: { deal: Deal }) {
+  const steps = [
+    { label: 'المطابقة', done: true, date: deal.created_at },
+    { label: 'اعتماد المورد', done: !!deal.supplier_confirmed_at, date: deal.supplier_confirmed_at },
+    { label: 'تأكيد المشتري', done: !!deal.buyer_confirmed_at, date: deal.buyer_confirmed_at },
+    { label: 'التنفيذ والتسليم', done: deal.status === 'execution_in_progress' || deal.status === 'in_delivery' || deal.status === 'completed', date: deal.delivery_started_at },
+    { label: 'مكتملة', done: deal.status === 'completed', date: deal.completed_at },
+  ];
+
+  const currentIdx = steps.findIndex(s => !s.done);
+  const activeIdx = currentIdx === -1 ? steps.length - 1 : currentIdx;
+
+  return (
+    <div className="bg-white rounded-2xl border border-[#e2edf5] overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-[#f0f6fa] bg-[#f8fbfd]">
+        <p className="text-[11px] font-bold text-[#4a7a94]">مسار الصفقة</p>
+      </div>
+      <div className="p-4">
+        <div className="flex items-start gap-3" dir="rtl">
+          <div className="flex flex-col items-center gap-0">
+            {steps.map((step, i) => (
+              <div key={i} className="flex flex-col items-center">
+                <div
+                  className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                    step.done
+                      ? 'bg-[#059669]'
+                      : i === activeIdx
+                        ? 'bg-[#0369A1] ring-4 ring-[#BAE6FD]'
+                        : 'bg-gray-200'
+                  }`}
+                >
+                  {step.done ? (
+                    <CheckCircle2 className="w-3 h-3 text-white" />
+                  ) : i === activeIdx ? (
+                    <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                  ) : (
+                    <div className="w-2 h-2 rounded-full bg-gray-400" />
+                  )}
+                </div>
+                {i < steps.length - 1 && (
+                  <div className={`w-0.5 h-5 ${step.done ? 'bg-[#059669]' : 'bg-gray-200'}`} />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex-1 space-y-[14px] pt-0.5">
+            {steps.map((step, i) => (
+              <div key={i}>
+                <p className={`text-[11px] font-bold ${step.done ? 'text-[#059669]' : i === activeIdx ? 'text-[#0369A1]' : 'text-gray-400'}`}>
+                  {step.label}
+                </p>
+                {step.done && step.date && (
+                  <p className="text-[9px] text-[#b0c4d0] mt-0.5">
+                    {new Date(step.date).toLocaleString('ar-SA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExecutionCountdown({ deadline, hours }: { deadline: string; hours: number }) {
+  const [remaining, setRemaining] = useState('');
+  const [progress, setProgress] = useState(100);
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    const totalMs = hours * 60 * 60 * 1000;
+
+    const update = () => {
+      const now = Date.now();
+      const end = new Date(deadline).getTime();
+      const diff = end - now;
+
+      if (diff <= 0) {
+        setRemaining('انتهت المهلة');
+        setProgress(0);
+        setIsExpired(true);
+        return;
+      }
+
+      const h = Math.floor(diff / (1000 * 60 * 60));
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      setRemaining(h > 0 ? `${h} ساعة ${m} دقيقة` : `${m} دقيقة`);
+      setProgress(Math.min(100, (diff / totalMs) * 100));
+      setIsExpired(false);
+    };
+
+    update();
+    const interval = setInterval(update, 30000);
+    return () => clearInterval(interval);
+  }, [deadline, hours]);
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{ border: `1.5px solid ${isExpired ? '#FECACA' : '#BAE6FD'}` }}
+    >
+      <div
+        className="flex items-center justify-between px-4 py-3"
+        style={{ background: isExpired ? '#FEF2F2' : '#E0F2FE' }}
+      >
+        <div className="flex items-center gap-2">
+          <Timer className="w-4 h-4" style={{ color: isExpired ? '#dc2626' : '#0369A1' }} />
+          <div>
+            <p className="text-[12px] font-black" style={{ color: isExpired ? '#dc2626' : '#0369A1' }}>
+              {remaining}
+            </p>
+            <p className="text-[9px] mt-0.5" style={{ color: isExpired ? '#f87171' : '#0284C7' }}>
+              مهلة {hours} ساعة للتنفيذ
+            </p>
+          </div>
+        </div>
+        <Play className="w-5 h-5" style={{ color: isExpired ? '#dc2626' : '#0369A1' }} />
+      </div>
+      <div className="h-1.5" style={{ background: isExpired ? '#FECACA' : '#BAE6FD' }}>
+        <div
+          className="h-full transition-all duration-1000"
+          style={{
+            width: `${progress}%`,
+            background: isExpired ? '#dc2626' : progress < 25 ? '#f59e0b' : '#0369A1',
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function DealDetailSheet({
   deal, isBuyer, counterparty, actionLoading, onClose,
-  onSupplierConfirm, onBuyerConfirm, onStartDelivery,
-  onConfirmDelivery, onFailDelivery, onCancelDeal, onRate,
+  onSupplierConfirm, onBuyerConfirm, onBuyerConfirmWithDeadline,
+  onStartDelivery, onConfirmDelivery, onFailDelivery, onCancelDeal, onRate,
 }: Props) {
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [supplierPledge, setSupplierPledge] = useState(false);
+  const [selectedDeadline, setSelectedDeadline] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const counterpartyName = counterparty?.company_name || counterparty?.display_name || (isBuyer ? 'مورد' : 'مشتري');
@@ -74,23 +209,22 @@ export default function DealDetailSheet({
 
   const isWaitingSupplier = deal.status === 'pending_supplier' || deal.status === 'matched';
   const isSupplierConfirmed = deal.status === 'supplier_confirmed';
-  const isWaitingBuyer = deal.status === 'awaiting_buyer';
+  const isWaitingBuyer = deal.status === 'awaiting_buyer' || isSupplierConfirmed;
   const isReserved = deal.status === 'inventory_reserved';
   const isInDelivery = deal.status === 'in_delivery';
+  const isExecution = deal.status === 'execution_in_progress';
   const isCompleted = deal.status === 'completed';
   const isCancelled = deal.status === 'cancelled';
   const isActive = !isCompleted && !isCancelled;
 
   const otherPhone = isBuyer ? deal.supplier_phone : deal.buyer_phone;
   const myRole: 'buyer' | 'supplier' = isBuyer ? 'buyer' : 'supplier';
-  const showWhatsApp = isReserved || isInDelivery || isCompleted;
+  const showWhatsApp = isExecution || isInDelivery || isReserved || isCompleted;
 
-  const canSupplierConfirm = !isBuyer && (isWaitingSupplier || isSupplierConfirmed);
-  const canBuyerConfirm = isBuyer && isWaitingBuyer;
-  const canStartDelivery = !isBuyer && (isReserved || isWaitingBuyer);
-  const canConfirmDelivery = !isBuyer && isInDelivery;
-  const canFailDelivery = !isBuyer && isInDelivery;
-  const canCancel = !isBuyer && isActive && !isInDelivery;
+  const canSupplierConfirm = !isBuyer && isWaitingSupplier;
+  const canBuyerConfirmDeadline = isBuyer && isWaitingBuyer;
+  const canConfirmDelivery = !isBuyer && (isExecution || isInDelivery);
+  const canCancel = isActive && !isExecution && !isInDelivery;
   const canRate = isCompleted;
 
   const handleAction = async (action: (id: string) => Promise<{ success: boolean; error?: string }>) => {
@@ -99,6 +233,24 @@ export default function DealDetailSheet({
     if (!result.success) {
       setError(result.error ?? 'حدث خطأ');
     }
+  };
+
+  const handleBuyerConfirmWithDeadline = async () => {
+    if (!selectedDeadline) return;
+    setError(null);
+    const result = await onBuyerConfirmWithDeadline(deal.id, selectedDeadline);
+    if (!result.success) {
+      setError(result.error ?? 'حدث خطأ');
+    }
+  };
+
+  const getStatusIcon = () => {
+    if (isExecution || isInDelivery) return <Play className="w-4 h-4" style={{ color: statusCfg?.color }} />;
+    if (isCompleted) return <CheckCircle2 className="w-4 h-4" style={{ color: '#16a34a' }} />;
+    if (isCancelled) return <XCircle className="w-4 h-4" style={{ color: '#dc2626' }} />;
+    if (isWaitingSupplier) return <Clock className="w-4 h-4 animate-pulse" style={{ color: statusCfg?.color }} />;
+    if (isWaitingBuyer) return <Clock className="w-4 h-4 animate-pulse" style={{ color: statusCfg?.color }} />;
+    return <Handshake className="w-4 h-4" style={{ color: statusCfg?.color }} />;
   };
 
   return (
@@ -113,10 +265,7 @@ export default function DealDetailSheet({
           className="flex items-center justify-between px-5 py-4 flex-shrink-0"
           style={{ background: 'linear-gradient(135deg, #0f2535, #1a3d56)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
         >
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center"
-          >
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
             <X className="w-4 h-4 text-white" />
           </button>
           <div className="flex items-center gap-2">
@@ -133,10 +282,7 @@ export default function DealDetailSheet({
             className="flex items-center gap-2.5 rounded-xl px-3.5 py-3"
             style={{ background: statusCfg?.bg ?? '#f3f4f6', border: `1px solid ${statusCfg?.color ?? '#e2edf5'}20` }}
           >
-            {isInDelivery && <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: statusCfg?.color }} />}
-            {isCompleted && <CheckCircle2 className="w-4 h-4" style={{ color: '#16a34a' }} />}
-            {isCancelled && <XCircle className="w-4 h-4" style={{ color: '#dc2626' }} />}
-            {isActive && !isInDelivery && <Clock className="w-4 h-4" style={{ color: statusCfg?.color }} />}
+            {getStatusIcon()}
             <div className="flex-1 min-w-0">
               <p className="text-[12px] font-black" style={{ color: statusCfg?.color ?? '#1a2f3e' }}>
                 {statusCfg?.label ?? deal.status}
@@ -147,9 +293,15 @@ export default function DealDetailSheet({
             </div>
           </div>
 
+          <DealTimeline deal={deal} />
+
+          {(isExecution || isInDelivery) && deal.execution_deadline && deal.execution_hours && (
+            <ExecutionCountdown deadline={deal.execution_deadline} hours={deal.execution_hours} />
+          )}
+
           <div className="bg-white rounded-2xl border border-[#e2edf5] overflow-hidden">
             <div className="px-4 py-2.5 border-b border-[#f0f6fa] bg-[#f8fbfd]">
-              <p className="text-[11px] font-bold text-[#4a7a94]">معلومات الصفقة</p>
+              <p className="text-[11px] font-bold text-[#4a7a94]">ملخص الصفقة</p>
             </div>
             <div className="p-4 space-y-2.5">
               <InfoRow icon={<Handshake className="w-3.5 h-3.5 text-[#7a9aab]" />} label={isBuyer ? 'المورد' : 'المشتري'} value={counterpartyName} />
@@ -171,7 +323,7 @@ export default function DealDetailSheet({
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[12px] font-bold text-[#F59E0B]">{platformFee} ر.س / طبلية</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] text-[#7a9aab]">رسوم المنصة</span>
+                    <span className="text-[11px] text-[#7a9aab]">عمولة المنصة</span>
                     <CreditCard className="w-3.5 h-3.5 text-[#F59E0B]" />
                   </div>
                 </div>
@@ -183,15 +335,13 @@ export default function DealDetailSheet({
                 </div>
               )}
               {!isBuyer && (
-                <>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[12px] font-bold text-[#F59E0B]">{totalFee.toLocaleString('ar-SA')} ر.س</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] text-[#7a9aab]">رسوم المنصة ({platformFee} x {deal.quantity})</span>
-                      <CreditCard className="w-3.5 h-3.5 text-[#F59E0B]" />
-                    </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[12px] font-bold text-[#F59E0B]">{totalFee.toLocaleString('ar-SA')} ر.س</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-[#7a9aab]">عمولة المنصة ({platformFee} x {deal.quantity})</span>
+                    <CreditCard className="w-3.5 h-3.5 text-[#F59E0B]" />
                   </div>
-                </>
+                </div>
               )}
               <div className="border-t-2 border-[#e2edf5] pt-3">
                 <div className="flex items-center justify-between bg-[#0f2535] rounded-xl px-4 py-3">
@@ -201,15 +351,6 @@ export default function DealDetailSheet({
               </div>
             </div>
           </div>
-
-          {deal.delivery_started_at && (
-            <div className="flex items-center gap-2 bg-[#E0F2FE] border border-[#BAE6FD] rounded-xl px-3 py-2.5">
-              <Truck className="w-4 h-4 text-[#0369A1]" />
-              <span className="text-[11px] font-bold text-[#0369A1]">
-                بدأ التسليم: {new Date(deal.delivery_started_at).toLocaleString('ar-SA', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
-              </span>
-            </div>
-          )}
 
           {deal.cancel_reason && (
             <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
@@ -224,10 +365,16 @@ export default function DealDetailSheet({
             </div>
           )}
 
-          {canSupplierConfirm && !isBuyer && (
+          {canSupplierConfirm && (
             <div className="space-y-3">
-              <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-xl p-2.5 text-right text-[10px] leading-relaxed text-[#92400E]">
-                سيتم إضافة رسوم المنصة ({totalFee.toLocaleString('ar-SA')} ر.س) إلى فاتورة البيع الخاصة بكم، وتتعهدون بتحصيلها من المشتري وتسليمها للمنصة.
+              <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-xl p-3 text-right space-y-2">
+                <p className="text-[11px] font-black text-[#92400E]">عمولة المنصة</p>
+                <p className="text-[10px] leading-relaxed text-[#92400E]">
+                  عمولة المنصة: <span className="font-black">{platformFee} ر.س</span> لكل طبلية
+                </p>
+                <p className="text-[10px] leading-relaxed text-[#92400E]">
+                  إجمالي العمولة: <span className="font-black">{totalFee.toLocaleString('ar-SA')} ر.س</span> ({deal.quantity} طبلية)
+                </p>
               </div>
               <button
                 onClick={() => setSupplierPledge(!supplierPledge)}
@@ -239,7 +386,7 @@ export default function DealDetailSheet({
                   : <Square className="w-5 h-5 text-[#b0c8d5] flex-shrink-0" />
                 }
                 <span className="text-[12px] font-bold text-right" style={{ color: supplierPledge ? '#166534' : '#4a6a7e' }}>
-                  أتعهد بتحصيل رسوم المنصة من المشتري وتسليمها للمنصة
+                  أوافق على تحصيل عمولة المنصة من المشتري عند إتمام هذه الصفقة
                 </span>
               </button>
               <button
@@ -248,24 +395,55 @@ export default function DealDetailSheet({
                 className="w-full py-3.5 rounded-2xl text-[13px] font-bold text-white active:scale-[0.97] transition-transform disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', boxShadow: '0 4px 16px rgba(22,163,74,0.3)' }}
               >
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'تأكيد الصفقة'}
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'تأكيد اعتماد الصفقة'}
               </button>
             </div>
           )}
 
-          {canBuyerConfirm && (
+          {canBuyerConfirmDeadline && (
             <div className="space-y-3">
-              <div className="flex items-center justify-end gap-1.5">
-                <span className="text-[10px] text-[#7a9aab]">الدفع عند المعاينة</span>
-                <CreditCard className="w-3 h-3 text-[#7a9aab]" />
+              <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl p-3 text-right">
+                <p className="text-[11px] font-black text-[#1E40AF] mb-1">تأكيد الشراء وتحديد المهلة</p>
+                <p className="text-[10px] text-[#3b82f6] leading-relaxed">
+                  بعد التأكيد سيبدأ مؤقت لمهلة التنفيذ ويمكنكم التواصل عبر واتساب لتنسيق الدفع والتسليم
+                </p>
               </div>
+
+              <div>
+                <p className="text-[11px] font-bold text-[#4a7a94] mb-2">اختر مهلة تنفيذ الصفقة</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[24, 48, 72].map(h => (
+                    <button
+                      key={h}
+                      onClick={() => setSelectedDeadline(h)}
+                      className="py-3 rounded-xl text-center transition-all border-2"
+                      style={{
+                        background: selectedDeadline === h ? '#0369A1' : 'white',
+                        borderColor: selectedDeadline === h ? '#0369A1' : '#e2edf5',
+                        color: selectedDeadline === h ? 'white' : '#1a4a5e',
+                      }}
+                    >
+                      <p className="text-[16px] font-black">{h}</p>
+                      <p className="text-[9px] font-bold mt-0.5" style={{ color: selectedDeadline === h ? 'rgba(255,255,255,0.7)' : '#7a9aab' }}>
+                        ساعة
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <button
-                disabled={isLoading}
-                onClick={() => handleAction(onBuyerConfirm)}
+                disabled={isLoading || !selectedDeadline}
+                onClick={handleBuyerConfirmWithDeadline}
                 className="w-full py-3.5 rounded-2xl text-[13px] font-bold text-white active:scale-[0.97] transition-transform disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', boxShadow: '0 4px 16px rgba(37,99,235,0.25)' }}
               >
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'تأكيد الشراء'}
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : (
+                  <span className="flex items-center justify-center gap-2">
+                    <ShieldCheck className="w-4 h-4" />
+                    تأكيد الشراء
+                  </span>
+                )}
               </button>
             </div>
           )}
@@ -279,41 +457,32 @@ export default function DealDetailSheet({
               style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 4px 14px rgba(37,211,102,0.3)' }}
             >
               <MessageCircle className="w-4 h-4" />
-              <span>تواصل عبر واتساب</span>
+              <span>التواصل عبر واتساب</span>
             </a>
           )}
 
-          {canStartDelivery && (
-            <button
-              disabled={isLoading}
-              onClick={() => handleAction(onStartDelivery)}
-              className="w-full py-3 rounded-xl text-[13px] font-bold text-white flex items-center justify-center gap-2 active:scale-[0.97] transition-transform disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #0369A1, #0284C7)', boxShadow: '0 4px 14px rgba(3,105,161,0.25)' }}
-            >
-              <Truck className="w-4 h-4" />
-              {isLoading ? 'جارٍ التحديث...' : 'بدء التسليم'}
-            </button>
-          )}
-
-          {canConfirmDelivery && (
-            <div className="flex gap-2">
-              <button
-                disabled={isLoading}
-                onClick={() => handleAction(onFailDelivery)}
-                className="flex-1 py-3 rounded-xl border border-red-200 bg-red-50 text-[12px] font-bold text-red-600 flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
-              >
-                <XCircle className="w-3.5 h-3.5" />
-                فشل التسليم
-              </button>
-              <button
-                disabled={isLoading}
-                onClick={() => handleAction(onConfirmDelivery)}
-                className="flex-1 py-3 rounded-xl text-[12px] font-bold text-white flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', boxShadow: '0 4px 14px rgba(22,163,74,0.25)' }}
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                تم التسليم
-              </button>
+          {canConfirmDelivery && !isBuyer && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-bold text-[#4a7a94] text-right">بعد إتمام التسليم</p>
+              <div className="flex gap-2">
+                <button
+                  disabled={isLoading}
+                  onClick={() => handleAction(onFailDelivery)}
+                  className="flex-1 py-3 rounded-xl border border-red-200 bg-red-50 text-[12px] font-bold text-red-600 flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
+                >
+                  <XCircle className="w-3.5 h-3.5" />
+                  فشل التسليم
+                </button>
+                <button
+                  disabled={isLoading}
+                  onClick={() => handleAction(onConfirmDelivery)}
+                  className="flex-1 py-3 rounded-xl text-[12px] font-bold text-white flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', boxShadow: '0 4px 14px rgba(22,163,74,0.25)' }}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  تأكيد التسليم
+                </button>
+              </div>
             </div>
           )}
 

@@ -5,6 +5,7 @@ export type DealStatus =
   | 'awaiting_buyer'
   | 'inventory_reserved'
   | 'in_delivery'
+  | 'execution_in_progress'
   | 'completed'
   | 'cancelled';
 
@@ -37,17 +38,20 @@ export interface Deal {
   cancel_reason: string | null;
   is_suspended: boolean;
   admin_notes: string | null;
+  execution_deadline: string | null;
+  execution_hours: number | null;
   created_at: string;
   updated_at: string;
 }
 
-export const DEAL_STATUS_CONFIG: Record<DealStatus, { label: string; color: string; bg: string }> = {
-  pending_supplier:   { label: 'بانتظار المورد',   color: '#B45309', bg: '#FFFBEB' },
-  matched:            { label: 'تم المطابقة',      color: '#B8860B', bg: '#FFFBEB' },
-  supplier_confirmed: { label: 'تأكيد المورد',     color: '#92400E', bg: '#FFF7ED' },
-  awaiting_buyer:     { label: 'بانتظار المشتري',  color: '#1E40AF', bg: '#EFF6FF' },
-  inventory_reserved: { label: 'تأكيد المشتري',    color: '#1E40AF', bg: '#EFF6FF' },
-  in_delivery:        { label: 'جاري التسليم',     color: '#0369A1', bg: '#E0F2FE' },
-  completed:          { label: 'مكتملة',           color: '#4B5563', bg: '#F9FAFB' },
-  cancelled:          { label: 'ملغاة',            color: '#991B1B', bg: '#FEF2F2' },
+export const DEAL_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  pending_supplier:       { label: 'بانتظار اعتماد المورد', color: '#B45309', bg: '#FFFBEB' },
+  matched:                { label: 'بانتظار اعتماد المورد', color: '#B45309', bg: '#FFFBEB' },
+  supplier_confirmed:     { label: 'تم اعتماد المورد',      color: '#059669', bg: '#ECFDF5' },
+  awaiting_buyer:         { label: 'بانتظار تأكيد المشتري', color: '#1E40AF', bg: '#EFF6FF' },
+  inventory_reserved:     { label: 'محجوزة',               color: '#059669', bg: '#ECFDF5' },
+  in_delivery:            { label: 'جاري التنفيذ',          color: '#0369A1', bg: '#E0F2FE' },
+  execution_in_progress:  { label: 'جاري التنفيذ',          color: '#0369A1', bg: '#E0F2FE' },
+  completed:              { label: 'مكتملة',               color: '#059669', bg: '#ECFDF5' },
+  cancelled:              { label: 'ملغاة',                color: '#dc2626', bg: '#FEF2F2' },
 };

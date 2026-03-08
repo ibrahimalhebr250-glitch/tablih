@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   Handshake,
   Clock,
@@ -11,15 +12,17 @@ import {
   Package,
   Layers,
   ArrowLeftRight,
+  Timer,
+  Play,
 } from 'lucide-react';
 import type { Deal } from '../../../types/deal';
 import { DEAL_STATUS_CONFIG } from '../../../types/deal';
 import type { CounterpartyInfo } from '../../../hooks/useAccountDeals';
 
-function buildWhatsAppLink(phone: string, senderRole: 'supplier' | 'buyer', deal: Deal): string {
+export function buildWhatsAppLink(phone: string, senderRole: 'supplier' | 'buyer', deal: Deal): string {
   const cleanPhone = phone.replace(/^0/, '966').replace('+', '');
-  const otherRole = senderRole === 'supplier' ? 'المشتري' : 'المورد';
   const myRole = senderRole === 'supplier' ? 'المورد' : 'المشتري';
+  const otherRole = senderRole === 'supplier' ? 'المشتري' : 'المورد';
   const message = [
     `السلام عليكم`,
     ``,
@@ -38,29 +41,25 @@ function buildWhatsAppLink(phone: string, senderRole: 'supplier' | 'buyer', deal
   return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
 }
 
+function DealHeader({ deal, isBuyer }: { deal: Deal; isBuyer: boolean }) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <span className="text-[10px] font-mono text-[#9ab0bf]" dir="ltr">{deal.deal_ref}</span>
+      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
+        style={{ background: isBuyer ? '#EFF6FF' : '#ECFDF5', color: isBuyer ? '#1E40AF' : '#059669', border: isBuyer ? '1px solid #BFDBFE' : '1px solid #A7F3D0' }}
+      >
+        <ArrowLeftRight className="w-2.5 h-2.5" />
+        {isBuyer ? 'مشتري' : 'مورد'}
+      </span>
+    </div>
+  );
+}
+
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-2">
       <span className="text-[12px] font-bold text-[#1a2f3e]">{value}</span>
       <span className="text-[11px] text-[#7a9aab]">{label}</span>
-    </div>
-  );
-}
-
-function DealHeader({ deal, isBuyer }: { deal: Deal; isBuyer: boolean }) {
-  return (
-    <div className="flex items-center justify-between mb-3">
-      <div className="flex items-center gap-1.5">
-        <span className="text-[10px] font-mono text-[#9ab0bf]" dir="ltr">{deal.deal_ref}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
-          style={{ background: isBuyer ? '#EFF6FF' : '#ECFDF5', color: isBuyer ? '#1E40AF' : '#059669', border: isBuyer ? '1px solid #BFDBFE' : '1px solid #A7F3D0' }}
-        >
-          <ArrowLeftRight className="w-2.5 h-2.5" />
-          {isBuyer ? 'مشتري' : 'مورد'}
-        </span>
-      </div>
     </div>
   );
 }
@@ -81,6 +80,70 @@ function PriceBlock({ deal, isBuyer }: { deal: Deal; isBuyer: boolean }) {
   );
 }
 
+function CountdownBadge({ deadline }: { deadline: string }) {
+  const [remaining, setRemaining] = useState('');
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    const update = () => {
+      const now = Date.now();
+      const end = new Date(deadline).getTime();
+      const diff = end - now;
+
+      if (diff <= 0) {
+        setRemaining('انتهت المهلة');
+        setIsExpired(true);
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      if (hours > 0) {
+        setRemaining(`${hours} ساعة ${minutes} دقيقة`);
+      } else {
+        setRemaining(`${minutes} دقيقة`);
+      }
+      setIsExpired(false);
+    };
+
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [deadline]);
+
+  return (
+    <div
+      className="flex items-center gap-2 rounded-lg px-2.5 py-1.5"
+      style={{
+        background: isExpired ? '#FEF2F2' : '#E0F2FE',
+        border: `1px solid ${isExpired ? '#FECACA' : '#BAE6FD'}`,
+      }}
+    >
+      <Timer className="w-3 h-3" style={{ color: isExpired ? '#dc2626' : '#0369A1' }} />
+      <span className="text-[10px] font-bold" style={{ color: isExpired ? '#dc2626' : '#0369A1' }}>
+        {remaining}
+      </span>
+    </div>
+  );
+}
+
+function getStatusIndicator(deal: Deal, isBuyer: boolean) {
+  const isExecution = deal.status === 'execution_in_progress';
+  const isInDelivery = deal.status === 'in_delivery';
+  const isWaitingSupplier = deal.status === 'pending_supplier' || deal.status === 'matched';
+  const isWaitingBuyer = deal.status === 'awaiting_buyer' || deal.status === 'supplier_confirmed';
+  const isReserved = deal.status === 'inventory_reserved';
+
+  if (isExecution || isInDelivery) return { icon: Play, color: '#0369A1', bg: '#E0F2FE', border: '#BAE6FD', text: 'جاري التنفيذ', pulse: true };
+  if (isWaitingSupplier) return { icon: Clock, color: '#B45309', bg: '#FFFBEB', border: '#FDE68A', text: 'بانتظار اعتماد المورد', pulse: true };
+  if (isWaitingBuyer) return { icon: Clock, color: '#1E40AF', bg: '#EFF6FF', border: '#BFDBFE', text: 'بانتظار تأكيد المشتري', pulse: true };
+  if (isReserved) return { icon: Package, color: '#059669', bg: '#ECFDF5', border: '#A7F3D0', text: 'محجوزة', pulse: false };
+
+  const statusCfg = DEAL_STATUS_CONFIG[deal.status];
+  return { icon: Handshake, color: statusCfg?.color ?? '#6b7280', bg: statusCfg?.bg ?? '#f3f4f6', border: '#e2edf5', text: statusCfg?.label ?? deal.status, pulse: false };
+}
+
 interface ActiveCardProps {
   deal: Deal;
   isBuyer: boolean;
@@ -90,22 +153,13 @@ interface ActiveCardProps {
 
 export function ActiveDealCard({ deal, isBuyer, counterparty, onViewDetail }: ActiveCardProps) {
   const counterpartyName = counterparty?.company_name || counterparty?.display_name || (isBuyer ? 'مورد' : 'مشتري');
-  const statusCfg = DEAL_STATUS_CONFIG[deal.status];
-  const isInDelivery = deal.status === 'in_delivery';
-  const isWaitingSupplier = deal.status === 'pending_supplier' || deal.status === 'matched';
-  const isWaitingBuyer = deal.status === 'awaiting_buyer';
-  const isReserved = deal.status === 'inventory_reserved';
-
-  const getStatusIndicator = () => {
-    if (isInDelivery) return { icon: Truck, color: '#0369A1', bg: '#E0F2FE', border: '#BAE6FD', text: 'جاري التسليم', pulse: true };
-    if (isWaitingSupplier) return { icon: Clock, color: '#B45309', bg: '#FFFBEB', border: '#FDE68A', text: 'بانتظار المورد', pulse: true };
-    if (isWaitingBuyer) return { icon: Clock, color: '#1E40AF', bg: '#EFF6FF', border: '#BFDBFE', text: 'بانتظار المشتري', pulse: true };
-    if (isReserved) return { icon: Package, color: '#059669', bg: '#ECFDF5', border: '#A7F3D0', text: 'محجوزة', pulse: false };
-    return { icon: Handshake, color: statusCfg?.color ?? '#6b7280', bg: statusCfg?.bg ?? '#f3f4f6', border: '#e2edf5', text: statusCfg?.label ?? deal.status, pulse: false };
-  };
-
-  const indicator = getStatusIndicator();
+  const indicator = getStatusIndicator(deal, isBuyer);
   const IndicatorIcon = indicator.icon;
+
+  const isWaitingSupplier = deal.status === 'pending_supplier' || deal.status === 'matched';
+  const isWaitingBuyer = deal.status === 'awaiting_buyer' || deal.status === 'supplier_confirmed';
+  const isExecution = deal.status === 'execution_in_progress' || deal.status === 'in_delivery';
+  const isReserved = deal.status === 'inventory_reserved';
 
   return (
     <button
@@ -120,15 +174,18 @@ export function ActiveDealCard({ deal, isBuyer, counterparty, onViewDetail }: Ac
           <IndicatorIcon className="w-3 h-3" style={{ color: indicator.color }} />
           <span className="text-[10px] font-bold" style={{ color: indicator.color }}>{indicator.text}</span>
         </div>
-        <span className="text-[9px] font-mono text-[#9ab0bf]" dir="ltr">{deal.deal_ref}</span>
+        {isExecution && deal.execution_deadline && (
+          <CountdownBadge deadline={deal.execution_deadline} />
+        )}
+        {!isExecution && (
+          <span className="text-[9px] font-mono text-[#9ab0bf]" dir="ltr">{deal.deal_ref}</span>
+        )}
       </div>
 
       <div className="p-4 space-y-2">
         <DealHeader deal={deal} isBuyer={isBuyer} />
-
         <InfoRow label={isBuyer ? 'المورد' : 'المشتري'} value={counterpartyName} />
         <InfoRow label="النوع" value={`${deal.pallet_type} · ${deal.size} · درجة ${deal.quality}`} />
-
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-1.5">
             <MapPin className="w-3 h-3 text-[#7a9aab]" />
@@ -145,32 +202,41 @@ export function ActiveDealCard({ deal, isBuyer, counterparty, onViewDetail }: Ac
         {isWaitingSupplier && isBuyer && (
           <div className="flex items-center gap-2 justify-center py-2 rounded-xl bg-amber-50 border border-amber-200 mt-1">
             <Loader2 className="w-3.5 h-3.5 text-amber-600 animate-spin" />
-            <span className="text-[11px] font-bold text-amber-700">في انتظار رد المورد</span>
+            <span className="text-[11px] font-bold text-amber-700">في انتظار اعتماد المورد</span>
           </div>
         )}
 
         {isWaitingSupplier && !isBuyer && (
           <div className="flex items-center gap-2 justify-center py-2 rounded-xl bg-amber-50 border border-amber-200 mt-1">
             <Handshake className="w-3.5 h-3.5 text-amber-600" />
-            <span className="text-[11px] font-bold text-amber-700">بحاجة لتأكيدك</span>
+            <span className="text-[11px] font-bold text-amber-700">بحاجة لاعتمادك</span>
           </div>
         )}
 
         {isWaitingBuyer && isBuyer && (
           <div className="flex items-center gap-2 justify-center py-2 rounded-xl bg-blue-50 border border-blue-200 mt-1">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-            <span className="text-[11px] font-bold text-blue-700">بحاجة لتأكيدك</span>
+            <span className="text-[11px] font-bold text-blue-700">بحاجة لتأكيدك وتحديد المهلة</span>
           </div>
         )}
 
-        {(isReserved || isInDelivery) && (
+        {isExecution && (
           <div className="flex items-center gap-2 justify-center py-2 rounded-xl mt-1"
-            style={{ background: indicator.bg, border: `1px solid ${indicator.border}` }}
+            style={{ background: '#E0F2FE', border: '1px solid #BAE6FD' }}
           >
-            <MessageCircle className="w-3.5 h-3.5" style={{ color: indicator.color }} />
-            <span className="text-[11px] font-bold" style={{ color: indicator.color }}>
-              اضغط لعرض التفاصيل والتواصل
+            <MessageCircle className="w-3.5 h-3.5 text-[#0369A1]" />
+            <span className="text-[11px] font-bold text-[#0369A1]">
+              تواصلوا عبر واتساب لتنسيق التسليم
             </span>
+          </div>
+        )}
+
+        {isReserved && (
+          <div className="flex items-center gap-2 justify-center py-2 rounded-xl mt-1"
+            style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}
+          >
+            <Package className="w-3.5 h-3.5 text-[#059669]" />
+            <span className="text-[11px] font-bold text-[#059669]">الكمية محجوزة</span>
           </div>
         )}
       </div>
@@ -207,12 +273,10 @@ export function CompletedDealCard({ deal, isBuyer, counterparty, onViewDetail }:
           <span className="text-[9px] font-mono text-[#9ab0bf]" dir="ltr">{deal.deal_ref}</span>
         </div>
       </div>
-
       <div className="p-4 space-y-2">
         <DealHeader deal={deal} isBuyer={isBuyer} />
         <InfoRow label={isBuyer ? 'المورد' : 'المشتري'} value={counterpartyName} />
         <InfoRow label="النوع" value={`${deal.pallet_type} · ${deal.size} · درجة ${deal.quality}`} />
-
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-1.5">
             <MapPin className="w-3 h-3 text-[#7a9aab]" />
@@ -223,7 +287,6 @@ export function CompletedDealCard({ deal, isBuyer, counterparty, onViewDetail }:
             <span className="text-[12px] font-bold text-[#1a4a5e]">{deal.quantity.toLocaleString('ar-SA')} طبلية</span>
           </div>
         </div>
-
         <PriceBlock deal={deal} isBuyer={isBuyer} />
       </div>
     </button>
@@ -259,12 +322,10 @@ export function CancelledDealCard({ deal, isBuyer, counterparty, onViewDetail }:
           <span className="text-[9px] font-mono text-[#9ab0bf]" dir="ltr">{deal.deal_ref}</span>
         </div>
       </div>
-
       <div className="p-4 space-y-2">
         <DealHeader deal={deal} isBuyer={isBuyer} />
         <InfoRow label={isBuyer ? 'المورد' : 'المشتري'} value={counterpartyName} />
         <InfoRow label="النوع" value={`${deal.pallet_type} · ${deal.size} · درجة ${deal.quality}`} />
-
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-1.5">
             <MapPin className="w-3 h-3 text-[#7a9aab]" />
@@ -275,17 +336,13 @@ export function CancelledDealCard({ deal, isBuyer, counterparty, onViewDetail }:
             <span className="text-[12px] font-bold text-[#6b7280]">{deal.quantity.toLocaleString('ar-SA')} طبلية</span>
           </div>
         </div>
-
         {deal.cancel_reason && (
           <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2 mt-1">
             <p className="text-[10px] text-red-600 font-bold">{deal.cancel_reason}</p>
           </div>
         )}
-
         <PriceBlock deal={deal} isBuyer={isBuyer} />
       </div>
     </button>
   );
 }
-
-export { buildWhatsAppLink };

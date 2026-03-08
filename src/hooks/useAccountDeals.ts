@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Deal } from '../types/deal';
 
-const DEAL_COLUMNS = 'id, deal_ref, request_id, order_id, inventory_batch_id, buyer_phone, supplier_phone, pallet_type, size, quality, city, quantity, final_price, supplier_price, platform_fee, platform_fee_per_pallet, buyer_price, status, supplier_confirmed_at, buyer_confirmed_at, reserved_at, delivery_started_at, delivery_failed_at, completed_at, cancelled_at, cancel_reason, is_suspended, admin_notes, created_at, updated_at';
+const DEAL_COLUMNS = 'id, deal_ref, request_id, order_id, inventory_batch_id, buyer_phone, supplier_phone, pallet_type, size, quality, city, quantity, final_price, supplier_price, platform_fee, platform_fee_per_pallet, buyer_price, status, supplier_confirmed_at, buyer_confirmed_at, reserved_at, delivery_started_at, delivery_failed_at, completed_at, cancelled_at, cancel_reason, is_suspended, admin_notes, execution_deadline, execution_hours, created_at, updated_at';
 
 export interface CounterpartyInfo {
   display_name: string;
@@ -10,7 +10,7 @@ export interface CounterpartyInfo {
   phone: string;
 }
 
-const ACTIVE_STATUSES = ['pending_supplier', 'matched', 'supplier_confirmed', 'awaiting_buyer', 'inventory_reserved', 'in_delivery'];
+const ACTIVE_STATUSES = ['pending_supplier', 'matched', 'supplier_confirmed', 'awaiting_buyer', 'inventory_reserved', 'in_delivery', 'execution_in_progress'];
 const COMPLETED_STATUSES = ['completed'];
 const CANCELLED_STATUSES = ['cancelled'];
 
@@ -106,6 +106,20 @@ export function useAccountDeals(phone: string) {
     return { success: true };
   }, [phone, fetchDeals]);
 
+  const buyerConfirmWithDeadline = useCallback(async (dealId: string, executionHours: number) => {
+    setActionLoading(dealId);
+    const { data, error } = await supabase.rpc('buyer_confirm_deal_with_deadline_v4', {
+      p_deal_id: dealId,
+      p_buyer_phone: phone,
+      p_execution_hours: executionHours,
+    });
+    setActionLoading(null);
+    if (error) return { success: false, error: error.message };
+    if (!data?.success) return { success: false, error: data?.error ?? 'فشلت العملية' };
+    await fetchDeals();
+    return { success: true };
+  }, [phone, fetchDeals]);
+
   const startDelivery = useCallback(async (dealId: string) => {
     setActionLoading(dealId);
     const { data, error } = await supabase.rpc('supplier_start_delivery_v4', { p_deal_id: dealId, p_supplier_phone: phone });
@@ -157,6 +171,7 @@ export function useAccountDeals(phone: string) {
     isBuyer,
     supplierConfirm,
     buyerConfirm,
+    buyerConfirmWithDeadline,
     startDelivery,
     confirmDelivery,
     failDelivery,
