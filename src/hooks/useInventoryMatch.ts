@@ -2,6 +2,24 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { InventoryFormData, ActiveDemand, ImpactPreview } from '../types/inventory';
 
+const QUALITY_GRADES = ['A+', 'A', 'B+', 'B', 'C', 'scrap'];
+const QUALITY_INDEX: Record<string, number> = {};
+QUALITY_GRADES.forEach((g, i) => { QUALITY_INDEX[g] = i; });
+
+function normalizeType(t: string): string {
+  const lower = (t || '').toLowerCase().trim();
+  if (['خشب', 'wood', 'wooden'].some(w => lower.includes(w))) return 'wood';
+  if (['بلاستيك', 'plastic'].some(w => lower.includes(w))) return 'plastic';
+  return lower;
+}
+
+function qualityDistance(a: string, b: string): number {
+  const ia = QUALITY_INDEX[a] ?? -1;
+  const ib = QUALITY_INDEX[b] ?? -1;
+  if (ia < 0 || ib < 0) return a === b ? 0 : 99;
+  return Math.abs(ia - ib);
+}
+
 function computeImpact(
   form: InventoryFormData,
   demand: ActiveDemand[],
@@ -13,24 +31,37 @@ function computeImpact(
   const allFieldsFilled =
     !!form.palletType && !!form.size && !!form.quality && !!form.city;
 
-  const matching = allFieldsFilled
-    ? demand.filter(
-        (d) =>
-          d.pallet_type === form.palletType &&
-          d.size === form.size &&
-          d.quality === form.quality &&
-          d.city === form.city
-      )
-    : [];
+  if (!allFieldsFilled) {
+    return { totalAfterDeposit, matchingDemandCount: 0, coveragePercent: 0, matchableQty: 0, hasMatch: false };
+  }
 
-  const totalNeeded = matching.reduce((s, d) => s + d.quantity_needed, 0);
+  const formType = normalizeType(form.palletType);
+
+  const scored = demand
+    .map((d) => {
+      let score = 0;
+      if (normalizeType(d.pallet_type) === formType) score += 25;
+      if (d.size === form.size) score += 20;
+      const qDist = qualityDistance(d.quality, form.quality);
+      if (qDist === 0) score += 15;
+      else if (qDist === 1) score += 10;
+      if (d.city === form.city) score += 15;
+      else score += 5;
+      const qtyRatio = Math.min(newQty / Math.max(d.quantity_needed, 1), 1);
+      score += Math.round(qtyRatio * 7);
+      return { ...d, score };
+    })
+    .filter((d) => d.score >= 50)
+    .sort((a, b) => b.score - a.score);
+
+  const totalNeeded = scored.reduce((s, d) => s + d.quantity_needed, 0);
   const matchableQty = totalNeeded > 0 ? Math.min(newQty, totalNeeded) : 0;
   const coveragePercent =
     totalNeeded > 0 ? Math.round((matchableQty / totalNeeded) * 100) : 0;
 
   return {
     totalAfterDeposit,
-    matchingDemandCount: matching.length,
+    matchingDemandCount: scored.length,
     coveragePercent,
     matchableQty,
     hasMatch: matchableQty > 0,

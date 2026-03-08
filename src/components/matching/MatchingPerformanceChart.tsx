@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { TrendingUp, Activity, Zap, Clock } from 'lucide-react';
 
 interface PerformanceData {
-  timestamp: string;
+  log_timestamp: string;
   matches_count: number;
   success_rate: number;
   avg_processing_time: number;
@@ -49,9 +49,9 @@ export default function MatchingPerformanceChart() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
+      <div className="bg-gradient-to-r from-blue-50 to-teal-50 rounded-2xl p-6 border border-blue-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center">
             <TrendingUp className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -89,7 +89,7 @@ export default function MatchingPerformanceChart() {
                   </div>
                 </div>
                 <span className="text-[10px] text-gray-500 font-bold">
-                  {new Date(point.timestamp).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(point.log_timestamp).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
             );
@@ -100,7 +100,7 @@ export default function MatchingPerformanceChart() {
       {/* Processing Time */}
       <div className="bg-white rounded-2xl p-6 border border-gray-100">
         <div className="flex items-center gap-2 mb-6">
-          <Clock className="w-5 h-5 text-purple-600" />
+          <Clock className="w-5 h-5 text-teal-600" />
           <h3 className="text-lg font-bold text-gray-900">زمن المعالجة</h3>
         </div>
 
@@ -116,7 +116,7 @@ export default function MatchingPerformanceChart() {
                     style={{
                       height: `${height}%`,
                       minHeight: '8px',
-                      background: 'linear-gradient(to top, #8B5CF6, #A78BFA)',
+                      background: 'linear-gradient(to top, #0D9488, #5EEAD4)',
                     }}
                   />
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block">
@@ -126,7 +126,7 @@ export default function MatchingPerformanceChart() {
                   </div>
                 </div>
                 <span className="text-[10px] text-gray-500 font-bold">
-                  {new Date(point.timestamp).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(point.log_timestamp).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
             );
