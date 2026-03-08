@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowRight, Package, MapPin, Eye, EyeOff, Clock, Store, Ban, Trash2, Plus, Minus, X, ChevronLeft, ChevronRight, ImagePlus, Calendar, Layers, Ruler, Shield, Wrench, DollarSign, FileText, CreditCard as Edit3 } from 'lucide-react';
+import { ArrowRight, Package, MapPin, Eye, EyeOff, Clock, Store, Ban, Trash2, Plus, Minus, X, ChevronLeft, ChevronRight, ImagePlus, Calendar, Layers, Ruler, Shield, Wrench, DollarSign, FileText, CreditCard as Edit3, ChevronDown } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { MyInventoryItem } from '../../../hooks/useMyInventory';
+import { useInventorySettings } from '../../../hooks/useInventorySettings';
+import { SAUDI_CITIES } from '../../../types/inventory';
 
 const QUALITY_STYLE: Record<string, { label: string; color: string; bg: string }> = {
   A: { label: 'ممتازة - Grade A', color: '#059669', bg: '#ECFDF5' },
@@ -56,14 +58,20 @@ export default function InventoryDetailSheet({
   const [showEditData, setShowEditData] = useState(false);
   const [editDesc, setEditDesc] = useState(item.description);
   const [editPrice, setEditPrice] = useState(item.price_per_pallet);
+  const [editType, setEditType] = useState(item.pallet_type);
+  const [editSize, setEditSize] = useState(item.size);
+  const [editQuality, setEditQuality] = useState(item.quality);
+  const [editCondition, setEditCondition] = useState(item.pallet_condition);
+  const [editCity, setEditCity] = useState(item.city);
   const [savingEdit, setSavingEdit] = useState(false);
   const [uploading, setUploading] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
   const editDataRef = useRef<HTMLDivElement>(null);
+  const { palletTypes, palletSizes, qualityGrades, palletConditions, getSizesForType } = useInventorySettings();
 
   useEffect(() => {
     if (showEditData) {
-      setTimeout(() => editDataRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      setTimeout(() => editDataRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
     }
   }, [showEditData]);
 
@@ -118,7 +126,15 @@ export default function InventoryDetailSheet({
     setSavingEdit(true);
     await supabase
       .from('inventory_batches')
-      .update({ description: editDesc, price_per_pallet: editPrice })
+      .update({
+        pallet_type: editType,
+        size: editSize,
+        quality: editQuality,
+        pallet_condition: editCondition,
+        city: editCity,
+        price_per_pallet: editPrice,
+        description: editDesc,
+      })
       .eq('id', item.id);
     setSavingEdit(false);
     setShowEditData(false);
@@ -347,10 +363,117 @@ export default function InventoryDetailSheet({
           {showEditData && (
             <div ref={editDataRef} className="px-5 py-3">
               <div className="bg-white rounded-2xl p-4 border border-gray-100">
-                <p className="text-[12px] font-bold text-[#1a4a5e] mb-3 text-right">تعديل بيانات المخزون</p>
+                <p className="text-[13px] font-bold text-[#1a4a5e] mb-4 text-right">تعديل بيانات الطبلية</p>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[11px] font-bold text-[#5a7a8a] mb-1 block text-right">السعر لكل طبلية (ر.س)</label>
+                    <label className="text-[11px] font-bold text-[#5a7a8a] mb-1.5 block text-right">نوع الطبلية</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(palletTypes.length > 0 ? palletTypes.map(t => t.name_ar) : ['خشبية', 'بلاستيكية']).map(type => (
+                        <button
+                          key={type}
+                          onClick={() => { setEditType(type); setEditSize(''); }}
+                          className="py-2.5 rounded-xl text-[13px] font-bold transition-all active:scale-[0.97]"
+                          style={editType === type
+                            ? { background: '#1a4a5e', color: 'white', boxShadow: '0 2px 8px rgba(26,74,94,0.25)' }
+                            : { background: '#f3f6f8', color: '#5a7a8a', border: '1px solid #e2eaf0' }
+                          }
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-[#5a7a8a] mb-1.5 block text-right">المقاس</label>
+                    {(() => {
+                      const matchedType = palletTypes.find(t => t.name_ar === editType);
+                      const sizes = matchedType ? getSizesForType(matchedType.code).map(s => s.name_ar) : ['120×100', '110×110', '120×80', '80×60', 'أخرى'];
+                      return (
+                        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                          {sizes.map(size => (
+                            <button
+                              key={size}
+                              onClick={() => setEditSize(size)}
+                              className="flex-shrink-0 px-3.5 py-2 rounded-xl text-[12px] font-bold transition-all active:scale-[0.97]"
+                              style={editSize === size
+                                ? { background: '#1a4a5e', color: 'white', boxShadow: '0 2px 8px rgba(26,74,94,0.25)' }
+                                : { background: '#f3f6f8', color: '#5a7a8a', border: '1px solid #e2eaf0' }
+                              }
+                            >
+                              {size}
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-[#5a7a8a] mb-1.5 block text-right">الجودة</label>
+                    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                      {(qualityGrades.length > 0 ? qualityGrades.map(g => ({ code: g.code, label: g.name_ar, color: g.color_hex || '#1a4a5e' })) : [
+                        { code: 'A', label: 'ممتازة', color: '#059669' },
+                        { code: 'B', label: 'جيدة', color: '#0369a1' },
+                        { code: 'C', label: 'مقبولة', color: '#b45309' },
+                        { code: 'Scrap', label: 'خردة', color: '#6b7280' },
+                      ]).map(g => (
+                        <button
+                          key={g.code}
+                          onClick={() => setEditQuality(g.code)}
+                          className="flex-shrink-0 px-3.5 py-2 rounded-xl text-[12px] font-bold transition-all active:scale-[0.97]"
+                          style={editQuality === g.code
+                            ? { background: g.color, color: 'white', boxShadow: `0 2px 8px ${g.color}40` }
+                            : { background: '#f3f6f8', color: '#5a7a8a', border: '1px solid #e2eaf0' }
+                          }
+                        >
+                          {g.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-[#5a7a8a] mb-1.5 block text-right">الحالة</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(palletConditions.length > 0 ? palletConditions.map(c => ({ code: c.code, label: c.name_ar })) : [
+                        { code: 'new', label: 'جديدة' },
+                        { code: 'used', label: 'مستعملة' },
+                        { code: 'repairable', label: 'قابلة للإصلاح' },
+                      ]).map(c => (
+                        <button
+                          key={c.code}
+                          onClick={() => setEditCondition(c.code)}
+                          className="py-2 rounded-xl text-[12px] font-bold transition-all active:scale-[0.97]"
+                          style={editCondition === c.code
+                            ? { background: '#1a4a5e', color: 'white', boxShadow: '0 2px 8px rgba(26,74,94,0.25)' }
+                            : { background: '#f3f6f8', color: '#5a7a8a', border: '1px solid #e2eaf0' }
+                          }
+                        >
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-[#5a7a8a] mb-1.5 block text-right">المدينة</label>
+                    <div className="relative">
+                      <select
+                        value={editCity}
+                        onChange={(e) => setEditCity(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-[13px] font-bold text-[#1a4a5e] text-right outline-none focus:border-[#1a4a5e] transition-colors appearance-none"
+                      >
+                        {SAUDI_CITIES.map(city => (
+                          <option key={city} value={city}>{city}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a9aab] pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-[#5a7a8a] mb-1.5 block text-right">السعر لكل طبلية (ر.س)</label>
                     <input
                       type="number"
                       value={editPrice}
@@ -360,8 +483,9 @@ export default function InventoryDetailSheet({
                       min={0}
                     />
                   </div>
+
                   <div>
-                    <label className="text-[11px] font-bold text-[#5a7a8a] mb-1 block text-right">الوصف</label>
+                    <label className="text-[11px] font-bold text-[#5a7a8a] mb-1.5 block text-right">الوصف</label>
                     <textarea
                       value={editDesc}
                       onChange={(e) => setEditDesc(e.target.value)}
@@ -370,16 +494,27 @@ export default function InventoryDetailSheet({
                       placeholder="اكتب وصفاً للمخزون..."
                     />
                   </div>
-                  <div className="flex gap-2">
+
+                  <div className="flex gap-2 pt-1">
                     <button
                       onClick={handleEditSave}
-                      disabled={savingEdit}
-                      className="flex-1 py-2.5 rounded-xl bg-[#059669] text-white text-[13px] font-bold active:scale-95 transition-transform"
+                      disabled={savingEdit || !editType || !editSize}
+                      className="flex-1 py-2.5 rounded-xl text-white text-[13px] font-bold active:scale-95 transition-transform disabled:opacity-50"
+                      style={{ background: 'linear-gradient(135deg, #059669, #047857)' }}
                     >
                       {savingEdit ? 'جاري الحفظ...' : 'حفظ التعديلات'}
                     </button>
                     <button
-                      onClick={() => { setShowEditData(false); setEditDesc(item.description); setEditPrice(item.price_per_pallet); }}
+                      onClick={() => {
+                        setShowEditData(false);
+                        setEditType(item.pallet_type);
+                        setEditSize(item.size);
+                        setEditQuality(item.quality);
+                        setEditCondition(item.pallet_condition);
+                        setEditCity(item.city);
+                        setEditPrice(item.price_per_pallet);
+                        setEditDesc(item.description);
+                      }}
                       className="px-4 py-2.5 rounded-xl bg-gray-100 text-gray-500 text-[13px] font-bold active:scale-95 transition-transform"
                     >
                       إلغاء
@@ -507,12 +642,21 @@ export default function InventoryDetailSheet({
                 </div>
                 <div className="mb-2">
                   <button
-                    onClick={() => { setEditDesc(item.description); setEditPrice(item.price_per_pallet); setShowEditData(true); }}
+                    onClick={() => {
+                      setEditType(item.pallet_type);
+                      setEditSize(item.size);
+                      setEditQuality(item.quality);
+                      setEditCondition(item.pallet_condition);
+                      setEditCity(item.city);
+                      setEditPrice(item.price_per_pallet);
+                      setEditDesc(item.description);
+                      setShowEditData(true);
+                    }}
                     className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-bold active:scale-[0.98] transition-transform"
                     style={{ background: 'white', color: '#1a4a5e', border: '1px solid #d8e8f0' }}
                   >
                     <Edit3 className="w-4 h-4" />
-                    تعديل بيانات المخزون
+                    تعديل بيانات الطبلية
                   </button>
                 </div>
               </>
