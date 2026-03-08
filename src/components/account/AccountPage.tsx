@@ -119,6 +119,8 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
   };
 
   const renderTab = () => {
+    console.log('[AccountPage] Current session phone:', localSession.profile.phone);
+    console.log('[AccountPage] Active tab:', activeTab);
     switch (activeTab) {
       case 'warehouse':
         return <CloudWarehouseTab phone={localSession.profile.phone} onAddInventory={onAddInventory} onAddInventoryWithPrefill={onAddInventory} />;

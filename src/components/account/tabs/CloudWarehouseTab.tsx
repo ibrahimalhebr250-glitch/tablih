@@ -91,11 +91,15 @@ export default function CloudWarehouseTab({ phone, onAddInventory, onAddInventor
 
   const fetchPurchases = useCallback(async () => {
     setLoadingPurch(true);
-    const { data } = await supabase
+    console.log('[CloudWarehouseTab] Fetching purchases for phone:', phone);
+    const { data, error } = await supabase
       .from('buyer_inventory')
       .select('*')
       .eq('buyer_phone', phone)
       .order('created_at', { ascending: false });
+    console.log('[CloudWarehouseTab] Purchases data:', data);
+    console.log('[CloudWarehouseTab] Purchases error:', error);
+    console.log('[CloudWarehouseTab] Number of purchases:', data?.length || 0);
     setPurchases((data as BuyerPurchaseItem[]) || []);
     setLoadingPurch(false);
   }, [phone]);
