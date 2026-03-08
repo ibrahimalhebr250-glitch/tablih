@@ -1,27 +1,49 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { useSession } from './hooks/useSession';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
 import BottomNavigation from './components/BottomNavigation';
-import OrderBuilder from './components/order/OrderBuilder';
-import InventoryBuilder from './components/inventory/InventoryBuilder';
-import OperationalDashboard from './components/dashboard/OperationalDashboard';
-import EnhancedAccountPage from './components/account/EnhancedAccountPage';
-import PhoneRegistration from './components/account/PhoneRegistration';
-import LoginPage from './components/account/LoginPage';
-import SupplierDealsPage from './components/deals/supplier/SupplierDealsPage';
-import BuyerDealsPage from './components/deals/buyer/BuyerDealsPage';
-import AdminPanel from './components/admin/AdminPanel';
-import AdminLoginSheet, { type AdminStaffData } from './components/admin/AdminLoginSheet';
-import SupplierInventory from './components/inventory/SupplierInventory';
-import PurchasedInventorySheet from './components/account/PurchasedInventorySheet';
+import TopNavigation from './components/shared/TopNavigation';
 import DesktopSidebar from './components/desktop/DesktopSidebar';
 import DesktopRightPanel from './components/desktop/DesktopRightPanel';
-import MarketSection from './components/market/MarketSection';
-import TopNavigation from './components/shared/TopNavigation';
+import type { AdminStaffData } from './components/admin/AdminLoginSheet';
+
+const OrderBuilder = lazy(() => import('./components/order/OrderBuilder'));
+const InventoryBuilder = lazy(() => import('./components/inventory/InventoryBuilder'));
+const OperationalDashboard = lazy(() => import('./components/dashboard/OperationalDashboard'));
+const EnhancedAccountPage = lazy(() => import('./components/account/EnhancedAccountPage'));
+const AccountPage = lazy(() => import('./components/account/AccountPage'));
+const PhoneRegistration = lazy(() => import('./components/account/PhoneRegistration'));
+const LoginPage = lazy(() => import('./components/account/LoginPage'));
+const SupplierDealsPage = lazy(() => import('./components/deals/supplier/SupplierDealsPage'));
+const BuyerDealsPage = lazy(() => import('./components/deals/buyer/BuyerDealsPage'));
+const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
+const AdminLoginSheet = lazy(() => import('./components/admin/AdminLoginSheet'));
+const SupplierInventory = lazy(() => import('./components/inventory/SupplierInventory'));
+const PurchasedInventorySheet = lazy(() => import('./components/account/PurchasedInventorySheet'));
+const MarketSection = lazy(() => import('./components/market/MarketSection'));
 
 type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'account' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'purchasedInventory';
 type MainView = 'marketplace' | 'dashboard' | 'account';
+
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #d6e4f0 0%, #e0ecf6 50%, #d6e4f0 100%)' }}>
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-14 h-14 bg-[#1a4a5e] rounded-2xl flex items-center justify-center shadow-xl">
+        <svg viewBox="0 0 20 20" className="w-8 h-8" fill="none">
+          <rect x="2" y="2" width="6.5" height="6.5" rx="1.5" fill="white" />
+          <rect x="11.5" y="2" width="6.5" height="6.5" rx="1.5" fill="white" />
+          <rect x="2" y="11.5" width="6.5" height="6.5" rx="1.5" fill="white" />
+          <rect x="11.5" y="11.5" width="6.5" height="6.5" rx="1.5" fill="white" />
+          <line x1="8.5" y1="5.25" x2="11.5" y2="5.25" stroke="white" strokeWidth="1.2" />
+          <line x1="5.25" y1="8.5" x2="5.25" y2="11.5" stroke="white" strokeWidth="1.2" />
+          <line x1="14.75" y1="8.5" x2="14.75" y2="11.5" stroke="white" strokeWidth="1.2" />
+        </svg>
+      </div>
+      <div className="w-6 h-6 border-2 border-[#1a4a5e] border-t-transparent rounded-full animate-spin" />
+    </div>
+  </div>
+);
 
 function App() {
   const { session, loading, register, login, updateProfile, activateRole, logout } = useSession();
@@ -48,27 +70,7 @@ function App() {
   }, []);
 
   if (loading) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: 'linear-gradient(180deg, #d6e4f0 0%, #e0ecf6 50%, #d6e4f0 100%)' }}
-      >
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-14 h-14 bg-[#1a4a5e] rounded-2xl flex items-center justify-center shadow-xl">
-            <svg viewBox="0 0 20 20" className="w-8 h-8" fill="none">
-              <rect x="2" y="2" width="6.5" height="6.5" rx="1.5" fill="white" />
-              <rect x="11.5" y="2" width="6.5" height="6.5" rx="1.5" fill="white" />
-              <rect x="2" y="11.5" width="6.5" height="6.5" rx="1.5" fill="white" />
-              <rect x="11.5" y="11.5" width="6.5" height="6.5" rx="1.5" fill="white" />
-              <line x1="8.5" y1="5.25" x2="11.5" y2="5.25" stroke="white" strokeWidth="1.2" />
-              <line x1="5.25" y1="8.5" x2="5.25" y2="11.5" stroke="white" strokeWidth="1.2" />
-              <line x1="14.75" y1="8.5" x2="14.75" y2="11.5" stroke="white" strokeWidth="1.2" />
-            </svg>
-          </div>
-          <div className="w-6 h-6 border-2 border-[#1a4a5e] border-t-transparent rounded-full animate-spin" />
-        </div>
-      </div>
-    );
+    return <LoadingFallback />;
   }
 
   const openInventory = () => setModal('inventoryBuilder');
@@ -91,7 +93,6 @@ function App() {
     const next = pendingAfterAuth.current;
     pendingAfterAuth.current = null;
 
-    // إذا لم يكن هناك modal محدد بعد التسجيل، افتح صفحة الحساب
     if (!next || next === 'none') {
       setModal('none');
       setFreshLogin(true);
@@ -118,7 +119,6 @@ function App() {
     const next = pendingAfterAuth.current;
     pendingAfterAuth.current = null;
 
-    // إذا لم يكن هناك modal محدد بعد تسجيل الدخول، افتح صفحة الحساب
     if (!next || next === 'none') {
       setModal('none');
       setFreshLogin(true);
@@ -188,7 +188,6 @@ function App() {
       >
         {session ? (
           <>
-            {/* Left Sidebar */}
             <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
               <DesktopSidebar
                 session={session}
@@ -199,7 +198,6 @@ function App() {
               />
             </div>
 
-            {/* Center Main Content */}
             <div
               className="flex-1 flex flex-col min-w-0 h-screen rounded-l-3xl overflow-hidden"
               style={{
@@ -214,10 +212,118 @@ function App() {
                 onLogout={handleLogout}
               />
               <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#b8d0e0 transparent' }}>
+                <Suspense fallback={<LoadingFallback />}>
+                  <div key={mainView} className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    {mainView === 'marketplace' ? (
+                      <div className="pb-10">
+                        <HeroSection desktop />
+                        <MarketSection
+                          onCreateOrder={openOrder}
+                          onAddInventory={openInventory}
+                          isAuthenticated={true}
+                          onShowAuth={() => openAuth('none')}
+                          onDetailSheetChange={setIsDetailSheetOpen}
+                        />
+                      </div>
+                    ) : mainView === 'account' ? (
+                      <EnhancedAccountPage
+                        session={session}
+                        freshLogin={freshLogin}
+                        onClose={() => setMainView('marketplace')}
+                        onLogout={handleLogout}
+                        onUpdateProfile={updateProfile}
+                        onOpenSupplierDeals={() => setModal('supplierDeals')}
+                        onOpenBuyerDeals={() => setModal('buyerDeals')}
+                        onOpenSupplierInventory={() => setModal('supplierInventory')}
+                        onOpenPurchasedInventory={() => setModal('purchasedInventory')}
+                        onAddInventory={openInventory}
+                        onCreateOrder={openOrder}
+                      />
+                    ) : (
+                      <OperationalDashboard
+                        session={session}
+                        onAddInventory={openInventory}
+                        onCreateOrder={openOrder}
+                        onOpenSupplierDeals={() => setModal('supplierDeals')}
+                        onOpenBuyerDeals={() => setModal('buyerDeals')}
+                        refreshRef={dashboardRefresh}
+                      />
+                    )}
+                  </div>
+                </Suspense>
+              </div>
+            </div>
+
+            <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
+              <DesktopRightPanel
+                session={session}
+                onLogin={() => openAuth('none')}
+                onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
+              <DesktopSidebar
+                session={session}
+                onOpenAccount={() => openAuth('none')}
+                onCreateOrder={openOrder}
+                onAddInventory={openInventory}
+                onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
+              />
+            </div>
+
+            <div
+              className="flex-1 flex flex-col min-w-0 h-screen rounded-l-3xl overflow-hidden"
+              style={{
+                background: 'linear-gradient(160deg, #bccad6 0%, #c8d5e2 40%, #d0dfe8 70%, #c3d1e0 100%)',
+                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.6)',
+              }}
+            >
+              <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#b8d0e0 transparent' }}>
+                <Suspense fallback={<LoadingFallback />}>
+                  <div className="pb-10">
+                    <HeroSection desktop />
+                    <MarketSection
+                      onCreateOrder={openOrder}
+                      onAddInventory={openInventory}
+                      isAuthenticated={false}
+                      onShowAuth={() => openAuth('none')}
+                      onDetailSheetChange={setIsDetailSheetOpen}
+                    />
+                  </div>
+                </Suspense>
+              </div>
+            </div>
+
+            <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
+              <DesktopRightPanel
+                session={session}
+                onLogin={() => openAuth('none')}
+                onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
+              />
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── Mobile Layout ── */}
+      <div className="lg:hidden min-h-screen" style={{ background: 'linear-gradient(180deg, #c3d1e0 0%, #cdd9e6 30%, #d5e1ea 50%, #cdd9e6 70%, #c3d1e0 100%)' }}>
+        {session ? (
+          <>
+            <TopNavigation
+              session={session}
+              currentView={getCurrentNavView()}
+              onNavigate={handleNavigation}
+              onLogout={handleLogout}
+            />
+            <div className="overflow-y-auto" style={{ height: 'calc(100vh - 56px)' }}>
+              <Suspense fallback={<LoadingFallback />}>
                 <div key={mainView} className="animate-in fade-in slide-in-from-bottom-4 duration-300">
                   {mainView === 'marketplace' ? (
-                    <div className="pb-10">
-                      <HeroSection desktop />
+                    <>
+                      <HeroSection />
                       <MarketSection
                         onCreateOrder={openOrder}
                         onAddInventory={openInventory}
@@ -225,7 +331,7 @@ function App() {
                         onShowAuth={() => openAuth('none')}
                         onDetailSheetChange={setIsDetailSheetOpen}
                       />
-                    </div>
+                    </>
                   ) : mainView === 'account' ? (
                     <EnhancedAccountPage
                       session={session}
@@ -251,113 +357,7 @@ function App() {
                     />
                   )}
                 </div>
-              </div>
-            </div>
-
-            {/* Right Panel */}
-            <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
-              <DesktopRightPanel
-                session={session}
-                onLogin={() => openAuth('none')}
-                onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
-              />
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Left Sidebar */}
-            <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
-              <DesktopSidebar
-                session={session}
-                onOpenAccount={() => openAuth('none')}
-                onCreateOrder={openOrder}
-                onAddInventory={openInventory}
-                onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
-              />
-            </div>
-
-            {/* Center Main Content */}
-            <div
-              className="flex-1 flex flex-col min-w-0 h-screen rounded-l-3xl overflow-hidden"
-              style={{
-                background: 'linear-gradient(160deg, #bccad6 0%, #c8d5e2 40%, #d0dfe8 70%, #c3d1e0 100%)',
-                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.6)',
-              }}
-            >
-              <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#b8d0e0 transparent' }}>
-                <div className="pb-10">
-                  <HeroSection desktop />
-                  <MarketSection
-                    onCreateOrder={openOrder}
-                    onAddInventory={openInventory}
-                    isAuthenticated={false}
-                    onShowAuth={() => openAuth('none')}
-                    onDetailSheetChange={setIsDetailSheetOpen}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Right Panel */}
-            <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
-              <DesktopRightPanel
-                session={session}
-                onLogin={() => openAuth('none')}
-                onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
-              />
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* ── Mobile Layout ── */}
-      <div className="lg:hidden min-h-screen" style={{ background: 'linear-gradient(180deg, #c3d1e0 0%, #cdd9e6 30%, #d5e1ea 50%, #cdd9e6 70%, #c3d1e0 100%)' }}>
-        {session ? (
-          <>
-            <TopNavigation
-              session={session}
-              currentView={getCurrentNavView()}
-              onNavigate={handleNavigation}
-              onLogout={handleLogout}
-            />
-            <div className="overflow-y-auto" style={{ height: 'calc(100vh - 56px)' }}>
-              <div key={mainView} className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                {mainView === 'marketplace' ? (
-                  <>
-                    <HeroSection />
-                    <MarketSection
-                      onCreateOrder={openOrder}
-                      onAddInventory={openInventory}
-                      isAuthenticated={true}
-                      onShowAuth={() => openAuth('none')}
-                      onDetailSheetChange={setIsDetailSheetOpen}
-                    />
-                  </>
-                ) : mainView === 'account' ? (
-                  <EnhancedAccountPage
-                    session={session}
-                    freshLogin={freshLogin}
-                    onClose={() => setMainView('marketplace')}
-                    onLogout={handleLogout}
-                    onUpdateProfile={updateProfile}
-                    onOpenSupplierDeals={() => setModal('supplierDeals')}
-                    onOpenBuyerDeals={() => setModal('buyerDeals')}
-                    onOpenSupplierInventory={() => setModal('supplierInventory')}
-                    onOpenPurchasedInventory={() => setModal('purchasedInventory')}
-                    onAddInventory={openInventory}
-                    onCreateOrder={openOrder}
-                  />
-                ) : (
-                  <OperationalDashboard
-                    session={session}
-                    onAddInventory={openInventory}
-                    onCreateOrder={openOrder}
-                    onOpenSupplierDeals={() => setModal('supplierDeals')}
-                    onOpenBuyerDeals={() => setModal('buyerDeals')}
-                    refreshRef={dashboardRefresh}
-                  />
-                )}
-              </div>
+              </Suspense>
             </div>
           </>
         ) : (
@@ -374,14 +374,16 @@ function App() {
               onLogout={handleLogout}
             />
             <div className="overflow-y-auto" style={{ height: 'calc(100vh - 65px)' }}>
-              <HeroSection />
-              <MarketSection
-                onCreateOrder={openOrder}
-                onAddInventory={openInventory}
-                isAuthenticated={false}
-                onShowAuth={() => openAuth('none')}
-                onDetailSheetChange={setIsDetailSheetOpen}
-              />
+              <Suspense fallback={<LoadingFallback />}>
+                <HeroSection />
+                <MarketSection
+                  onCreateOrder={openOrder}
+                  onAddInventory={openInventory}
+                  isAuthenticated={false}
+                  onShowAuth={() => openAuth('none')}
+                  onDetailSheetChange={setIsDetailSheetOpen}
+                />
+              </Suspense>
               {!isDetailSheetOpen && (
                 <BottomNavigation
                   onAddInventory={openInventory}
@@ -395,118 +397,120 @@ function App() {
       </div>
 
       {/* ── Shared Modals ── */}
-      {modal === 'orderBuilder' && (
-        <OrderBuilder
-          onClose={() => { setModal('none'); setAuthError(''); dashboardRefresh.current?.(); }}
-          phone={session?.profile.phone}
-          authError={authError}
-          onRegisterComplete={async (data) => { await handleInlineRegister(data); await activateRole('buyer'); }}
-          onLoginComplete={async (phone, pin) => { await handleInlineLogin(phone, pin); await activateRole('buyer'); }}
-          onOpenDeals={() => { setModal('buyerDeals'); dashboardRefresh.current?.(); }}
-          onOpenAccount={() => {
-            setModal('none');
-            setFreshLogin(true);
-            setMainView('account');
-            dashboardRefresh.current?.();
-          }}
-        />
-      )}
+      <Suspense fallback={null}>
+        {modal === 'orderBuilder' && (
+          <OrderBuilder
+            onClose={() => { setModal('none'); setAuthError(''); dashboardRefresh.current?.(); }}
+            phone={session?.profile.phone}
+            authError={authError}
+            onRegisterComplete={async (data) => { await handleInlineRegister(data); await activateRole('buyer'); }}
+            onLoginComplete={async (phone, pin) => { await handleInlineLogin(phone, pin); await activateRole('buyer'); }}
+            onOpenDeals={() => { setModal('buyerDeals'); dashboardRefresh.current?.(); }}
+            onOpenAccount={() => {
+              setModal('none');
+              setFreshLogin(true);
+              setMainView('account');
+              dashboardRefresh.current?.();
+            }}
+          />
+        )}
 
-      {modal === 'inventoryBuilder' && (
-        <InventoryBuilder
-          onClose={() => { setModal('none'); setAuthError(''); dashboardRefresh.current?.(); }}
-          phone={session?.profile.phone}
-          onDepositComplete={() => activateRole('supplier')}
-          authError={authError}
-          onRegisterComplete={async (data) => { await handleInlineRegister(data); await activateRole('supplier'); }}
-          onLoginComplete={async (phone, pin) => { await handleInlineLogin(phone, pin); await activateRole('supplier'); }}
-        />
-      )}
+        {modal === 'inventoryBuilder' && (
+          <InventoryBuilder
+            onClose={() => { setModal('none'); setAuthError(''); dashboardRefresh.current?.(); }}
+            phone={session?.profile.phone}
+            onDepositComplete={() => activateRole('supplier')}
+            authError={authError}
+            onRegisterComplete={async (data) => { await handleInlineRegister(data); await activateRole('supplier'); }}
+            onLoginComplete={async (phone, pin) => { await handleInlineLogin(phone, pin); await activateRole('supplier'); }}
+          />
+        )}
 
-      {modal === 'account' && (session || pendingSession.current) && (
-        <AccountPage
-          session={(session || pendingSession.current)!}
-          freshLogin={freshLogin}
-          onClose={() => { setModal('none'); setFreshLogin(false); pendingSession.current = null; }}
-          onLogout={async () => { await logout(); setModal('none'); setFreshLogin(false); pendingSession.current = null; }}
-          onUpdateProfile={updateProfile}
-          onOpenSupplierDeals={() => setModal('supplierDeals')}
-          onOpenBuyerDeals={() => setModal('buyerDeals')}
-          onOpenSupplierInventory={() => setModal('supplierInventory')}
-          onOpenPurchasedInventory={() => setModal('purchasedInventory')}
-        />
-      )}
+        {modal === 'account' && (session || pendingSession.current) && (
+          <AccountPage
+            session={(session || pendingSession.current)!}
+            freshLogin={freshLogin}
+            onClose={() => { setModal('none'); setFreshLogin(false); pendingSession.current = null; }}
+            onLogout={async () => { await logout(); setModal('none'); setFreshLogin(false); pendingSession.current = null; }}
+            onUpdateProfile={updateProfile}
+            onOpenSupplierDeals={() => setModal('supplierDeals')}
+            onOpenBuyerDeals={() => setModal('buyerDeals')}
+            onOpenSupplierInventory={() => setModal('supplierInventory')}
+            onOpenPurchasedInventory={() => setModal('purchasedInventory')}
+          />
+        )}
 
-      {modal === 'registration' && (
-        <PhoneRegistration
-          onComplete={handleRegisterComplete}
-          onClose={() => { pendingAfterAuth.current = null; setModal('none'); setAuthError(''); }}
-          onSwitchToLogin={() => { setModal('login'); setLoginError(''); }}
-        />
-      )}
+        {modal === 'registration' && (
+          <PhoneRegistration
+            onComplete={handleRegisterComplete}
+            onClose={() => { pendingAfterAuth.current = null; setModal('none'); setAuthError(''); }}
+            onSwitchToLogin={() => { setModal('login'); setLoginError(''); }}
+          />
+        )}
 
-      {modal === 'login' && (
-        <LoginPage
-          externalError={loginError}
-          onComplete={handleLoginComplete}
-          onClose={() => { pendingAfterAuth.current = null; setModal('none'); setLoginError(''); }}
-          onSwitchToRegister={() => { setModal('registration'); setAuthError(''); }}
-        />
-      )}
+        {modal === 'login' && (
+          <LoginPage
+            externalError={loginError}
+            onComplete={handleLoginComplete}
+            onClose={() => { pendingAfterAuth.current = null; setModal('none'); setLoginError(''); }}
+            onSwitchToRegister={() => { setModal('registration'); setAuthError(''); }}
+          />
+        )}
 
-      {modal === 'supplierDeals' && session && (
-        <SupplierDealsPage
-          phone={session.profile.phone}
-          onClose={() => { setModal('none'); dashboardRefresh.current?.(); }}
-        />
-      )}
+        {modal === 'supplierDeals' && session && (
+          <SupplierDealsPage
+            phone={session.profile.phone}
+            onClose={() => { setModal('none'); dashboardRefresh.current?.(); }}
+          />
+        )}
 
-      {modal === 'buyerDeals' && session && (
-        <BuyerDealsPage
-          phone={session.profile.phone}
-          onClose={() => {
-            setModal('none');
-            dashboardRefresh.current?.();
-          }}
-        />
-      )}
+        {modal === 'buyerDeals' && session && (
+          <BuyerDealsPage
+            phone={session.profile.phone}
+            onClose={() => {
+              setModal('none');
+              dashboardRefresh.current?.();
+            }}
+          />
+        )}
 
-      {modal === 'adminLogin' && (
-        <AdminLoginSheet
-          onClose={() => setModal('none')}
-          onSuccess={(staffData) => {
-            setAdminStaff(staffData);
-            sessionStorage.setItem('adminStaffData', JSON.stringify(staffData));
-            setModal('admin');
-          }}
-        />
-      )}
+        {modal === 'adminLogin' && (
+          <AdminLoginSheet
+            onClose={() => setModal('none')}
+            onSuccess={(staffData) => {
+              setAdminStaff(staffData);
+              sessionStorage.setItem('adminStaffData', JSON.stringify(staffData));
+              setModal('admin');
+            }}
+          />
+        )}
 
-      {modal === 'admin' && adminStaff && (
-        <AdminPanel
-          adminStaff={adminStaff}
-          onClose={() => {
-            setModal('none');
-            setAdminStaff(null);
-            sessionStorage.removeItem('adminStaffData');
-          }}
-        />
-      )}
+        {modal === 'admin' && adminStaff && (
+          <AdminPanel
+            adminStaff={adminStaff}
+            onClose={() => {
+              setModal('none');
+              setAdminStaff(null);
+              sessionStorage.removeItem('adminStaffData');
+            }}
+          />
+        )}
 
-      {modal === 'supplierInventory' && session && (
-        <SupplierInventory
-          phone={session.profile.phone}
-          onClose={() => { setModal('none'); dashboardRefresh.current?.(); }}
-          onAddInventory={() => setModal('inventoryBuilder')}
-        />
-      )}
+        {modal === 'supplierInventory' && session && (
+          <SupplierInventory
+            phone={session.profile.phone}
+            onClose={() => { setModal('none'); dashboardRefresh.current?.(); }}
+            onAddInventory={() => setModal('inventoryBuilder')}
+          />
+        )}
 
-      {modal === 'purchasedInventory' && session && (
-        <PurchasedInventorySheet
-          phone={session.profile.phone}
-          onClose={() => { setModal('none'); dashboardRefresh.current?.(); }}
-        />
-      )}
+        {modal === 'purchasedInventory' && session && (
+          <PurchasedInventorySheet
+            phone={session.profile.phone}
+            onClose={() => { setModal('none'); dashboardRefresh.current?.(); }}
+          />
+        )}
+      </Suspense>
 
     </div>
   );
