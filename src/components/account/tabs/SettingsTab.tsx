@@ -34,6 +34,7 @@ interface Props {
   session: AppSession;
   onLogout: () => void;
   onUpdateProfile?: (updates: { display_name?: string }) => Promise<void>;
+  onEditProfile?: () => void;
 }
 
 const SECTION_IDS = [
@@ -152,7 +153,7 @@ function CommissionRow({ label, value, mono }: { label: string; value: string; m
   );
 }
 
-export default function SettingsTab({ session, onLogout, onUpdateProfile }: Props) {
+export default function SettingsTab({ session, onLogout, onUpdateProfile, onEditProfile }: Props) {
   const phone = session.profile.phone;
   const {
     supportMessages, notifPrefs, loadingMessages, sendingMessage, sendingSuggestion, savingProfile,
@@ -249,6 +250,20 @@ export default function SettingsTab({ session, onLogout, onUpdateProfile }: Prop
         icon={<User className="w-5 h-5 text-[#1a4a5e]" />}
       >
         <div className="space-y-2.5 p-4 pt-3">
+          {onEditProfile && (
+            <button
+              onClick={onEditProfile}
+              className="w-full flex items-center justify-between gap-3 py-3 px-4 rounded-2xl text-white active:scale-[0.97] transition-transform mb-1"
+              style={{ background: 'linear-gradient(135deg, #0369A1, #0284C7)', boxShadow: '0 4px 14px rgba(3,105,161,0.25)' }}
+            >
+              <ChevronLeft className="w-4 h-4 opacity-70" />
+              <div className="flex-1 text-right">
+                <p className="text-[13px] font-bold">تعديل معلومات الحساب والصورة</p>
+                <p className="text-[10px] opacity-70 mt-0.5">الاسم، المدينة، النشاط، الصورة الشخصية</p>
+              </div>
+              <Pencil className="w-4 h-4 opacity-80" />
+            </button>
+          )}
           <InfoRow icon={<Phone className="w-3.5 h-3.5 text-[#7a9aab]" />} label="رقم الجوال" value={phone} />
           <InfoRow icon={<Hash className="w-3.5 h-3.5 text-[#7a9aab]" />} label="نوع الحساب" value={roleLabel} />
           {session.profile.company_name && (

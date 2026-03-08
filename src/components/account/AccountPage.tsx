@@ -120,7 +120,7 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
       case 'orders':
         return <MyOrdersTab phone={localSession.profile.phone} onCreateOrder={onCreateOrder} onGoToDeals={() => setActiveTab('deals')} onGoToWarehouse={() => setActiveTab('warehouse')} />;
       case 'settings':
-        return <SettingsTab session={localSession} onLogout={onLogout} />;
+        return <SettingsTab session={localSession} onLogout={onLogout} onEditProfile={() => setShowEditSheet(true)} />;
       default:
         return null;
     }

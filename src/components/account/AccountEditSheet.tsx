@@ -8,7 +8,6 @@ import {
   Briefcase,
   Check,
   Loader2,
-  Trash2,
   ChevronDown,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
