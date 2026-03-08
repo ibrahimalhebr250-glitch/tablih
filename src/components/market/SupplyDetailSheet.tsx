@@ -179,13 +179,14 @@ function WelcomeMessageDialog({ card, onClose, onLogin }: {
   );
 }
 
-function NegotiationRequestDialog({ card, buyerPhone, existingRequest, onClose, onSent }: {
+function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisting, onClose, onSent }: {
   card: SupplyCard;
   buyerPhone: string;
   existingRequest: { id: string; status: string; created_at: string; supplier_response?: string } | null;
   onClose: () => void;
   onSent: () => void;
 }) {
+  const existingRequest = rawExisting?.status === 'rejected' ? null : rawExisting;
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -492,6 +493,7 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, buye
 
   const handleRequestSent = () => {
     setRequestSent(true);
+    setShowNegotiationDialog(false);
     loadExistingRequest();
   };
 
