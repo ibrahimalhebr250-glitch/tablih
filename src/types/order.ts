@@ -18,10 +18,8 @@ export interface OrderFormData {
 export interface MatchResult {
   found: boolean;
   matchedQuantity?: number;
-  deliveryDays?: number;
-  pricePerUnit?: number;
-  totalPrice?: number;
-  conditions?: string[];
+  supplierCity?: string;
+  supplierPhone?: string;
   requestId?: string;
   dealId?: string;
   dealRef?: string;

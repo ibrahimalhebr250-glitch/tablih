@@ -5,23 +5,6 @@ import { getPlatformSettingsOnce } from './usePlatformSettings';
 
 const QUALITY_ORDER: Record<string, number> = { A: 4, B: 3, C: 2, Scrap: 1 };
 
-function calculateDynamicPrice(palletType: string, quality: string, size: string, quantity: number): number {
-  const basePrices: Record<string, number> = {
-    'خشبية': 45,
-    'بلاستيكية': 65,
-    'إعادة تدوير': 20,
-  };
-  const qualityMultipliers: Record<string, number> = { A: 1.4, B: 1.0, C: 0.75, Scrap: 0.35 };
-  const sizeMultipliers: Record<string, number> = {
-    '120×100': 1.0, '110×110': 1.05, '120×80': 0.85, '80×60': 0.7, 'أخرى': 0.9,
-  };
-  const base = basePrices[palletType] ?? 45;
-  const qm = qualityMultipliers[quality] ?? 1.0;
-  const sm = sizeMultipliers[size] ?? 1.0;
-  const volumeDiscount = quantity >= 2000 ? 0.92 : quantity >= 1000 ? 0.96 : 1.0;
-  return Math.round(base * qm * sm * volumeDiscount);
-}
-
 function isQualityMatch(
   batchQuality: string,
   requestQuality: string,
@@ -74,6 +57,7 @@ export function useMatching() {
             accept_partial_delivery: form.acceptPartialDelivery,
             phone,
             status: 'pending',
+            order_source: 'manual_order',
           })
           .select('id, request_id')
           .maybeSingle();
@@ -91,12 +75,12 @@ export function useMatching() {
             .upsert({ user_id: existingUser.id, phone, role: 'buyer' }, { onConflict: 'phone,role', ignoreDuplicates: true });
         }
 
-        await new Promise((res) => setTimeout(res, 2500));
-
         const { data: batches } = await supabase
           .from('inventory_batches')
           .select('id, pallet_type, size, quality, city, available_quantity, phone')
           .eq('status', 'active')
+          .eq('publish_to_market', true)
+          .eq('hide_from_matching', false)
           .gt('available_quantity', 0)
           .eq('pallet_type', form.palletType ?? '')
           .eq('size', form.size ?? '')
@@ -196,13 +180,6 @@ export function useMatching() {
             : null;
 
           if (matchedQty && matchedQty > 0) {
-            const pricePerUnit = calculateDynamicPrice(
-              matchedBatch.pallet_type,
-              matchedBatch.quality,
-              matchedBatch.size,
-              matchedQty
-            );
-
             const supplierPhone = matchedBatch.phone ?? '';
 
             if (supplierPhone && supplierPhone === phone) {
@@ -230,7 +207,7 @@ export function useMatching() {
                 p_quality: matchedBatch.quality,
                 p_city: matchedBatch.city,
                 p_quantity: matchedQty,
-                p_final_price: pricePerUnit,
+                p_final_price: 0,
                 p_request_id: savedOrder?.request_id ?? '',
               }
             );
@@ -251,10 +228,8 @@ export function useMatching() {
             const result: MatchResult = {
               found: true,
               matchedQuantity: matchedQty,
-              deliveryDays: [2, 3, 5, 7][Math.floor(Math.random() * 4)],
-              pricePerUnit,
-              totalPrice: matchedQty * pricePerUnit,
-              conditions: ['التسليم يشمل منطقة المستودع', 'يُشترط الدفع مسبقاً'],
+              supplierCity: matchedBatch.city,
+              supplierPhone: supplierPhone,
               dealId: dealResult.deal_id,
               dealRef: dealResult.deal_ref,
               reservationExpiresAt: dealResult.expires_at,
@@ -267,7 +242,6 @@ export function useMatching() {
                 .update({
                   status: 'matched',
                   matched_quantity: matchedQty,
-                  matched_price: pricePerUnit,
                   updated_at: new Date().toISOString(),
                 })
                 .eq('id', savedOrder.id);

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { CheckCircle, Copy, RefreshCw, Handshake, Radar, Sparkles } from 'lucide-react';
+import { CheckCircle, Copy, Handshake, Radar, Sparkles, MapPin, Package, FileText } from 'lucide-react';
 import type { MatchResult, OrderFormData } from '../../types/order';
 
 interface Props {
@@ -13,7 +13,6 @@ interface Props {
 }
 
 export default function MatchResultScreen({ requestId, matchResult, onReset, onEdit, onExecute, onAutoRedirect }: Props) {
-  // انتقال تلقائي بعد 3 ثواني عند عدم المطابقة
   useEffect(() => {
     if (!matchResult.found && onAutoRedirect) {
       const timer = setTimeout(() => {
@@ -31,10 +30,10 @@ export default function MatchResultScreen({ requestId, matchResult, onReset, onE
             <CheckCircle className="w-10 h-10 text-[#27AE60]" />
           </div>
           <h2 className="text-[20px] font-bold text-[#1a4a5e] text-center mb-1">
-            تم العثور على كمية مطابقة
+            تم العثور على مخزون مطابق
           </h2>
           <p className="text-[13px] text-[#7a9aab] text-center">
-            وجدنا مصدراً متاحاً يطابق مواصفات طلبك
+            تم إنشاء صفقة وحجز الكمية من المورد
           </p>
         </div>
 
@@ -48,45 +47,52 @@ export default function MatchResultScreen({ requestId, matchResult, onReset, onE
                 {matchResult.matchedQuantity?.toLocaleString('ar-SA')}
                 <span className="text-[13px] text-[#7a9aab] font-medium mr-1">طبلية</span>
               </span>
-              <span className="text-[13px] text-[#7a9aab]">الكمية المتاحة</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[13px] text-[#7a9aab]">الكمية المحجوزة</span>
+                <Package className="w-4 h-4 text-[#7a9aab]" />
+              </div>
             </div>
 
-            <div className="flex justify-between items-center pb-3 border-b border-gray-50">
-              <span className="text-[18px] font-bold text-[#2196F3]">
-                {matchResult.pricePerUnit?.toLocaleString('ar-SA')}
-                <span className="text-[12px] font-medium mr-1">ريال / طبلية</span>
-              </span>
-              <span className="text-[13px] text-[#7a9aab]">السعر</span>
-            </div>
+            {matchResult.supplierCity && (
+              <div className="flex justify-between items-center pb-3 border-b border-gray-50">
+                <span className="text-[16px] font-bold text-[#1a4a5e]">
+                  {matchResult.supplierCity}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[13px] text-[#7a9aab]">مدينة المورد</span>
+                  <MapPin className="w-4 h-4 text-[#7a9aab]" />
+                </div>
+              </div>
+            )}
 
-            <div className="flex justify-between items-center pb-3 border-b border-gray-50">
-              <span className="text-[16px] font-bold text-[#1a4a5e]">
-                {matchResult.deliveryDays} أيام
-              </span>
-              <span className="text-[13px] text-[#7a9aab]">مدة التسليم</span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-[16px] font-bold text-[#1a4a5e]">
-                {matchResult.totalPrice?.toLocaleString('ar-SA')}
-                <span className="text-[12px] font-medium mr-1">ريال</span>
-              </span>
-              <span className="text-[13px] text-[#7a9aab]">الإجمالي</span>
-            </div>
+            {matchResult.dealRef && (
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-[15px] font-bold text-[#2196F3]" dir="ltr">
+                    {matchResult.dealRef}
+                  </span>
+                  <button
+                    onClick={() => matchResult.dealRef && navigator.clipboard?.writeText(matchResult.dealRef)}
+                    className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-[#2196F3]" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[13px] text-[#7a9aab]">رقم الصفقة</span>
+                  <FileText className="w-4 h-4 text-[#7a9aab]" />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {matchResult.conditions && matchResult.conditions.length > 0 && (
-          <div className="bg-[#FFFBEB] rounded-2xl border border-[#FDE68A] p-4 mb-4">
-            <p className="text-[12px] font-bold text-[#92400E] mb-2">شروط التنفيذ</p>
-            {matchResult.conditions.map((c, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <div className="w-1.5 h-1.5 bg-[#F59E0B] rounded-full mt-1.5 flex-shrink-0" />
-                <span className="text-[12px] text-[#92400E]">{c}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="bg-[#FFF7ED] rounded-2xl border border-[#FED7AA] p-4 mb-4">
+          <p className="text-[12px] font-bold text-[#9A3412] mb-2">ملاحظة</p>
+          <p className="text-[12px] text-[#9A3412] leading-relaxed">
+            تم حجز الكمية مؤقتاً. يمكنك التفاوض على السعر وتفاصيل التسليم مباشرة داخل الصفقة.
+          </p>
+        </div>
 
         <div className="sticky bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-gray-100">
           <div className="flex flex-col gap-2">
