@@ -21,9 +21,10 @@ const AdminLoginSheet = lazy(() => import('./components/admin/AdminLoginSheet'))
 const SupplierInventory = lazy(() => import('./components/inventory/SupplierInventory'));
 const MarketSection = lazy(() => import('./components/market/MarketSection'));
 const AccountPage = lazy(() => import('./components/account/AccountPage'));
+const MatchingHub = lazy(() => import('./components/matching/MatchingHub'));
 
-type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'account';
-type MainView = 'marketplace' | 'dashboard';
+type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'account' | 'matchingHub';
+type MainView = 'marketplace' | 'dashboard' | 'matching';
 
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #d6e4f0 0%, #e0ecf6 50%, #d6e4f0 100%)' }}>
@@ -530,6 +531,13 @@ function App() {
             onCreateOrder={() => setModal('orderBuilder')}
             onLogout={handleLogout}
             initialTab={accountInitialTab}
+          />
+        )}
+
+        {modal === 'matchingHub' && (
+          <MatchingHub
+            phone={session?.profile?.phone}
+            isAdmin={!!adminStaff}
           />
         )}
       </Suspense>
