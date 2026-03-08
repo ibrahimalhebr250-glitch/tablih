@@ -526,6 +526,10 @@ export default function InventoryBuilder({
               matchableQty={builder.matchableQty}
               onNewDeposit={builder.reset}
               onClose={onClose}
+              onGoHome={() => {
+                if (onDepositComplete) onDepositComplete();
+                onClose();
+              }}
             />
           )}
         </div>

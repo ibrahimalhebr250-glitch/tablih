@@ -1,4 +1,4 @@
-import { CheckCircle, Copy, Zap, Plus } from 'lucide-react';
+import { CheckCircle, Copy, Zap, Plus, Home, CloudCog, Network, Shield } from 'lucide-react';
 
 interface Props {
   batchRef: string | null;
@@ -6,6 +6,7 @@ interface Props {
   matchableQty: number;
   onNewDeposit: () => void;
   onClose: () => void;
+  onGoHome?: () => void;
 }
 
 export default function DepositResultScreen({
@@ -14,6 +15,7 @@ export default function DepositResultScreen({
   matchableQty,
   onNewDeposit,
   onClose,
+  onGoHome,
 }: Props) {
   return (
     <div className="px-4 pt-6 pb-36">
@@ -41,11 +43,11 @@ export default function DepositResultScreen({
           </>
         ) : (
           <>
-            <h2 className="text-[20px] font-bold text-[#1a4a5e] text-center mb-1">
-              تم إيداع الدفعة بنجاح
+            <h2 className="text-[22px] font-bold text-[#1a4a5e] text-center mb-2 leading-snug">
+              تم إنشاء بطاقة مستودع سحابي
             </h2>
-            <p className="text-[13px] text-[#7a9aab] text-center leading-relaxed">
-              وهي الآن نشطة ضمن الشبكة الوطنية
+            <p className="text-[13px] text-[#7a9aab] text-center leading-relaxed max-w-[280px]">
+              بالكمية والمواصفات المسجلة، وهي الآن نشطة ضمن الشبكة الوطنية
             </p>
           </>
         )}
@@ -92,23 +94,64 @@ export default function DepositResultScreen({
         </div>
       </div>
 
-      <div className="bg-[#F5F9FC] rounded-2xl p-4 mb-4">
-        <p className="text-[12px] text-[#2c5f7c] leading-relaxed text-right">
-          ستتلقى إشعاراً فور مطابقة دفعتك مع طلب مشترٍ من الشبكة
+      <div className="bg-gradient-to-br from-[#E8F8F0] via-[#EBF5FF] to-[#F0F9FF] rounded-2xl p-5 mb-4 border border-[#C3EAD4] shadow-sm">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-white/80 flex items-center justify-center flex-shrink-0 shadow-sm">
+            <CloudCog className="w-5 h-5 text-[#2196F3]" />
+          </div>
+          <div className="flex-1 text-right">
+            <h3 className="text-[13px] font-bold text-[#1a4a5e] mb-1">المستودع السحابي</h3>
+            <p className="text-[11px] text-[#5a8499] leading-relaxed">
+              بطاقتك مسجلة في نظام التتبع الذكي وستُطابق تلقائياً مع الطلبات المناسبة
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-white/80">
+            <div className="flex items-center justify-end gap-2 mb-1">
+              <span className="text-[11px] font-bold text-[#1a4a5e]">حماية متقدمة</span>
+              <Shield className="w-4 h-4 text-[#27AE60]" />
+            </div>
+            <p className="text-[10px] text-[#5a8499] text-right">بيانات مشفرة</p>
+          </div>
+
+          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-white/80">
+            <div className="flex items-center justify-end gap-2 mb-1">
+              <span className="text-[11px] font-bold text-[#1a4a5e]">شبكة وطنية</span>
+              <Network className="w-4 h-4 text-[#2196F3]" />
+            </div>
+            <p className="text-[10px] text-[#5a8499] text-right">وصول فوري</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-[#FFFBEB] rounded-2xl border border-[#FDE68A] p-4 mb-4">
+        <p className="text-[12px] text-[#92400E] leading-relaxed text-right font-medium">
+          ستتلقى إشعاراً فورياً عند مطابقة دفعتك مع طلب مشترٍ من الشبكة
         </p>
       </div>
 
       <div className="sticky bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-gray-100">
-        <div className="flex gap-3">
+        <div className="grid grid-cols-3 gap-2">
           <button
             onClick={onClose}
-            className="flex-1 py-3.5 border-2 border-[#1a4a5e] text-[#1a4a5e] font-bold text-[14px] rounded-2xl active:scale-[0.98] transition-transform"
+            className="py-3.5 border-2 border-[#1a4a5e] text-[#1a4a5e] font-bold text-[13px] rounded-2xl active:scale-[0.98] transition-transform flex items-center justify-center gap-1"
           >
             العودة
           </button>
+          {onGoHome && (
+            <button
+              onClick={onGoHome}
+              className="py-3.5 bg-[#2196F3] text-white font-bold text-[13px] rounded-2xl active:scale-[0.98] transition-transform flex items-center justify-center gap-1"
+            >
+              <Home className="w-4 h-4" />
+              الرئيسية
+            </button>
+          )}
           <button
             onClick={onNewDeposit}
-            className="flex-1 py-3.5 bg-[#1a4a5e] text-white font-bold text-[14px] rounded-2xl active:scale-[0.98] transition-transform flex items-center justify-center gap-1.5"
+            className="py-3.5 bg-[#1a4a5e] text-white font-bold text-[13px] rounded-2xl active:scale-[0.98] transition-transform flex items-center justify-center gap-1"
           >
             <Plus className="w-4 h-4" />
             دفعة جديدة
