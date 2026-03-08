@@ -6,7 +6,6 @@ import { supabase } from '../lib/supabase';
 
 interface Props {
   session: AppSession | null;
-  onOpenAccount: () => void;
   onOpenAdmin: () => void;
   onOpenSupplierDeals?: () => void;
   onOpenBuyerDeals?: () => void;
@@ -18,7 +17,6 @@ interface Props {
 
 export default function Header({
   session,
-  onOpenAccount,
   onOpenAdmin,
   onOpenSupplierDeals,
   onOpenBuyerDeals,
@@ -138,66 +136,21 @@ export default function Header({
             </button>
           )}
 
-          {/* Account Button */}
+          {/* Account Button - Disabled (Coming Soon) */}
           <button
-            onClick={onOpenAccount}
-            className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl active:scale-95 transition-all group relative overflow-hidden"
+            className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl opacity-50 cursor-not-allowed relative overflow-hidden"
             style={{
               background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
               border: '2px solid #cbd5e1',
               boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
             }}
-            aria-label="حسابي"
+            aria-label="حسابي - قريباً"
+            disabled
+            title="قريباً"
           >
-            <div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{
-                background: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
-              }}
-            />
-            {session && trustConfig && TrustIcon ? (
-              <div className="relative">
-                {profileImageUrl ? (
-                  <div
-                    className="w-9 h-9 rounded-xl overflow-hidden relative z-10 group-active:scale-90 transition-transform"
-                    style={{
-                      border: '2.5px solid white',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    }}
-                  >
-                    <img
-                      src={profileImageUrl}
-                      alt="الصورة الشخصية"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center relative z-10 group-active:scale-90 transition-transform"
-                    style={{
-                      background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                      border: '2.5px solid white',
-                      boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
-                    }}
-                  >
-                    <span className="text-[11px] font-black text-white">{initials}</span>
-                  </div>
-                )}
-                <div
-                  className="absolute -bottom-1 -right-1 w-5 h-5 rounded-lg flex items-center justify-center border-2 border-white z-20"
-                  style={{
-                    background: trustConfig.color,
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                  }}
-                >
-                  <TrustIcon className="w-2.5 h-2.5 text-white" />
-                </div>
-              </div>
-            ) : (
-              <User className="w-6 h-6 text-[#64748b] relative z-10 group-active:scale-90 transition-transform" />
-            )}
+            <User className="w-6 h-6 text-[#64748b] relative z-10" />
             <span
-              className="text-[8px] font-bold mt-0.5 relative z-10 transition-colors group-hover:text-[#6366f1]"
+              className="text-[8px] font-bold mt-0.5 relative z-10"
               style={{ color: '#64748b' }}
             >
               حسابي

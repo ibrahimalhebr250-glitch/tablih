@@ -11,8 +11,6 @@ import type { AdminStaffData } from './components/admin/AdminLoginSheet';
 const OrderBuilder = lazy(() => import('./components/order/OrderBuilder'));
 const InventoryBuilder = lazy(() => import('./components/inventory/InventoryBuilder'));
 const OperationalDashboard = lazy(() => import('./components/dashboard/OperationalDashboard'));
-const EnhancedAccountPage = lazy(() => import('./components/account/EnhancedAccountPage'));
-const AccountPage = lazy(() => import('./components/account/AccountPage'));
 const PhoneRegistration = lazy(() => import('./components/account/PhoneRegistration'));
 const LoginPage = lazy(() => import('./components/account/LoginPage'));
 const SupplierDealsPage = lazy(() => import('./components/deals/supplier/SupplierDealsPage'));
@@ -20,11 +18,10 @@ const BuyerDealsPage = lazy(() => import('./components/deals/buyer/BuyerDealsPag
 const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
 const AdminLoginSheet = lazy(() => import('./components/admin/AdminLoginSheet'));
 const SupplierInventory = lazy(() => import('./components/inventory/SupplierInventory'));
-const PurchasedInventorySheet = lazy(() => import('./components/account/PurchasedInventorySheet'));
 const MarketSection = lazy(() => import('./components/market/MarketSection'));
 
-type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'account' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'purchasedInventory';
-type MainView = 'marketplace' | 'dashboard' | 'account';
+type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory';
+type MainView = 'marketplace' | 'dashboard';
 
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #d6e4f0 0%, #e0ecf6 50%, #d6e4f0 100%)' }}>
@@ -96,7 +93,7 @@ function App() {
     if (!next || next === 'none') {
       setModal('none');
       setFreshLogin(true);
-      setMainView('account');
+      setMainView('marketplace');
     } else {
       setModal(next);
     }
@@ -122,7 +119,7 @@ function App() {
     if (!next || next === 'none') {
       setModal('none');
       setFreshLogin(true);
-      setMainView('account');
+      setMainView('marketplace');
     } else {
       setModal(next);
     }
@@ -145,12 +142,10 @@ function App() {
     setModal('login');
   };
 
-  const handleNavigation = (view: 'marketplace' | 'orders' | 'inventory' | 'deals' | 'account') => {
+  const handleNavigation = (view: 'marketplace' | 'orders' | 'inventory' | 'deals') => {
     setModal('none');
     if (view === 'marketplace') {
       setMainView('marketplace');
-    } else if (view === 'account') {
-      setMainView('account');
     } else if (view === 'orders') {
       setMainView('dashboard');
     } else if (view === 'inventory') {
@@ -162,8 +157,7 @@ function App() {
     }
   };
 
-  const getCurrentNavView = (): 'marketplace' | 'orders' | 'inventory' | 'deals' | 'account' => {
-    if (mainView === 'account') return 'account';
+  const getCurrentNavView = (): 'marketplace' | 'orders' | 'inventory' | 'deals' => {
     if (mainView === 'marketplace') return 'marketplace';
     if (modal === 'supplierInventory') return 'inventory';
     if (modal === 'buyerDeals' || modal === 'supplierDeals') return 'deals';
@@ -191,7 +185,7 @@ function App() {
             <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
               <DesktopSidebar
                 session={session}
-                onOpenAccount={() => setMainView('account')}
+                onOpenAccount={() => {}}
                 onCreateOrder={openOrder}
                 onAddInventory={openInventory}
                 onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
@@ -225,20 +219,6 @@ function App() {
                           onDetailSheetChange={setIsDetailSheetOpen}
                         />
                       </div>
-                    ) : mainView === 'account' ? (
-                      <EnhancedAccountPage
-                        session={session}
-                        freshLogin={freshLogin}
-                        onClose={() => setMainView('marketplace')}
-                        onLogout={handleLogout}
-                        onUpdateProfile={updateProfile}
-                        onOpenSupplierDeals={() => setModal('supplierDeals')}
-                        onOpenBuyerDeals={() => setModal('buyerDeals')}
-                        onOpenSupplierInventory={() => setModal('supplierInventory')}
-                        onOpenPurchasedInventory={() => setModal('purchasedInventory')}
-                        onAddInventory={openInventory}
-                        onCreateOrder={openOrder}
-                      />
                     ) : (
                       <OperationalDashboard
                         session={session}
@@ -332,20 +312,6 @@ function App() {
                         onDetailSheetChange={setIsDetailSheetOpen}
                       />
                     </>
-                  ) : mainView === 'account' ? (
-                    <EnhancedAccountPage
-                      session={session}
-                      freshLogin={freshLogin}
-                      onClose={() => setMainView('marketplace')}
-                      onLogout={handleLogout}
-                      onUpdateProfile={updateProfile}
-                      onOpenSupplierDeals={() => setModal('supplierDeals')}
-                      onOpenBuyerDeals={() => setModal('buyerDeals')}
-                      onOpenSupplierInventory={() => setModal('supplierInventory')}
-                      onOpenPurchasedInventory={() => setModal('purchasedInventory')}
-                      onAddInventory={openInventory}
-                      onCreateOrder={openOrder}
-                    />
                   ) : (
                     <OperationalDashboard
                       session={session}
@@ -364,7 +330,6 @@ function App() {
           <>
             <Header
               session={session}
-              onOpenAccount={() => openAuth('none')}
               onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
               onOpenSupplierDeals={() => setModal('supplierDeals')}
               onOpenBuyerDeals={() => setModal('buyerDeals')}
@@ -388,7 +353,6 @@ function App() {
                 <BottomNavigation
                   onAddInventory={openInventory}
                   onCreateOrder={openOrder}
-                  onOpenAccount={() => openAuth('none')}
                 />
               )}
             </div>
@@ -408,8 +372,6 @@ function App() {
             onOpenDeals={() => { setModal('buyerDeals'); dashboardRefresh.current?.(); }}
             onOpenAccount={() => {
               setModal('none');
-              setFreshLogin(true);
-              setMainView('account');
               dashboardRefresh.current?.();
             }}
           />
@@ -423,20 +385,6 @@ function App() {
             authError={authError}
             onRegisterComplete={async (data) => { await handleInlineRegister(data); await activateRole('supplier'); }}
             onLoginComplete={async (phone, pin) => { await handleInlineLogin(phone, pin); await activateRole('supplier'); }}
-          />
-        )}
-
-        {modal === 'account' && (session || pendingSession.current) && (
-          <AccountPage
-            session={(session || pendingSession.current)!}
-            freshLogin={freshLogin}
-            onClose={() => { setModal('none'); setFreshLogin(false); pendingSession.current = null; }}
-            onLogout={async () => { await logout(); setModal('none'); setFreshLogin(false); pendingSession.current = null; }}
-            onUpdateProfile={updateProfile}
-            onOpenSupplierDeals={() => setModal('supplierDeals')}
-            onOpenBuyerDeals={() => setModal('buyerDeals')}
-            onOpenSupplierInventory={() => setModal('supplierInventory')}
-            onOpenPurchasedInventory={() => setModal('purchasedInventory')}
           />
         )}
 
@@ -501,13 +449,6 @@ function App() {
             phone={session.profile.phone}
             onClose={() => { setModal('none'); dashboardRefresh.current?.(); }}
             onAddInventory={() => setModal('inventoryBuilder')}
-          />
-        )}
-
-        {modal === 'purchasedInventory' && session && (
-          <PurchasedInventorySheet
-            phone={session.profile.phone}
-            onClose={() => { setModal('none'); dashboardRefresh.current?.(); }}
           />
         )}
       </Suspense>
