@@ -210,7 +210,7 @@ export default function EnhancedAccountPage({
                   <Package className="w-5 h-5 text-[#27AE60]" />
                 </div>
                 <p className="text-[20px] font-black text-[#1a2f3e]">{activeBatches.length}</p>
-                <p className="text-[10px] font-bold text-[#7a9aab]">دفعات المخزون</p>
+                <p className="text-[10px] font-bold text-[#7a9aab]">مستودع سحابي</p>
               </div>
 
               <div className="text-center p-3 rounded-xl" style={{ background: '#fefce8' }}>
@@ -233,7 +233,7 @@ export default function EnhancedAccountPage({
                 }}
               >
                 <Plus className="w-4 h-4" />
-                <span>إضافة مخزون</span>
+                <span>إضافة مخزون سحابي</span>
               </button>
               <button
                 onClick={onCreateOrder}
@@ -458,7 +458,7 @@ export default function EnhancedAccountPage({
                     className="text-[11px] font-bold text-[#27AE60] flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" />
-                    اضافة دفعة
+                    اضافة مخزون
                   </button>
                 </div>
               </div>
@@ -473,7 +473,7 @@ export default function EnhancedAccountPage({
                     style={{ background: 'linear-gradient(135deg, #27AE60, #1e8449)' }}
                   >
                     <Plus className="w-3 h-3 inline ml-1" />
-                    اضافة اول دفعة
+                    اضافة اول مخزون
                   </button>
                 </div>
               ) : (
@@ -534,7 +534,7 @@ export default function EnhancedAccountPage({
                       onClick={onOpenSupplierInventory}
                       className="w-full py-2.5 text-center text-[11px] font-bold text-[#27AE60] bg-white rounded-2xl border-2 border-[#e4edf3]"
                     >
-                      عرض جميع الدفعات ({batches.length})
+                      عرض كل المخزون ({batches.length})
                     </button>
                   )}
                 </div>
