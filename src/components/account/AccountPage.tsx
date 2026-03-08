@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   Camera,
   Pencil,
+  LogOut,
 } from 'lucide-react';
 import type { AppSession } from '../../types/session';
 import { supabase } from '../../lib/supabase';
@@ -49,6 +50,7 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
   const [activeTab, setActiveTab] = useState<AccountTab>('warehouse');
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [showEditSheet, setShowEditSheet] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [localSession, setLocalSession] = useState(session);
   const [stats, setStats] = useState({ inventory: 0, purchases: 0, activeDeals: 0, orders: 0 });
 
@@ -137,6 +139,47 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
         />
       )}
 
+      {showLogoutConfirm && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center px-6"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}
+          onClick={() => setShowLogoutConfirm(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl p-6 space-y-4"
+            style={{ background: 'white', boxShadow: '0 24px 60px rgba(0,0,0,0.3)' }}
+            onClick={(e) => e.stopPropagation()}
+            dir="rtl"
+          >
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: '#FEF2F2' }}>
+                <LogOut className="w-8 h-8 text-[#dc2626]" />
+              </div>
+              <h3 className="text-[17px] font-black text-[#1a3a4a]">تسجيل الخروج</h3>
+              <p className="text-[13px] text-[#7a9aab] leading-relaxed">
+                هل تريد تسجيل الخروج من حسابك؟
+              </p>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]"
+                style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={onLogout}
+                className="flex-1 py-3 rounded-2xl text-[13px] font-bold text-white"
+                style={{ background: 'linear-gradient(135deg, #dc2626, #ef4444)', boxShadow: '0 4px 12px rgba(220,38,38,0.3)' }}
+              >
+                تسجيل الخروج
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header
         className="flex-shrink-0 relative overflow-hidden"
@@ -157,10 +200,12 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
             </button>
             <h1 className="text-[16px] font-bold text-white">حسابي</h1>
             <button
-              onClick={() => setShowEditSheet(true)}
-              className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center active:scale-95 transition-transform backdrop-blur-sm border border-white/10"
+              onClick={() => setShowLogoutConfirm(true)}
+              className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-95 transition-transform backdrop-blur-sm border border-red-400/30"
+              style={{ background: 'rgba(220,38,38,0.15)' }}
+              title="تسجيل الخروج"
             >
-              <Pencil className="w-4 h-4 text-white" />
+              <LogOut className="w-4 h-4 text-red-300" />
             </button>
           </div>
 
@@ -198,6 +243,12 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowEditSheet(true)}
+                  className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center active:scale-90 transition-transform border border-white/10 flex-shrink-0"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-white/70" />
+                </button>
                 <h2 className="text-[18px] font-bold text-white truncate">{displayName}</h2>
               </div>
               <p className="text-[12px] text-white/50 mt-0.5" dir="ltr">{localSession.profile.phone}</p>
