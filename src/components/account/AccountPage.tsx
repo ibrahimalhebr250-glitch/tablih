@@ -294,11 +294,12 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
           {TAB_CONFIG.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
+            const badgeCount = tab.key === 'deals' ? stats.activeDeals : tab.key === 'orders' ? stats.orders : 0;
             return (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-bold transition-all ${
+                className={`flex-1 relative flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-bold transition-all ${
                   isActive
                     ? 'text-white shadow-lg'
                     : 'text-[#5a7a8a] hover:text-[#1a4a5e] hover:bg-white/50'
@@ -310,6 +311,25 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
               >
                 <Icon className="w-4 h-4" />
                 <span>{tab.label}</span>
+                {badgeCount > 0 && !isActive && (
+                  <span
+                    className="absolute -top-1 left-1/2 translate-x-2 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-black text-white px-1"
+                    style={{
+                      background: tab.key === 'deals' ? '#059669' : '#0369A1',
+                      boxShadow: `0 2px 6px ${tab.key === 'deals' ? 'rgba(5,150,105,0.4)' : 'rgba(3,105,161,0.4)'}`,
+                    }}
+                  >
+                    {badgeCount > 99 ? '99+' : badgeCount}
+                  </span>
+                )}
+                {badgeCount > 0 && isActive && (
+                  <span
+                    className="min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-black px-1 mr-0.5"
+                    style={{ background: 'rgba(255,255,255,0.25)', color: 'white' }}
+                  >
+                    {badgeCount > 99 ? '99+' : badgeCount}
+                  </span>
+                )}
               </button>
             );
           })}
