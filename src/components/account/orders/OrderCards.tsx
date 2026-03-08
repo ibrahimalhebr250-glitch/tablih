@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Timer,
   AlertTriangle,
+  Store,
 } from 'lucide-react';
 import type { AccountOrder } from '../../../hooks/useAccountOrders';
 
@@ -169,23 +170,41 @@ export function ActiveOrderCard({ order, onViewDetail }: ActiveOrderCardProps) {
     >
       <OrderHeader order={order} />
       <div className="p-4 space-y-2">
-        <OrderSpecs order={order} />
-
-        {isUnmatched && (
-          <div className="flex items-center gap-2.5 bg-[#E0F2FE] border border-[#BAE6FD] rounded-xl px-3 py-2.5 mt-1">
-            <Radar className="w-4 h-4 text-[#0369A1] animate-pulse flex-shrink-0" />
-            <div className="flex-1 min-w-0 text-right">
-              <p className="text-[11px] font-bold text-[#0369A1] leading-tight">جارٍ تتبع المخزون تلقائيا</p>
-              <p className="text-[9px] text-[#0284C7] mt-0.5 leading-tight">سيتم مطابقتك فور إضافة مورد لمخزون مطابق</p>
-            </div>
+        {order.order_source === 'market_offer' && (
+          <div className="flex items-center gap-2 bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl px-3 py-2 mb-1">
+            <Store className="w-3.5 h-3.5 text-[#15803d] flex-shrink-0" />
+            <span className="text-[11px] font-bold text-[#15803d]">طلب تفاوض على عرض في السوق</span>
           </div>
         )}
+        <OrderSpecs order={order} />
 
-        {!isUnmatched && (
-          <div className="flex items-center gap-2 justify-center py-2 rounded-xl bg-amber-50 border border-amber-200 mt-1">
-            <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
-            <span className="text-[11px] font-bold text-amber-700">جارٍ البحث عن مخزون مطابق</span>
+        {order.order_source === 'market_offer' ? (
+          <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 mt-1">
+            <Clock className="w-4 h-4 text-amber-600 animate-pulse flex-shrink-0" />
+            <div className="flex-1 min-w-0 text-right">
+              <p className="text-[11px] font-bold text-amber-700 leading-tight">بانتظار رد المورد</p>
+              <p className="text-[9px] text-amber-600 mt-0.5 leading-tight">سيتم إنشاء الصفقة تلقائياً عند موافقة المورد</p>
+            </div>
           </div>
+        ) : (
+          <>
+            {isUnmatched && (
+              <div className="flex items-center gap-2.5 bg-[#E0F2FE] border border-[#BAE6FD] rounded-xl px-3 py-2.5 mt-1">
+                <Radar className="w-4 h-4 text-[#0369A1] animate-pulse flex-shrink-0" />
+                <div className="flex-1 min-w-0 text-right">
+                  <p className="text-[11px] font-bold text-[#0369A1] leading-tight">جارٍ تتبع المخزون تلقائيا</p>
+                  <p className="text-[9px] text-[#0284C7] mt-0.5 leading-tight">سيتم مطابقتك فور إضافة مورد لمخزون مطابق</p>
+                </div>
+              </div>
+            )}
+
+            {!isUnmatched && (
+              <div className="flex items-center gap-2 justify-center py-2 rounded-xl bg-amber-50 border border-amber-200 mt-1">
+                <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                <span className="text-[11px] font-bold text-amber-700">جارٍ البحث عن مخزون مطابق</span>
+              </div>
+            )}
+          </>
         )}
 
         <div className="flex items-center justify-between pt-1">

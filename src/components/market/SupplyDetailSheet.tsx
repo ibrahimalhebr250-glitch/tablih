@@ -188,29 +188,28 @@ function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisti
 }) {
   const existingRequest = rawExisting?.status === 'rejected' ? null : rawExisting;
   const [message, setMessage] = useState('');
+  const [quantity, setQuantity] = useState(card.available_quantity);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSend = async () => {
     if (loading) return;
+    if (quantity < 1) { setError('الكمية يجب أن تكون 1 على الأقل'); return; }
+    if (quantity > card.available_quantity) { setError('الكمية أكبر من المتاح'); return; }
     setLoading(true);
     setError('');
     try {
-      const { error: err } = await supabase.from('negotiation_requests').insert({
-        inventory_batch_id: card.id,
-        buyer_phone: buyerPhone,
-        supplier_phone: card.phone,
-        pallet_type: card.pallet_type,
-        size: card.size,
-        quality: card.quality,
-        pallet_condition: card.pallet_condition,
-        available_quantity: card.available_quantity,
-        city: card.city,
-        price_per_pallet: card.price_per_pallet,
-        buyer_message: message.trim() || null,
-        status: 'pending',
+      const { data, error: err } = await supabase.rpc('create_order_from_market_offer', {
+        p_buyer_phone: buyerPhone,
+        p_inventory_batch_id: card.id,
+        p_quantity: quantity,
+        p_buyer_message: message.trim() || null,
       });
       if (err) throw err;
+      if (data && !data.success) {
+        setError(data.error || 'حدث خطأ');
+        return;
+      }
       onSent();
     } catch {
       setError('حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.');
@@ -343,6 +342,37 @@ function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisti
 
               <div>
                 <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">
+                  الكمية المطلوبة
+                </label>
+                <div className="flex items-center gap-2" dir="rtl">
+                  <button
+                    onClick={() => setQuantity(q => Math.max(1, q - 10))}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90"
+                    style={{ background: '#f0f6fa', border: '1.5px solid #e2edf5', color: '#1a3a4a' }}
+                  >-</button>
+                  <input
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value) || 0;
+                      setQuantity(Math.min(card.available_quantity, Math.max(0, v)));
+                    }}
+                    className="flex-1 text-center text-[16px] font-black text-[#1a3a4a] rounded-xl py-2.5 outline-none"
+                    style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
+                    min={1}
+                    max={card.available_quantity}
+                  />
+                  <button
+                    onClick={() => setQuantity(q => Math.min(card.available_quantity, q + 10))}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90"
+                    style={{ background: '#f0f6fa', border: '1.5px solid #e2edf5', color: '#1a3a4a' }}
+                  >+</button>
+                </div>
+                <p className="text-[10px] text-[#a0b5c0] text-right mt-1">الحد الأقصى: {card.available_quantity} طبلية</p>
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">
                   رسالة للمورد (اختياري)
                 </label>
                 <div className="relative">
@@ -372,7 +402,7 @@ function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisti
               >
                 <CheckCircle className="w-4 h-4 text-[#1d4ed8] flex-shrink-0 mt-0.5" />
                 <p className="text-[11px] text-[#1e40af] leading-relaxed">
-                  سيصل طلبك إلى المورد وسيظهر في <span className="font-black">طلباتي</span>. بعد موافقة المورد تُنشأ الصفقة تلقائياً.
+                  سيتم إنشاء طلب وإرسال إشعار للمورد. يظهر في <span className="font-black">حسابي ← طلباتي</span>. بعد موافقة المورد تُنشأ الصفقة تلقائياً.
                 </p>
               </div>
 
@@ -390,7 +420,7 @@ function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisti
                 ) : (
                   <Send className="w-5 h-5" />
                 )}
-                {loading ? 'جاري الإرسال...' : 'إرسال طلب التفاوض'}
+                {loading ? 'جاري إنشاء الطلب...' : 'إرسال طلب التفاوض'}
               </button>
 
               <button
@@ -499,7 +529,7 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, buye
 
   const getButtonState = () => {
     if (isSelf) return { label: 'عرضك الخاص', disabled: true, color: '#6b7280', bg: '#f3f4f6' };
-    if (!isAuthenticated) return { label: 'بدء الصفقة', disabled: false, color: 'white', bg: 'linear-gradient(135deg, #0369A1, #0284C7)' };
+    if (!isAuthenticated) return { label: 'بدء الصفقة', disabled: false, color: 'white', bg: 'linear-gradient(135deg, #059669, #10b981)' };
     if (existingRequest || requestSent) {
       const status = existingRequest?.status;
       if (status === 'pending') return { label: 'طلب التفاوض قيد الانتظار', disabled: false, color: 'white', bg: 'linear-gradient(135deg, #b45309, #d97706)' };

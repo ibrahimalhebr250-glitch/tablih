@@ -33,10 +33,12 @@ export interface AccountOrder {
   accept_partial_delivery: boolean;
   created_at: string;
   updated_at: string;
+  order_source?: string;
+  source_supplier_phone?: string;
   deal?: OrderDealInfo;
 }
 
-const ORDER_COLUMNS = 'id, request_id, pallet_type, size, quality, quantity, city, pallet_condition, status, matched_quantity, matched_price, accept_close_quality, accept_close_city, accept_partial_delivery, created_at, updated_at';
+const ORDER_COLUMNS = 'id, request_id, pallet_type, size, quality, quantity, city, pallet_condition, status, matched_quantity, matched_price, accept_close_quality, accept_close_city, accept_partial_delivery, created_at, updated_at, order_source, source_supplier_phone';
 const DEAL_COLUMNS = 'id, deal_ref, status, order_id, supplier_phone, execution_deadline, execution_hours, buyer_confirmed_at, supplier_confirmed_at, completed_at, cancelled_at, cancel_reason, delivery_failed_at';
 
 const ACTIVE_STATUSES = ['pending', 'unmatched'];
