@@ -21,11 +21,11 @@ interface SupplyCard {
   trust_rating?: number;
 }
 
-const QUALITY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  A: { bg: '#dcfce7', text: '#15803d', label: 'درجة A' },
-  B: { bg: '#dbeafe', text: '#1d4ed8', label: 'درجة B' },
-  C: { bg: '#fef9c3', text: '#a16207', label: 'درجة C' },
-  Scrap: { bg: '#fee2e2', text: '#b91c1c', label: 'خردة' },
+const QUALITY_COLORS: Record<string, { bg: string; text: string; label: string; dot: string }> = {
+  A: { bg: '#dcfce7', text: '#15803d', label: 'درجة A', dot: '#22c55e' },
+  B: { bg: '#dbeafe', text: '#1d4ed8', label: 'درجة B', dot: '#3b82f6' },
+  C: { bg: '#fff7ed', text: '#c2410c', label: 'درجة C', dot: '#f97316' },
+  Scrap: { bg: '#f3f4f6', text: '#6b7280', label: 'خردة', dot: '#9ca3af' },
 };
 
 const CONDITION_MAP: Record<string, { label: string; color: string; bg: string }> = {
@@ -58,6 +58,7 @@ function GalleryImage({ url, onLoad, onError }: { url: string; onLoad: () => voi
         <img
           src={url}
           alt=""
+          loading="lazy"
           className={`w-full h-full object-cover transition-opacity duration-300 ${status === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => { setStatus('loaded'); onLoad(); }}
           onError={() => { setStatus('error'); onError(); }}
@@ -257,16 +258,38 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
                     boxShadow: i === imgIndex ? '0 0 0 2px rgba(34,197,94,0.2)' : 'none',
                   }}
                 >
-                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <img src={url} alt="" loading="lazy" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
           )}
 
           <div className="px-5 mt-4">
-            <h2 className="text-[20px] font-black text-[#1a3a4a] text-right mb-1">{card.pallet_type}</h2>
-            <div className="flex items-center gap-1 justify-end mb-4">
-              <span className="text-[12px] text-[#7a9aab]">{timeAgo(card.created_at)}</span>
+            <div className="flex items-center justify-between mb-1" dir="rtl">
+              <h2 className="text-[20px] font-black text-[#1a3a4a]">{card.pallet_type}</h2>
+              <span className="text-[11px] text-[#a0b5c0]">{timeAgo(card.created_at)}</span>
+            </div>
+
+            <div className="flex items-center gap-2 justify-end mb-4">
+              <span
+                className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg"
+                style={{ background: q.bg, color: q.text, border: `1px solid ${q.dot}25` }}
+              >
+                <span className="w-2 h-2 rounded-full" style={{ background: q.dot }} />
+                {q.label}
+              </span>
+              <span
+                className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg"
+                style={{ background: cond.bg, color: cond.color }}
+              >
+                <Wrench className="w-3 h-3" />
+                {cond.label}
+              </span>
+              {card.size && (
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg" style={{ background: '#f0f4f8', color: '#4a7a8a' }}>
+                  {card.size}
+                </span>
+              )}
             </div>
           </div>
 
@@ -275,8 +298,8 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
               <div className="rounded-2xl p-3.5 text-right" style={{ background: '#f0f9f4', border: '1px solid rgba(21,128,61,0.08)' }}>
                 <p className="text-[10px] text-green-600/60 mb-1">الكمية المتاحة</p>
                 <div className="flex items-center justify-end gap-1.5">
-                  <span className="text-[24px] font-black text-[#15803d]">{card.available_quantity.toLocaleString()}</span>
-                  <Package className="w-4.5 h-4.5 text-green-500/50" />
+                  <span className="text-[22px] font-black text-[#15803d]">{card.available_quantity.toLocaleString()}</span>
+                  <Package className="w-4 h-4 text-green-500/50" />
                 </div>
                 <p className="text-[10px] text-green-600/50">طبلية</p>
               </div>
@@ -285,7 +308,7 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
                 <p className="text-[10px] text-green-600/60 mb-1">السعر</p>
                 {card.price_per_pallet > 0 ? (
                   <>
-                    <span className="text-[24px] font-black text-[#15803d]">{card.price_per_pallet}</span>
+                    <span className="text-[22px] font-black text-[#15803d]">{card.price_per_pallet.toLocaleString()}</span>
                     <p className="text-[10px] text-green-600/50">ريال / طبلية</p>
                   </>
                 ) : (
@@ -294,24 +317,20 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 justify-end">
-              <span className="text-[12px] font-bold px-3 py-1.5 rounded-xl" style={{ background: q.bg, color: q.text }}>
-                {q.label}
-              </span>
-              <span className="text-[12px] font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5" style={{ background: cond.bg, color: cond.color }}>
-                <Wrench className="w-3 h-3" />
-                {cond.label}
-              </span>
-              {card.size && (
-                <span className="text-[12px] font-semibold px-3 py-1.5 rounded-xl" style={{ background: '#f0f4f8', color: '#4a7a8a' }}>
-                  {card.size} سم
-                </span>
-              )}
-            </div>
-
-            <div className="rounded-2xl p-3.5 flex items-center justify-end gap-2" style={{ background: '#f5f9fc', border: '1px solid rgba(0,0,0,0.04)' }}>
-              <span className="text-[13px] font-bold text-[#1a3a4a]">{card.city}</span>
-              <MapPin className="w-4 h-4 text-green-500/60" />
+            <div className="rounded-2xl overflow-hidden" style={{ background: '#f5f9fc', border: '1px solid rgba(0,0,0,0.04)' }}>
+              <div className="grid grid-cols-2 divide-x divide-gray-100" dir="rtl">
+                <div className="p-3 text-right">
+                  <p className="text-[10px] text-[#7a9aab] mb-0.5">المدينة</p>
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-green-500/60" />
+                    <span className="text-[13px] font-bold text-[#1a3a4a]">{card.city}</span>
+                  </div>
+                </div>
+                <div className="p-3 text-right">
+                  <p className="text-[10px] text-[#7a9aab] mb-0.5">المقاس</p>
+                  <span className="text-[13px] font-bold text-[#1a3a4a]">{card.size || '-'}</span>
+                </div>
+              </div>
             </div>
 
             <TrustRatingBadge rating={card.trust_rating ?? 3} size="md" showLabel={true} variant="detailed" />

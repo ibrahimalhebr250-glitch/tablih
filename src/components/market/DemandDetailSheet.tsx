@@ -20,11 +20,11 @@ interface DemandCard {
   trust_rating?: number;
 }
 
-const QUALITY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  A: { bg: '#dcfce7', text: '#15803d', label: 'درجة A' },
-  B: { bg: '#dbeafe', text: '#1d4ed8', label: 'درجة B' },
-  C: { bg: '#fef9c3', text: '#a16207', label: 'درجة C' },
-  Scrap: { bg: '#fee2e2', text: '#b91c1c', label: 'خردة' },
+const QUALITY_COLORS: Record<string, { bg: string; text: string; label: string; dot: string }> = {
+  A: { bg: '#dcfce7', text: '#15803d', label: 'درجة A', dot: '#22c55e' },
+  B: { bg: '#dbeafe', text: '#1d4ed8', label: 'درجة B', dot: '#3b82f6' },
+  C: { bg: '#fff7ed', text: '#c2410c', label: 'درجة C', dot: '#f97316' },
+  Scrap: { bg: '#f3f4f6', text: '#6b7280', label: 'خردة', dot: '#9ca3af' },
 };
 
 function timeAgo(dateStr: string): string {
@@ -140,7 +140,8 @@ export default function DemandDetailSheet({ card, onClose, isAuthenticated, onSh
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-2xl p-3.5 text-right" style={{ background: '#FFF7ED', border: '1px solid rgba(217,119,6,0.1)' }}>
                 <p className="text-[10px] text-amber-600/60 mb-1.5">الجودة المطلوبة</p>
-                <span className="text-[13px] font-bold px-2.5 py-1 rounded-xl inline-block" style={{ background: q.bg, color: q.text }}>
+                <span className="flex items-center gap-1.5 text-[13px] font-bold px-2.5 py-1 rounded-xl inline-flex" style={{ background: q.bg, color: q.text }}>
+                  <span className="w-2 h-2 rounded-full" style={{ background: q.dot }} />
                   {q.label}
                 </span>
               </div>

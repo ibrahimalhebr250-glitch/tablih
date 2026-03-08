@@ -8,7 +8,6 @@ import { supabase } from '../../lib/supabase';
 import SupplyDetailSheet from './SupplyDetailSheet';
 import DemandDetailSheet from './DemandDetailSheet';
 import AuthPromptSheet from './AuthPromptSheet';
-import TrustRatingBadge from '../shared/TrustRatingBadge';
 
 type TabKind = 'all' | 'supply' | 'demand';
 
@@ -49,11 +48,11 @@ export interface DemandCard {
 
 type MarketCard = SupplyCard | DemandCard;
 
-export const QUALITY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  A: { bg: '#dcfce7', text: '#15803d', label: 'A' },
-  B: { bg: '#dbeafe', text: '#1d4ed8', label: 'B' },
-  C: { bg: '#fef9c3', text: '#a16207', label: 'C' },
-  Scrap: { bg: '#fee2e2', text: '#b91c1c', label: 'خردة' },
+export const QUALITY_COLORS: Record<string, { bg: string; text: string; label: string; dot: string }> = {
+  A: { bg: '#dcfce7', text: '#15803d', label: 'A', dot: '#22c55e' },
+  B: { bg: '#dbeafe', text: '#1d4ed8', label: 'B', dot: '#3b82f6' },
+  C: { bg: '#fff7ed', text: '#c2410c', label: 'C', dot: '#f97316' },
+  Scrap: { bg: '#f3f4f6', text: '#6b7280', label: 'خردة', dot: '#9ca3af' },
 };
 
 export const CONDITION_MAP: Record<string, { label: string; color: string; bg: string }> = {
@@ -92,6 +91,7 @@ function SupplyCardImage({ url, count, onError }: { url: string; count: number; 
         <img
           src={url}
           alt=""
+          loading="lazy"
           className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-[1.08] ${status === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => setStatus('loaded')}
           onError={() => { setStatus('error'); onError(); }}
@@ -103,12 +103,12 @@ function SupplyCardImage({ url, count, onError }: { url: string; count: number; 
           <span className="text-[8px] font-semibold text-green-400">تعذّر التحميل</span>
         </div>
       )}
-      {count > 1 && status === 'loaded' && (
+      {count > 1 && (
         <div
-          className="absolute top-2 left-2 text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5"
-          style={{ background: 'rgba(0,0,0,0.6)', color: 'white', backdropFilter: 'blur(6px)' }}
+          className="absolute top-2 left-2 text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1"
+          style={{ background: 'rgba(0,0,0,0.55)', color: 'white', backdropFilter: 'blur(6px)' }}
         >
-          <ImageOff className="w-2.5 h-2.5" />
+          <LayoutGrid className="w-2.5 h-2.5" />
           {count}
         </div>
       )}
@@ -148,28 +148,23 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
 
         <div className="flex-1 min-w-0 flex flex-col justify-between p-3">
           <div>
-            <div className="flex items-start justify-between gap-2 mb-1.5">
+            <div className="flex items-start justify-between gap-1.5 mb-1">
               <span
-                className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                style={{ background: 'rgba(21,128,61,0.08)', color: '#15803d', border: '1px solid rgba(21,128,61,0.15)' }}
+                className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                style={{ background: q.bg, color: q.text, border: `1px solid ${q.dot}30` }}
               >
-                عرض
-              </span>
-              <p className="text-[15px] font-black text-[#1a3a4a] leading-tight truncate">{card.pallet_type}</p>
-            </div>
-
-            <div className="flex items-center gap-1 mb-2 justify-end">
-              <span className="text-[11px] font-semibold text-[#4a7a8a]">{card.city}</span>
-              <MapPin className="w-3 h-3 text-green-500/60" />
-            </div>
-
-            <div className="flex items-center gap-1.5 flex-wrap justify-end">
-              <span
-                className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
-                style={{ background: q.bg, color: q.text }}
-              >
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: q.dot }} />
                 {q.label}
               </span>
+              <p className="text-[14px] font-black text-[#1a3a4a] leading-tight truncate">{card.pallet_type}</p>
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap justify-end mb-1.5">
+              {card.size && (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style={{ background: '#f0f4f8', color: '#4a7a8a' }}>
+                  {card.size}
+                </span>
+              )}
               <span
                 className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md flex items-center gap-0.5"
                 style={{ background: cond.bg, color: cond.color }}
@@ -177,30 +172,27 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
                 <Wrench className="w-2.5 h-2.5" />
                 {cond.label}
               </span>
-              {card.size && (
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style={{ background: '#f0f4f8', color: '#4a7a8a' }}>
-                  {card.size}
-                </span>
-              )}
+            </div>
+
+            <div className="flex items-center gap-1 justify-end">
+              <span className="text-[11px] font-semibold text-[#4a7a8a]">{card.city}</span>
+              <MapPin className="w-3 h-3 text-green-500/60" />
             </div>
           </div>
 
-          <div className="flex items-center justify-between mt-2.5 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
+            <div className="flex items-center gap-1.5">
               <span className="text-[9px] text-[#a0b5c0]">{timeAgo(card.created_at)}</span>
               {card.price_per_pallet > 0 && (
-                <div className="flex items-baseline gap-0.5">
-                  <span className="text-[13px] font-black text-[#15803d]">{card.price_per_pallet}</span>
+                <div className="flex items-baseline gap-0.5 px-1.5 py-0.5 rounded-md" style={{ background: '#f0fdf4' }}>
+                  <span className="text-[12px] font-black text-[#15803d]">{card.price_per_pallet}</span>
                   <span className="text-[8px] text-[#15803d]/60 font-semibold">ر.س</span>
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <TrustRatingBadge rating={card.trust_rating ?? 3} size="sm" showLabel={false} />
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg" style={{ background: '#f0f9f4' }}>
-                <span className="text-[12px] font-black text-[#15803d]">{card.available_quantity.toLocaleString()}</span>
-                <Package className="w-3 h-3 text-green-500/70" />
-              </div>
+            <div className="flex items-center gap-1 px-2 py-1 rounded-lg" style={{ background: '#f0f9f4', border: '1px solid rgba(21,128,61,0.08)' }}>
+              <span className="text-[12px] font-black text-[#15803d]">{card.available_quantity.toLocaleString()}</span>
+              <Package className="w-3 h-3 text-green-500/70" />
             </div>
           </div>
         </div>
@@ -257,57 +249,49 @@ function DemandCardItem({ card, onClick }: { card: DemandCard; onClick: () => vo
 
         <div className="flex-1 min-w-0 flex flex-col justify-between p-3">
           <div>
-            <div className="flex items-start justify-between gap-2 mb-1.5">
+            <div className="flex items-start justify-between gap-1.5 mb-1">
               <span
-                className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                style={{ background: 'rgba(217,119,6,0.08)', color: '#b45309', border: '1px solid rgba(217,119,6,0.15)' }}
+                className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                style={{ background: q.bg, color: q.text, border: `1px solid ${q.dot}30` }}
               >
-                طلب
-              </span>
-              <p className="text-[15px] font-black text-[#1a3a4a] leading-tight truncate">{card.pallet_type}</p>
-            </div>
-
-            <div className="flex items-center gap-1 mb-2 justify-end">
-              <span className="text-[11px] font-semibold text-[#4a7a8a]">{card.city}</span>
-              <MapPin className="w-3 h-3 text-amber-400" />
-            </div>
-
-            <div className="flex items-center gap-1.5 flex-wrap justify-end">
-              <span
-                className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
-                style={{ background: q.bg, color: q.text }}
-              >
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: q.dot }} />
                 {q.label}
               </span>
+              <p className="text-[14px] font-black text-[#1a3a4a] leading-tight truncate">{card.pallet_type}</p>
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap justify-end mb-1.5">
               {card.size && (
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style={{ background: '#f0f4f8', color: '#4a7a8a' }}>
                   {card.size}
                 </span>
               )}
             </div>
+
+            <div className="flex items-center gap-1 justify-end">
+              <span className="text-[11px] font-semibold text-[#4a7a8a]">{card.city}</span>
+              <MapPin className="w-3 h-3 text-amber-400" />
+            </div>
           </div>
 
-          <div className="flex items-center justify-between mt-2.5 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
+            <div className="flex items-center gap-1.5">
               <span className="text-[9px] text-[#a0b5c0]">{timeAgo(card.created_at)}</span>
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg" style={{ background: isPartiallyMatched ? '#f0fdf4' : '#fff7ed' }}>
-                <span className="text-[12px] font-black" style={{ color: isPartiallyMatched ? '#15803d' : '#b45309' }}>
-                  {remainingQty.toLocaleString()}
-                </span>
-                <Package className="w-3 h-3" style={{ color: isPartiallyMatched ? '#22c55e' : '#f59e0b' }} />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <TrustRatingBadge rating={card.trust_rating ?? 3} size="sm" showLabel={false} />
               {flexCount > 0 && (
                 <span
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1"
+                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5"
                   style={{ background: '#FFF7ED', color: '#b45309', border: '1px solid #FED7AA' }}
                 >
                   <Star className="w-2.5 h-2.5" />
-                  {flexCount} مرونة
+                  {flexCount}
                 </span>
               )}
+            </div>
+            <div className="flex items-center gap-1 px-2 py-1 rounded-lg" style={{ background: isPartiallyMatched ? '#f0fdf4' : '#fff7ed', border: `1px solid ${isPartiallyMatched ? 'rgba(21,128,61,0.08)' : 'rgba(217,119,6,0.08)'}` }}>
+              <span className="text-[12px] font-black" style={{ color: isPartiallyMatched ? '#15803d' : '#b45309' }}>
+                {remainingQty.toLocaleString()}
+              </span>
+              <Package className="w-3 h-3" style={{ color: isPartiallyMatched ? '#22c55e' : '#f59e0b' }} />
             </div>
           </div>
         </div>
@@ -316,7 +300,7 @@ function DemandCardItem({ card, onClick }: { card: DemandCard; onClick: () => vo
       {(isPartiallyMatched || card.accept_close_quality || card.accept_close_city || card.accept_partial_delivery) && (
         <div className="flex gap-1.5 flex-wrap px-3 pb-2.5 pt-0.5">
           {isPartiallyMatched && (
-            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #22c55e' }}>
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
               <Package className="w-2.5 h-2.5" />
               مطابق جزئياً: {card.matched_quantity!.toLocaleString()} من {card.quantity.toLocaleString()}
             </span>
@@ -752,7 +736,6 @@ export default function MarketSection({
     ? (() => { const m = Math.floor((Date.now() - lastUpdated.getTime()) / 60000); return m < 1 ? 'تم التحديث الآن' : `تحديث قبل ${m} د`; })()
     : 'جاري التحميل...';
 
-  const hasActiveFilters = palletFilter !== 'all' || cityFilter !== 'all';
   const showSubFilters = tab !== 'all' && (allPalletTypes.length > 0 || allCities.length > 0);
 
   return (
