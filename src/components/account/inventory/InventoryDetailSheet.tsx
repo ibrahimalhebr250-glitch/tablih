@@ -1,30 +1,6 @@
 import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  ArrowRight,
-  Package,
-  MapPin,
-  Eye,
-  EyeOff,
-  Clock,
-  Store,
-  Ban,
-  Trash2,
-  Plus,
-  Minus,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  ImagePlus,
-  Calendar,
-  Layers,
-  Ruler,
-  Shield,
-  Wrench,
-  DollarSign,
-  FileText,
-  Edit3,
-} from 'lucide-react';
+import { ArrowRight, Package, MapPin, Eye, EyeOff, Clock, Store, Ban, Trash2, Plus, Minus, X, ChevronLeft, ChevronRight, ImagePlus, Calendar, Layers, Ruler, Shield, Wrench, DollarSign, FileText, CreditCard as Edit3 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { MyInventoryItem } from '../../../hooks/useMyInventory';
 

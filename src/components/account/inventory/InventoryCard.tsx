@@ -1,20 +1,5 @@
 import { useState } from 'react';
-import {
-  Package,
-  MapPin,
-  Eye,
-  EyeOff,
-  Clock,
-  Store,
-  Ban,
-  Trash2,
-  Plus,
-  Minus,
-  Check,
-  X,
-  ChevronLeft,
-  ImageIcon,
-} from 'lucide-react';
+import { Package, MapPin, Eye, EyeOff, Clock, Store, Ban, Trash2, Plus, Minus, Check, X, ChevronLeft, Image as ImageIcon } from 'lucide-react';
 import type { MyInventoryItem } from '../../../hooks/useMyInventory';
 
 const QUALITY_STYLE: Record<string, { label: string; color: string; bg: string }> = {
