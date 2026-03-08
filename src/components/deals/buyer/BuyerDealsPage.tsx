@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, ShoppingBag, RefreshCw, Bell, Package, CheckCircle, MessageCircle, CreditCard, Truck, Clock, Loader2, ShieldCheck, Star } from 'lucide-react';
+import { ArrowRight, ShoppingBag, RefreshCw, Bell, Package, CheckCircle, MessageCircle, CreditCard, Truck, Clock, Loader2, ShieldCheck, Star, Cloud } from 'lucide-react';
 import { useBuyerDeals } from '../../../hooks/useBuyerDeals';
 import type { SupplierInfo } from '../../../hooks/useBuyerDeals';
 import { DEAL_STATUS_CONFIG } from '../../../types/deal';
@@ -13,6 +13,7 @@ type Tab = 'awaiting' | 'active' | 'ended';
 interface Props {
   phone: string;
   onClose: () => void;
+  onNavigateToWarehouse?: () => void;
 }
 
 function buildWhatsAppLink(phone: string, senderRole: 'supplier' | 'buyer', deal: Deal): string {
@@ -176,7 +177,7 @@ function ActiveDealCard({ deal, supplierInfo }: { deal: Deal; supplierInfo: Supp
   );
 }
 
-function EndedDealCard({ deal, supplierInfo, onRate }: { deal: Deal; supplierInfo: SupplierInfo | null; onRate: () => void }) {
+function EndedDealCard({ deal, supplierInfo, onRate, onGoToWarehouse }: { deal: Deal; supplierInfo: SupplierInfo | null; onRate: () => void; onGoToWarehouse?: () => void }) {
   const cfg = DEAL_STATUS_CONFIG[deal.status];
   const isCompleted = deal.status === 'completed';
   const supplierPrice = deal.supplier_price ?? deal.final_price;
@@ -258,6 +259,29 @@ function EndedDealCard({ deal, supplierInfo, onRate }: { deal: Deal; supplierInf
         {deal.cancel_reason && (
           <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2">
             <p className="text-[11px] text-red-600 font-bold">{deal.cancel_reason}</p>
+          </div>
+        )}
+
+        {isCompleted && (
+          <div className="rounded-xl overflow-hidden" style={{ border: '1.5px solid #86EFAC', background: 'linear-gradient(135deg, #F0FDF4, #ECFDF5)' }}>
+            <div className="flex items-center gap-3 px-3.5 py-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #059669, #047857)' }}>
+                <Cloud className="w-4.5 h-4.5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-black text-[#166534] leading-tight">تم نقل البضاعة إلى مستودعك السحابي</p>
+                <p className="text-[10px] text-[#15803d] mt-0.5">{deal.quantity.toLocaleString('ar-SA')} طبلية {deal.pallet_type} متاحة الآن في مشترياتك</p>
+              </div>
+            </div>
+            {onGoToWarehouse && (
+              <button
+                onClick={onGoToWarehouse}
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-[12px] font-bold text-[#059669] hover:bg-green-50/80 transition-colors border-t border-green-200 active:scale-[0.98]"
+              >
+                <ShoppingBag className="w-3.5 h-3.5" />
+                عرض مشترياتي في المستودع السحابي
+              </button>
+            )}
           </div>
         )}
 
@@ -362,7 +386,7 @@ function EmptyState({ tab }: { tab: Tab }) {
   );
 }
 
-export default function BuyerDealsPage({ phone, onClose }: Props) {
+export default function BuyerDealsPage({ phone, onClose, onNavigateToWarehouse }: Props) {
   const {
     loading, actionLoading,
     awaitingDeals, activeDeals, endedDeals,
@@ -532,6 +556,7 @@ export default function BuyerDealsPage({ phone, onClose }: Props) {
                     deal={deal}
                     supplierInfo={getSupplierInfo(deal.supplier_phone)}
                     onRate={() => handleOpenRating(deal, getSupplierInfo(deal.supplier_phone))}
+                    onGoToWarehouse={onNavigateToWarehouse}
                   />
                 ))}
               </div>

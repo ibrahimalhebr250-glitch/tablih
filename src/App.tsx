@@ -479,6 +479,11 @@ function App() {
               setModal('none');
               dashboardRefresh.current?.();
             }}
+            onNavigateToWarehouse={() => {
+              setModal('none');
+              setAccountInitialTab('warehouse');
+              setTimeout(() => setModal('account'), 100);
+            }}
           />
         )}
 
