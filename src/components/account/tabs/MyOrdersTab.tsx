@@ -58,7 +58,14 @@ function BuyerNegotiationRequests({ phone }: { phone: string }) {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [phone]);
+  useEffect(() => {
+    load();
+    const channel = supabase
+      .channel('buyer_negotiation_' + phone)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'negotiation_requests', filter: `buyer_phone=eq.${phone}` }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [phone]);
 
   if (loading || requests.length === 0) return null;
 

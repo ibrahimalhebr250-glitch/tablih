@@ -65,16 +65,32 @@ function SupplierNegotiationRequests({ phone }: { phone: string }) {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [phone]);
+  useEffect(() => {
+    load();
+    const channel = supabase
+      .channel('supplier_negotiation_' + phone)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'negotiation_requests', filter: `supplier_phone=eq.${phone}` }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [phone]);
+
+  const [acceptResult, setAcceptResult] = useState<{ dealRef: string; quantity: number } | null>(null);
 
   const handleAccept = async (req: NegotiationRequest) => {
     setActionId(req.id);
     try {
-      const { error } = await supabase
-        .from('negotiation_requests')
-        .update({ status: 'accepted', supplier_response: responseText[req.id] || null, updated_at: new Date().toISOString() })
-        .eq('id', req.id);
-      if (!error) load();
+      const { data, error } = await supabase.rpc('accept_negotiation_and_create_deal', {
+        p_request_id: req.id,
+        p_supplier_phone: phone,
+        p_supplier_response: responseText[req.id] || null,
+        p_quantity: req.available_quantity,
+      });
+      if (error) throw error;
+      if (data?.success) {
+        setAcceptResult({ dealRef: data.deal_ref, quantity: data.quantity });
+        setTimeout(() => setAcceptResult(null), 4000);
+        load();
+      }
     } finally {
       setActionId(null);
     }
@@ -94,10 +110,29 @@ function SupplierNegotiationRequests({ phone }: { phone: string }) {
   };
 
   if (loading) return null;
-  if (requests.length === 0) return null;
+  if (requests.length === 0 && !acceptResult) return null;
 
   return (
     <div className="space-y-2">
+      {acceptResult && (
+        <div
+          className="rounded-2xl p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300"
+          style={{ background: '#ECFDF5', border: '1.5px solid #A7F3D0', boxShadow: '0 4px 12px rgba(5,150,105,0.12)' }}
+          dir="rtl"
+        >
+          <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-[13px] font-black text-green-700">تم إنشاء الصفقة بنجاح</p>
+            <p className="text-[11px] text-green-600 mt-0.5">
+              رقم الصفقة: {acceptResult.dealRef} — الكمية: {acceptResult.quantity} طبلية
+            </p>
+            <p className="text-[10px] text-green-500 mt-1">ستظهر في الصفقات النشطة أدناه</p>
+          </div>
+        </div>
+      )}
+
+      {requests.length > 0 && (
+      <>
       <div className="flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
         <h3 className="text-[13px] font-black text-[#1a3a4a]">طلبات تفاوض واردة</h3>
@@ -186,6 +221,8 @@ function SupplierNegotiationRequests({ phone }: { phone: string }) {
         </div>
       ))}
       <div className="h-px" style={{ background: '#e2edf5' }} />
+      </>
+      )}
     </div>
   );
 }
