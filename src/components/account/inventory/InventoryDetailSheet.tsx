@@ -53,6 +53,10 @@ export default function InventoryDetailSheet({
   const [showQtyEditor, setShowQtyEditor] = useState(false);
   const [editQty, setEditQty] = useState(item.available_quantity);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEditData, setShowEditData] = useState(false);
+  const [editDesc, setEditDesc] = useState(item.description);
+  const [editPrice, setEditPrice] = useState(item.price_per_pallet);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [uploading, setUploading] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
 
@@ -101,6 +105,17 @@ export default function InventoryDetailSheet({
       onUpdateQuantity(item.id, editQty);
     }
     setShowQtyEditor(false);
+  };
+
+  const handleEditSave = async () => {
+    setSavingEdit(true);
+    await supabase
+      .from('inventory_batches')
+      .update({ description: editDesc, price_per_pallet: editPrice })
+      .eq('id', item.id);
+    setSavingEdit(false);
+    setShowEditData(false);
+    onRefresh();
   };
 
   const createdDate = new Date(item.created_at).toLocaleDateString('ar-SA', {
@@ -322,6 +337,52 @@ export default function InventoryDetailSheet({
             </div>
           )}
 
+          {showEditData && (
+            <div className="px-5 py-3">
+              <div className="bg-white rounded-2xl p-4 border border-gray-100">
+                <p className="text-[12px] font-bold text-[#1a4a5e] mb-3 text-right">تعديل بيانات المخزون</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-[#5a7a8a] mb-1 block text-right">السعر لكل طبلية (ر.س)</label>
+                    <input
+                      type="number"
+                      value={editPrice}
+                      onChange={(e) => setEditPrice(Math.max(0, parseFloat(e.target.value) || 0))}
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-[14px] font-bold text-[#1a4a5e] text-right outline-none focus:border-[#1a4a5e] transition-colors"
+                      placeholder="0"
+                      min={0}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-[#5a7a8a] mb-1 block text-right">الوصف</label>
+                    <textarea
+                      value={editDesc}
+                      onChange={(e) => setEditDesc(e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-[13px] text-[#1a4a5e] text-right outline-none resize-none focus:border-[#1a4a5e] transition-colors"
+                      placeholder="اكتب وصفاً للمخزون..."
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleEditSave}
+                      disabled={savingEdit}
+                      className="flex-1 py-2.5 rounded-xl bg-[#059669] text-white text-[13px] font-bold active:scale-95 transition-transform"
+                    >
+                      {savingEdit ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                    </button>
+                    <button
+                      onClick={() => { setShowEditData(false); setEditDesc(item.description); setEditPrice(item.price_per_pallet); }}
+                      className="px-4 py-2.5 rounded-xl bg-gray-100 text-gray-500 text-[13px] font-bold active:scale-95 transition-transform"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {showQtyEditor && (
             <div className="px-5 py-3">
               <div className="bg-white rounded-2xl p-4 border border-gray-100">
@@ -398,44 +459,56 @@ export default function InventoryDetailSheet({
           <div className="h-4" />
         </div>
 
-        {!showDeleteConfirm && !showQtyEditor && (
+        {!showDeleteConfirm && !showQtyEditor && !showEditData && (
           <div
             className="flex-shrink-0 px-4 pb-5 pt-3 border-t border-gray-100"
             style={{ background: 'linear-gradient(to top, #ffffff 0%, #f8fafb 100%)' }}
             dir="rtl"
           >
             {!isInDeal ? (
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                {item.status === 'active' && item.publish_to_market ? (
+              <>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {item.status === 'active' && item.publish_to_market ? (
+                    <button
+                      onClick={() => onUnpublish(item.id)}
+                      disabled={isActioning}
+                      className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-bold active:scale-[0.98] transition-transform"
+                      style={{ background: '#FFFBEB', color: '#b45309', border: '1px solid #FDE68A' }}
+                    >
+                      <Ban className="w-4 h-4" />
+                      إيقاف النشر
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onPublish(item.id)}
+                      disabled={isActioning}
+                      className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-bold text-white active:scale-[0.98] transition-transform"
+                      style={{ background: 'linear-gradient(135deg, #059669, #047857)', boxShadow: '0 4px 12px rgba(5,150,105,0.25)' }}
+                    >
+                      <Store className="w-4 h-4" />
+                      نشر في السوق
+                    </button>
+                  )}
                   <button
-                    onClick={() => onUnpublish(item.id)}
-                    disabled={isActioning}
+                    onClick={() => { setEditQty(item.available_quantity); setShowQtyEditor(true); }}
                     className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-bold active:scale-[0.98] transition-transform"
-                    style={{ background: '#FFFBEB', color: '#b45309', border: '1px solid #FDE68A' }}
+                    style={{ background: '#EFF6FF', color: '#0369a1', border: '1px solid #BFDBFE' }}
                   >
-                    <Ban className="w-4 h-4" />
-                    إيقاف النشر
+                    <Plus className="w-4 h-4" />
+                    تعديل الكمية
                   </button>
-                ) : (
+                </div>
+                <div className="mb-2">
                   <button
-                    onClick={() => onPublish(item.id)}
-                    disabled={isActioning}
-                    className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-bold text-white active:scale-[0.98] transition-transform"
-                    style={{ background: 'linear-gradient(135deg, #059669, #047857)', boxShadow: '0 4px 12px rgba(5,150,105,0.25)' }}
+                    onClick={() => { setEditDesc(item.description); setEditPrice(item.price_per_pallet); setShowEditData(true); }}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-bold active:scale-[0.98] transition-transform"
+                    style={{ background: 'white', color: '#1a4a5e', border: '1px solid #d8e8f0' }}
                   >
-                    <Store className="w-4 h-4" />
-                    نشر في السوق
+                    <Edit3 className="w-4 h-4" />
+                    تعديل بيانات المخزون
                   </button>
-                )}
-                <button
-                  onClick={() => { setEditQty(item.available_quantity); setShowQtyEditor(true); }}
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-bold active:scale-[0.98] transition-transform"
-                  style={{ background: '#EFF6FF', color: '#0369a1', border: '1px solid #BFDBFE' }}
-                >
-                  <Edit3 className="w-4 h-4" />
-                  تعديل الكمية
-                </button>
-              </div>
+                </div>
+              </>
             ) : (
               <div className="flex items-center justify-center gap-2 py-3 rounded-xl mb-2 text-[12px] font-bold text-amber-700" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
                 <Clock className="w-4 h-4" />
