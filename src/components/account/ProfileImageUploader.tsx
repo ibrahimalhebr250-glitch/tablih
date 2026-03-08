@@ -37,10 +37,10 @@ export default function ProfileImageUploader({ currentImageUrl, userPhone, onIma
       const fileName = `${userPhone}_${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // حذف الصورة القديمة إن وجدت
+      // حذف الصورة القديمة إن وجدت (فقط إذا كانت تخص نفس المستخدم)
       if (currentImageUrl) {
         const oldPath = currentImageUrl.split('/').pop();
-        if (oldPath) {
+        if (oldPath && oldPath.startsWith(userPhone + '_')) {
           await supabase.storage.from('profile-images').remove([oldPath]);
         }
       }
@@ -84,9 +84,9 @@ export default function ProfileImageUploader({ currentImageUrl, userPhone, onIma
     setUploading(true);
 
     try {
-      // حذف الصورة من التخزين
+      // حذف الصورة من التخزين (فقط إذا كانت تخص نفس المستخدم)
       const oldPath = currentImageUrl.split('/').pop();
-      if (oldPath) {
+      if (oldPath && oldPath.startsWith(userPhone + '_')) {
         await supabase.storage.from('profile-images').remove([oldPath]);
       }
 
