@@ -1,4 +1,4 @@
-import { X, UserCheck, Sparkles, Shield, TrendingUp } from 'lucide-react';
+import { X, UserCheck, Sparkles, Shield, TrendingUp, Handshake } from 'lucide-react';
 
 interface Props {
   onClose: () => void;
@@ -63,10 +63,10 @@ export default function AuthPromptSheet({ onClose, onRegister }: Props) {
                 </div>
               </div>
               <h2 className="text-[22px] font-black text-[#1a4a5e] text-center leading-tight mb-2">
-                أهلاً بك في شبكة الطبليات
+                سجّل الدخول لبدء الصفقة
               </h2>
               <p className="text-[13px] text-[#5a7a8a] text-center leading-relaxed">
-                في انتظار تواصلك مع الموردين
+                الصفقات تُعقد داخل المنصة فقط لحماية حقوق الطرفين
               </p>
             </div>
           </div>
@@ -98,9 +98,9 @@ export default function AuthPromptSheet({ onClose, onRegister }: Props) {
               </h4>
               <div className="space-y-2.5">
                 {[
-                  { icon: TrendingUp, text: 'تفاوض مباشر مع الموردين والمشترين', color: '#2196F3' },
-                  { icon: Shield, text: 'حماية صفقاتك وتتبع حالتها لحظياً', color: '#22c55e' },
-                  { icon: Sparkles, text: 'وصول فوري لآلاف الفرص في السوق', color: '#F59E0B' },
+                  { icon: Handshake, text: 'إنشاء الصفقة مباشرة داخل المنصة', color: '#0369A1' },
+                  { icon: Shield, text: 'حماية حقوقك وتتبع حالة الصفقة لحظياً', color: '#22c55e' },
+                  { icon: TrendingUp, text: 'سجل كامل للصفقات والمدفوعات', color: '#F59E0B' },
                 ].map((item, i) => (
                   <div
                     key={i}
@@ -132,8 +132,8 @@ export default function AuthPromptSheet({ onClose, onRegister }: Props) {
               boxShadow: '0 6px 20px rgba(33,150,243,0.4)',
             }}
           >
-            <UserCheck className="w-5 h-5" />
-            سجّل الآن وابدأ التفاوض
+            <Handshake className="w-5 h-5" />
+            سجّل الدخول وابدأ الصفقة
           </button>
           <button
             onClick={onClose}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff, Heart, MessageCircle, Star, Home } from 'lucide-react';
+import { MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff, Heart, Star, Home, Handshake, CheckCircle, LogIn, X } from 'lucide-react';
 import TrustRatingBadge from '../shared/TrustRatingBadge';
 import VisitorRatingDialog from './VisitorRatingDialog';
 import { CommentsSection } from '../shared/CommentsSection';
@@ -73,17 +73,125 @@ function GalleryImage({ url, onLoad, onError }: { url: string; onLoad: () => voi
   );
 }
 
+function WelcomeMessageDialog({ card, onClose, onLogin }: {
+  card: SupplyCard;
+  onClose: () => void;
+  onLogin: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-end justify-center"
+      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full rounded-t-3xl overflow-hidden"
+        style={{ maxWidth: 480, background: 'white' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="h-1 w-12 rounded-full mx-auto mt-3 mb-0" style={{ background: '#d1d5db' }} />
+
+        <div className="px-5 pt-4 pb-6 space-y-4" dir="rtl">
+          <div className="flex items-start justify-between">
+            <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
+              <X className="w-3.5 h-3.5 text-gray-500" />
+            </button>
+            <div className="flex items-center gap-2">
+              <div>
+                <p className="text-[15px] font-black text-[#1a3a4a]">رسالة من المورد</p>
+                <p className="text-[11px] text-[#7a9aab]">{card.pallet_type} — {card.city}</p>
+              </div>
+              <div
+                className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg, #0f2535, #1a3d56)' }}
+              >
+                <Handshake className="w-5 h-5 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="rounded-2xl p-4 space-y-2"
+            style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
+          >
+            <div className="flex items-start gap-2">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                style={{ background: 'linear-gradient(135deg, #0369A1, #0284C7)' }}
+              >
+                <span className="text-[10px] font-black text-white">م</span>
+              </div>
+              <div
+                className="flex-1 rounded-2xl rounded-tr-none px-3.5 py-3"
+                style={{ background: 'white', border: '1px solid #e2edf5', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
+              >
+                <p className="text-[13px] text-[#1a3a4a] leading-relaxed">
+                  شكراً لتواصلك معي بخصوص هذا العرض.
+                </p>
+                <p className="text-[13px] text-[#1a3a4a] leading-relaxed mt-1">
+                  يسعدني إتمام الصفقة معك.
+                </p>
+                <p className="text-[13px] text-[#1a3a4a] leading-relaxed mt-1">
+                  يرجى تسجيل الدخول للمنصة لبدء عقد الصفقة.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 px-1 pt-1">
+              <div className="flex-1 h-px" style={{ background: '#e2edf5' }} />
+              <span className="text-[10px] text-[#a0b5c0]">يتطلب تسجيل الدخول</span>
+              <div className="flex-1 h-px" style={{ background: '#e2edf5' }} />
+            </div>
+          </div>
+
+          <div
+            className="rounded-2xl p-3.5 flex items-start gap-3"
+            style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}
+          >
+            <CheckCircle className="w-4 h-4 text-[#1d4ed8] flex-shrink-0 mt-0.5" />
+            <p className="text-[11px] text-[#1e40af] leading-relaxed">
+              بعد تسجيل الدخول ستُنشأ الصفقة تلقائياً وستجدها في <span className="font-black">حسابي ← صفقاتي</span>
+            </p>
+          </div>
+
+          <button
+            onClick={onLogin}
+            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97]"
+            style={{
+              background: 'linear-gradient(135deg, #0369A1, #0284C7)',
+              boxShadow: '0 6px 20px rgba(3,105,161,0.3)',
+            }}
+          >
+            <LogIn className="w-5 h-5" />
+            تسجيل الدخول وبدء الصفقة
+          </button>
+
+          <button
+            onClick={onClose}
+            className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]"
+            style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}
+          >
+            ليس الآن
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   card: SupplyCard;
   onClose: () => void;
   isAuthenticated: boolean;
   onShowAuthPrompt: () => void;
+  onStartDeal?: (card: SupplyCard) => void;
 }
 
-export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onShowAuthPrompt }: Props) {
+export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onShowAuthPrompt, onStartDeal }: Props) {
   const [imgIndex, setImgIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
   const [showRatingDialog, setShowRatingDialog] = useState(false);
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
   const [ratingSummary, setRatingSummary] = useState<{ average_rating: number; total_ratings: number } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -96,7 +204,6 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
       const { data, error } = await supabase.rpc('get_visitor_ratings_summary', {
         p_user_phone: card.phone
       });
-
       if (error) throw error;
       setRatingSummary(data);
     } catch (err) {
@@ -119,36 +226,20 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
     }
   };
 
-  const buildWhatsAppLink = () => {
-    const cleanPhone = card.phone.replace(/^0/, '966').replace('+', '');
-    const platformFee = 0.25;
-
-    const message = [
-      'السلام عليكم',
-      '',
-      'لديكم عرض في منصة *طبليتي*',
-      '',
-      `النوع: ${card.pallet_type}`,
-      `المقاس: ${card.size}`,
-      `الجودة: درجة ${card.quality}`,
-      `الحالة: ${cond.label}`,
-      `الكمية المتاحة: ${card.available_quantity.toLocaleString('ar-SA')} طبلية`,
-      `السعر: ${card.price_per_pallet.toLocaleString('ar-SA')} ر.س / طبلية`,
-      `المدينة: ${card.city}`,
-      '',
-      'أرجو الرد لإكمال المشترى معكم',
-      '',
-      `*ملاحظة:* رسوم المنصة ${platformFee} ر.س للطبلية الواحدة`,
-      '',
-      'شكراً لتعاملكم مع منصة طبليتي',
-    ].join('\n');
-
-    return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+  const handleStartDeal = () => {
+    if (!isAuthenticated) {
+      setShowWelcomeMessage(true);
+    } else {
+      if (onStartDeal) {
+        onStartDeal(card);
+      }
+    }
   };
 
-  const handleWhatsAppClick = () => {
-    const link = buildWhatsAppLink();
-    window.open(link, '_blank');
+  const handleLoginFromWelcome = () => {
+    setShowWelcomeMessage(false);
+    onClose();
+    onShowAuthPrompt();
   };
 
   return (
@@ -355,6 +446,17 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
                 </p>
               </div>
             )}
+
+            <div
+              className="rounded-2xl p-3.5 flex items-start gap-3"
+              style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}
+              dir="rtl"
+            >
+              <CheckCircle className="w-4 h-4 text-[#b45309] flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] text-[#92400E] leading-relaxed">
+                التواصل مع المورد والاتفاق يتمان <span className="font-black">داخل المنصة فقط</span> لضمان حقوق الطرفين وحفظ سجل الصفقة.
+              </p>
+            </div>
           </div>
 
           <div className="px-5 mt-4">
@@ -370,26 +472,26 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
           }}
         >
           <button
-            onClick={handleWhatsAppClick}
-            className="w-full relative overflow-hidden group mb-3"
+            onClick={handleStartDeal}
+            className="w-full relative overflow-hidden group mb-3 rounded-2xl"
           >
             <div
-              className="absolute inset-0 transition-transform duration-300 group-active:scale-95"
+              className="absolute inset-0 rounded-2xl transition-transform duration-300 group-active:scale-95"
               style={{
-                background: 'linear-gradient(135deg, #25D366, #128C7E)',
-                boxShadow: '0 6px 20px rgba(37,211,102,0.35)',
+                background: 'linear-gradient(135deg, #0369A1, #0284C7)',
+                boxShadow: '0 6px 20px rgba(3,105,161,0.35)',
               }}
             />
             <div
-              className="absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity duration-200"
-              style={{ background: 'linear-gradient(135deg, #20BA5A, #0F7A66)' }}
+              className="absolute inset-0 rounded-2xl opacity-0 group-active:opacity-100 transition-opacity duration-200"
+              style={{ background: 'linear-gradient(135deg, #025e8f, #0272b0)' }}
             />
-            <div className="relative flex items-center justify-center gap-2.5 py-4 rounded-2xl">
-              <MessageCircle className="w-5 h-5 text-white" strokeWidth={2.5} />
-              <span className="text-[15px] font-black text-white">تواصل عبر الواتساب</span>
+            <div className="relative flex items-center justify-center gap-2.5 py-4">
+              <Handshake className="w-5 h-5 text-white" strokeWidth={2.5} />
+              <span className="text-[15px] font-black text-white">بدء الصفقة</span>
               <div
                 className="absolute left-3 w-2 h-2 rounded-full animate-pulse"
-                style={{ background: '#dcfce7', boxShadow: '0 0 8px #22c55e' }}
+                style={{ background: '#bfdbfe', boxShadow: '0 0 8px #60b4e0' }}
               />
             </div>
           </button>
@@ -455,6 +557,14 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, onSh
             loadRatingSummary();
             setRefreshKey(prev => prev + 1);
           }}
+        />
+      )}
+
+      {showWelcomeMessage && (
+        <WelcomeMessageDialog
+          card={card}
+          onClose={() => setShowWelcomeMessage(false)}
+          onLogin={handleLoginFromWelcome}
         />
       )}
     </div>

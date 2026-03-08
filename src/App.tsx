@@ -227,6 +227,7 @@ function App() {
                           isAuthenticated={true}
                           onShowAuth={() => openAuth('none')}
                           onDetailSheetChange={setIsDetailSheetOpen}
+                          onGoToDeals={() => setModal('buyerDeals')}
                         />
                       </div>
                     ) : (
@@ -281,6 +282,7 @@ function App() {
                       isAuthenticated={false}
                       onShowAuth={() => openAuth('none')}
                       onDetailSheetChange={setIsDetailSheetOpen}
+                      onGoToDeals={() => openAuth('none')}
                     />
                   </div>
                 </Suspense>
@@ -320,6 +322,7 @@ function App() {
                         isAuthenticated={true}
                         onShowAuth={() => openAuth('none')}
                         onDetailSheetChange={setIsDetailSheetOpen}
+                        onGoToDeals={() => setModal('buyerDeals')}
                       />
                     </>
                   ) : (
@@ -357,6 +360,7 @@ function App() {
                   isAuthenticated={false}
                   onShowAuth={() => openAuth('none')}
                   onDetailSheetChange={setIsDetailSheetOpen}
+                  onGoToDeals={() => openAuth('none')}
                 />
               </Suspense>
               {!isDetailSheetOpen && (

@@ -585,6 +585,7 @@ interface Props {
   isAuthenticated: boolean;
   onShowAuth: () => void;
   onDetailSheetChange?: (isOpen: boolean) => void;
+  onGoToDeals?: () => void;
 }
 
 export default function MarketSection({
@@ -593,6 +594,7 @@ export default function MarketSection({
   isAuthenticated,
   onShowAuth,
   onDetailSheetChange,
+  onGoToDeals,
 }: Props) {
   const [tab, setTab] = useState<TabKind>('all');
   const [palletFilter, setPalletFilter] = useState('all');
@@ -858,6 +860,10 @@ export default function MarketSection({
         onClose={() => setSelectedSupply(null)}
         isAuthenticated={isAuthenticated}
         onShowAuthPrompt={() => setShowAuthPrompt(true)}
+        onStartDeal={() => {
+          setSelectedSupply(null);
+          if (onGoToDeals) onGoToDeals();
+        }}
       />
     )}
 
