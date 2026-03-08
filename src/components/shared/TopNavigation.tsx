@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, User, Sparkles, LayoutGrid } from 'lucide-react';
+import { Home, Sparkles, LayoutGrid } from 'lucide-react';
 import type { AppSession } from '../../types/session';
 import { getTrustConfig } from './TrustRatingBadge';
 import { supabase } from '../../lib/supabase';
@@ -21,7 +21,7 @@ export default function TopNavigation({ session, currentView, onNavigate }: Prop
     : (session.profile.display_name || 'مستخدم');
 
   const initials = displayName.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('');
-  const trustConfig = getTrustConfig(session.profile.trust_rating || 3);
+  const trustConfig = getTrustConfig(3);
   const TrustIcon = trustConfig.icon;
 
   // جلب الصورة الشخصية
@@ -122,7 +122,7 @@ export default function TopNavigation({ session, currentView, onNavigate }: Prop
         <button
           onClick={() => onNavigate('account')}
           className={`flex flex-col items-center justify-center w-14 h-14 rounded-2xl active:scale-95 transition-all group relative overflow-hidden ${
-            currentView === 'account' ? 'ring-2 ring-offset-2 ring-[#6366f1]' : ''
+            currentView === 'account' ? 'ring-2 ring-offset-2 ring-[#1a4a5e]' : ''
           }`}
           style={{
             background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
@@ -134,7 +134,7 @@ export default function TopNavigation({ session, currentView, onNavigate }: Prop
           <div
             className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
             style={{
-              background: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
+              background: 'linear-gradient(135deg, #e4eff6 0%, #d0dfe8 100%)',
             }}
           />
           <div className="relative">
@@ -156,9 +156,9 @@ export default function TopNavigation({ session, currentView, onNavigate }: Prop
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center relative z-10 group-active:scale-90 transition-transform"
                 style={{
-                  background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                  background: 'linear-gradient(135deg, #1a4a5e 0%, #2c6f8a 100%)',
                   border: '2.5px solid white',
-                  boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
+                  boxShadow: '0 2px 8px rgba(26, 74, 94, 0.25)',
                 }}
               >
                 <span className="text-[11px] font-black text-white">{initials}</span>
@@ -175,7 +175,7 @@ export default function TopNavigation({ session, currentView, onNavigate }: Prop
             </div>
           </div>
           <span
-            className="text-[8px] font-bold mt-0.5 relative z-10 transition-colors group-hover:text-[#6366f1]"
+            className="text-[8px] font-bold mt-0.5 relative z-10 transition-colors group-hover:text-[#1a4a5e]"
             style={{ color: '#64748b' }}
           >
             حسابي

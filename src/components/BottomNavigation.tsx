@@ -3,9 +3,10 @@ import { Warehouse, ShoppingBag, User } from 'lucide-react';
 interface Props {
   onAddInventory: () => void;
   onCreateOrder: () => void;
+  onOpenAccount?: () => void;
 }
 
-export default function BottomNavigation({ onAddInventory, onCreateOrder }: Props) {
+export default function BottomNavigation({ onAddInventory, onCreateOrder, onOpenAccount }: Props) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
       <div className="max-w-md mx-auto">
@@ -24,13 +25,12 @@ export default function BottomNavigation({ onAddInventory, onCreateOrder }: Prop
             </button>
 
             <button
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0 border-2 active:scale-95 transition-all opacity-50 cursor-not-allowed"
+              onClick={onOpenAccount}
+              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0 border-2 active:scale-95 transition-all"
               style={{
                 background: 'linear-gradient(135deg, #0f2535, #1a4a5e)',
                 borderColor: '#1a4a5e'
               }}
-              disabled
-              title="قريباً"
             >
               <User className="w-5 h-5 text-white" />
             </button>

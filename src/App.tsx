@@ -19,8 +19,9 @@ const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
 const AdminLoginSheet = lazy(() => import('./components/admin/AdminLoginSheet'));
 const SupplierInventory = lazy(() => import('./components/inventory/SupplierInventory'));
 const MarketSection = lazy(() => import('./components/market/MarketSection'));
+const AccountPage = lazy(() => import('./components/account/AccountPage'));
 
-type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory';
+type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'account';
 type MainView = 'marketplace' | 'dashboard';
 
 const LoadingFallback = () => (
@@ -142,7 +143,7 @@ function App() {
     setModal('login');
   };
 
-  const handleNavigation = (view: 'marketplace' | 'orders' | 'inventory' | 'deals') => {
+  const handleNavigation = (view: 'marketplace' | 'orders' | 'inventory' | 'deals' | 'account') => {
     setModal('none');
     if (view === 'marketplace') {
       setMainView('marketplace');
@@ -154,10 +155,13 @@ function App() {
     } else if (view === 'deals') {
       setMainView('dashboard');
       setTimeout(() => setModal('buyerDeals'), 100);
+    } else if (view === 'account') {
+      setModal('account');
     }
   };
 
-  const getCurrentNavView = (): 'marketplace' | 'orders' | 'inventory' | 'deals' => {
+  const getCurrentNavView = (): 'marketplace' | 'orders' | 'inventory' | 'deals' | 'account' => {
+    if (modal === 'account') return 'account';
     if (mainView === 'marketplace') return 'marketplace';
     if (modal === 'supplierInventory') return 'inventory';
     if (modal === 'buyerDeals' || modal === 'supplierDeals') return 'deals';
@@ -185,7 +189,7 @@ function App() {
             <div className="w-64 xl:w-72 flex-shrink-0 h-screen overflow-hidden">
               <DesktopSidebar
                 session={session}
-                onOpenAccount={() => {}}
+                onOpenAccount={() => setModal('account')}
                 onCreateOrder={openOrder}
                 onAddInventory={openInventory}
                 onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
@@ -334,7 +338,7 @@ function App() {
               onOpenSupplierDeals={() => setModal('supplierDeals')}
               onOpenBuyerDeals={() => setModal('buyerDeals')}
               onOpenSupplierInventory={() => setModal('supplierInventory')}
-              onOpenPurchasedInventory={() => setModal('purchasedInventory')}
+              onOpenPurchasedInventory={() => setModal('account')}
               onOpenDashboard={() => setMainView('dashboard')}
               onLogout={handleLogout}
             />
@@ -353,6 +357,7 @@ function App() {
                 <BottomNavigation
                   onAddInventory={openInventory}
                   onCreateOrder={openOrder}
+                  onOpenAccount={() => openAuth('none')}
                 />
               )}
             </div>
@@ -449,6 +454,16 @@ function App() {
             phone={session.profile.phone}
             onClose={() => { setModal('none'); dashboardRefresh.current?.(); }}
             onAddInventory={() => setModal('inventoryBuilder')}
+          />
+        )}
+
+        {modal === 'account' && session && (
+          <AccountPage
+            session={session}
+            onClose={() => { setModal('none'); }}
+            onAddInventory={() => setModal('inventoryBuilder')}
+            onCreateOrder={() => setModal('orderBuilder')}
+            onLogout={handleLogout}
           />
         )}
       </Suspense>
