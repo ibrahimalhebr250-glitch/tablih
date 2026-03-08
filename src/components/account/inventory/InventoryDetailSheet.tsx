@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowRight, Package, MapPin, Eye, EyeOff, Clock, Store, Ban, Trash2, Plus, Minus, X, ChevronLeft, ChevronRight, ImagePlus, Calendar, Layers, Ruler, Shield, Wrench, DollarSign, FileText, CreditCard as Edit3 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
@@ -59,6 +59,13 @@ export default function InventoryDetailSheet({
   const [savingEdit, setSavingEdit] = useState(false);
   const [uploading, setUploading] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
+  const editDataRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showEditData) {
+      setTimeout(() => editDataRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    }
+  }, [showEditData]);
 
   const status = getDisplayStatus(item);
   const StatusIcon = status.icon;
@@ -338,7 +345,7 @@ export default function InventoryDetailSheet({
           )}
 
           {showEditData && (
-            <div className="px-5 py-3">
+            <div ref={editDataRef} className="px-5 py-3">
               <div className="bg-white rounded-2xl p-4 border border-gray-100">
                 <p className="text-[12px] font-bold text-[#1a4a5e] mb-3 text-right">تعديل بيانات المخزون</p>
                 <div className="space-y-3">
