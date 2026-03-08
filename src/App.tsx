@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useSession } from './hooks/useSession';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
@@ -6,6 +6,7 @@ import BottomNavigation from './components/BottomNavigation';
 import TopNavigation from './components/shared/TopNavigation';
 import DesktopSidebar from './components/desktop/DesktopSidebar';
 import DesktopRightPanel from './components/desktop/DesktopRightPanel';
+import { supabase } from './lib/supabase';
 import type { AdminStaffData } from './components/admin/AdminLoginSheet';
 
 const OrderBuilder = lazy(() => import('./components/order/OrderBuilder'));
@@ -57,6 +58,27 @@ function App() {
   const [adminStaff, setAdminStaff] = useState<AdminStaffData | null>(null);
   const [inventoryPrefill, setInventoryPrefill] = useState<{ pallet_type?: string; size?: string; quality?: string; quantity?: number; city?: string } | undefined>();
   const [inventorySource, setInventorySource] = useState<'supplier_added' | 'purchase_transfer'>('supplier_added');
+  const [accountInitialTab, setAccountInitialTab] = useState<'warehouse' | 'deals' | 'orders' | 'settings' | undefined>();
+
+  const checkPendingMarketRequest = useCallback(async (phone: string) => {
+    const raw = sessionStorage.getItem('pending_market_request');
+    if (!raw) return;
+    try {
+      const pending = JSON.parse(raw);
+      if (!pending.inventory_batch_id) return;
+      sessionStorage.removeItem('pending_market_request');
+      await supabase.rpc('create_order_from_market_offer', {
+        p_buyer_phone: phone,
+        p_inventory_batch_id: pending.inventory_batch_id,
+        p_quantity: pending.quantity || 1,
+        p_buyer_message: null,
+      });
+      setAccountInitialTab('orders');
+      setModal('account');
+    } catch {
+      sessionStorage.removeItem('pending_market_request');
+    }
+  }, []);
 
   useEffect(() => {
     const storedAdminData = sessionStorage.getItem('adminStaffData');
@@ -94,6 +116,15 @@ function App() {
       await activateRole('buyer');
     }
 
+    const hasPending = sessionStorage.getItem('pending_market_request');
+    if (hasPending) {
+      const phone = result.session?.profile?.phone || data.phone;
+      await checkPendingMarketRequest(phone);
+      setFreshLogin(true);
+      setMainView('marketplace');
+      return;
+    }
+
     const next = pendingAfterAuth.current;
     pendingAfterAuth.current = null;
 
@@ -118,6 +149,15 @@ function App() {
     if (result.session) {
       pendingSession.current = result.session;
       await activateRole('buyer');
+    }
+
+    const hasPending = sessionStorage.getItem('pending_market_request');
+    if (hasPending) {
+      const userPhone = result.session?.profile?.phone || phone;
+      await checkPendingMarketRequest(userPhone);
+      setFreshLogin(true);
+      setMainView('marketplace');
+      return;
     }
 
     const next = pendingAfterAuth.current;
@@ -162,6 +202,7 @@ function App() {
       setMainView('dashboard');
       setTimeout(() => setModal('buyerDeals'), 100);
     } else if (view === 'account') {
+      setAccountInitialTab(undefined);
       setModal('account');
     }
   };
@@ -474,10 +515,11 @@ function App() {
         {modal === 'account' && session && (
           <AccountPage
             session={session}
-            onClose={() => { setModal('none'); }}
+            onClose={() => { setModal('none'); setAccountInitialTab(undefined); }}
             onAddInventory={openInventory}
             onCreateOrder={() => setModal('orderBuilder')}
             onLogout={handleLogout}
+            initialTab={accountInitialTab}
           />
         )}
       </Suspense>

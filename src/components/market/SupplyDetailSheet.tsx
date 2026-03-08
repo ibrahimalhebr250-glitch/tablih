@@ -516,6 +516,14 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, buye
   };
 
   const handleLoginFromWelcome = () => {
+    sessionStorage.setItem('pending_market_request', JSON.stringify({
+      inventory_batch_id: card.id,
+      pallet_type: card.pallet_type,
+      size: card.size,
+      quality: card.quality,
+      city: card.city,
+      quantity: card.available_quantity,
+    }));
     setShowWelcomeMessage(false);
     onClose();
     onShowAuthPrompt();

@@ -37,6 +37,7 @@ interface Props {
   onAddInventory: (prefill?: InventoryPrefill, source?: 'supplier_added' | 'purchase_transfer') => void;
   onCreateOrder: () => void;
   onLogout: () => void;
+  initialTab?: AccountTab;
 }
 
 const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Cloud }[] = [
@@ -46,13 +47,17 @@ const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Cloud }[] = [
   { key: 'settings', label: 'الإعدادات', icon: Settings },
 ];
 
-export default function AccountPage({ session, onClose, onAddInventory, onCreateOrder, onLogout }: Props) {
-  const [activeTab, setActiveTab] = useState<AccountTab>('warehouse');
+export default function AccountPage({ session, onClose, onAddInventory, onCreateOrder, onLogout, initialTab }: Props) {
+  const [activeTab, setActiveTab] = useState<AccountTab>(initialTab || 'warehouse');
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [showEditSheet, setShowEditSheet] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [localSession, setLocalSession] = useState(session);
   const [stats, setStats] = useState({ inventory: 0, purchases: 0, activeDeals: 0, orders: 0 });
+
+  useEffect(() => {
+    if (initialTab) setActiveTab(initialTab);
+  }, [initialTab]);
 
   const isCompany = localSession.profile.user_type === 'company';
   const displayName = isCompany
