@@ -20,6 +20,8 @@ export interface InventoryBatch {
   approval_status: string;
   image_url: string;
   images_count: number;
+  inventory_source: string;
+  publish_to_market: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -56,9 +58,19 @@ export function useAdminInventory(adminEmail: string) {
 
       if (err) throw err;
       return data || [];
-    } catch (err) {
-      console.error('Error fetching batches:', err);
-      throw err;
+    } catch {
+      let query = supabase
+        .from('inventory_batches')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      const { data: fallbackData } = await query;
+      return fallbackData || [];
     }
   };
 
@@ -70,9 +82,14 @@ export function useAdminInventory(adminEmail: string) {
 
       if (err) throw err;
       return data || [];
-    } catch (err) {
-      console.error('Error fetching drafts:', err);
-      throw err;
+    } catch {
+      const { data: fallbackData } = await supabase
+        .from('inventory_batches')
+        .select('*')
+        .eq('status', 'draft')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      return fallbackData || [];
     }
   };
 

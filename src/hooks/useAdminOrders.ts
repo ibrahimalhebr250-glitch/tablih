@@ -18,6 +18,9 @@ export interface OrderWithDetails {
   is_draft: boolean;
   created_at: string;
   updated_at: string;
+  order_source: string;
+  pallet_condition: string;
+  source_supplier_phone: string | null;
 }
 
 export interface OrderDraft {
@@ -141,11 +144,30 @@ export function useAdminOrders() {
         `)
         .order('created_at', { ascending: false });
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (fallbackError) throw fallbackError;
+
+        setOrders((fallbackData || []).map((order: any) => ({
+          ...order,
+          buyer_name: order.phone || 'غير معروف',
+          order_source: order.order_source || 'normal',
+          pallet_condition: order.pallet_condition || '',
+          source_supplier_phone: order.source_supplier_phone || null,
+        })));
+        return;
+      }
 
       const ordersWithNames = (data || []).map((order: any) => ({
         ...order,
-        buyer_name: order.platform_users?.display_name || order.phone || 'غير معروف'
+        buyer_name: order.platform_users?.display_name || order.phone || 'غير معروف',
+        order_source: order.order_source || 'normal',
+        pallet_condition: order.pallet_condition || '',
+        source_supplier_phone: order.source_supplier_phone || null,
       }));
 
       setOrders(ordersWithNames);
@@ -236,10 +258,8 @@ export function useAdminOrders() {
         .limit(30);
 
       if (fetchError) throw fetchError;
-      console.log('✅ تم جلب التحليلات:', data?.length || 0, 'سجل');
       setAnalytics(data || []);
     } catch (err: any) {
-      console.error('❌ خطأ في جلب التحليلات:', err.message);
       setError(err.message);
     }
   };
@@ -253,10 +273,8 @@ export function useAdminOrders() {
         .limit(limit);
 
       if (fetchError) throw fetchError;
-      console.log('✅ تم جلب سجل العمليات:', data?.length || 0, 'عملية');
       setOperations(data || []);
     } catch (err: any) {
-      console.error('❌ خطأ في جلب سجل العمليات:', err.message);
       setError(err.message);
     }
   };

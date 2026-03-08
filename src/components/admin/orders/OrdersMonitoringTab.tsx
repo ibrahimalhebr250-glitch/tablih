@@ -38,16 +38,27 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   pending: { bg: '#FEF3C7', text: '#92400E' },
   matched: { bg: '#D1FAE5', text: '#065F46' },
   unmatched: { bg: '#FEE2E2', text: '#991B1B' },
-  partially_matched: { bg: '#EDE9FE', text: '#5B21B6' },
+  partially_matched: { bg: '#DBEAFE', text: '#1E40AF' },
   executed: { bg: '#E0E7FF', text: '#3730A3' },
   fulfilled: { bg: '#D1FAE5', text: '#065F46' },
   cancelled: { bg: '#F3F4F6', text: '#6B7280' }
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+  normal: 'طلب عادي',
+  market: 'من السوق',
+};
+
+const SOURCE_COLORS: Record<string, { bg: string; text: string }> = {
+  normal: { bg: '#F0F9FF', text: '#0369A1' },
+  market: { bg: '#FFF7ED', text: '#C2410C' },
 };
 
 export default function OrdersMonitoringTab({ orders, onUpdate, onDelete }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [stageFilter, setStageFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -63,8 +74,9 @@ export default function OrdersMonitoringTab({ orders, onUpdate, onDelete }: Prop
 
     const matchesStage = stageFilter === 'all' || order.current_stage === stageFilter;
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    const matchesSource = sourceFilter === 'all' || (order.order_source || 'normal') === sourceFilter;
 
-    return matchesSearch && matchesStage && matchesStatus;
+    return matchesSearch && matchesStage && matchesStatus && matchesSource;
   });
 
   const handleDelete = async (orderId: string) => {
@@ -156,6 +168,15 @@ export default function OrdersMonitoringTab({ orders, onUpdate, onDelete }: Prop
             <option value="fulfilled">منفّذ</option>
             <option value="cancelled">ملغي</option>
           </select>
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+            className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm"
+          >
+            <option value="all">جميع المصادر</option>
+            <option value="normal">طلب عادي</option>
+            <option value="market">من السوق</option>
+          </select>
         </div>
       </div>
 
@@ -204,6 +225,7 @@ export default function OrdersMonitoringTab({ orders, onUpdate, onDelete }: Prop
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">الكمية</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">المدينة</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">نوع الطلب</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">المصدر</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">المرحلة</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">الحالة</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">العروض</th>
@@ -248,6 +270,20 @@ export default function OrdersMonitoringTab({ orders, onUpdate, onDelete }: Prop
                       {order.order_type_code === 'standard' && 'طلب عادي'}
                       {order.order_type_code === 'urgent' && 'طلب عاجل'}
                       {order.order_type_code === 'recurring' && 'توريد دوري'}
+                    </td>
+                    <td className="px-4 py-3">
+                      {(() => {
+                        const src = order.order_source || 'normal';
+                        const srcCfg = SOURCE_COLORS[src] || SOURCE_COLORS.normal;
+                        return (
+                          <span
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                            style={{ backgroundColor: srcCfg.bg, color: srcCfg.text }}
+                          >
+                            {SOURCE_LABELS[src] || src}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -401,6 +437,10 @@ export default function OrdersMonitoringTab({ orders, onUpdate, onDelete }: Prop
                 <div>
                   <label className="text-xs text-gray-500">عدد المطابقات</label>
                   <p className="font-semibold text-gray-900">{selectedOrder.match_count || 0}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">مصدر الطلب</label>
+                  <p className="font-semibold text-gray-900">{SOURCE_LABELS[selectedOrder.order_source || 'normal'] || selectedOrder.order_source}</p>
                 </div>
               </div>
               <div className="pt-4 border-t border-gray-100 flex gap-3">

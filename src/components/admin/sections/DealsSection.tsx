@@ -66,7 +66,7 @@ function MetricCard({ label, value, sub, icon, color, bg, active, badge, badgeCo
 
 const FILTER_LABELS: Record<AdminDealFilter, string> = {
   all:              'جميع الصفقات',
-  new_deals:        'صفقات جديدة',
+  pending_supplier: 'بانتظار المورد',
   awaiting_buyer:   'بانتظار المشتري',
   active_deals:     'صفقات نشطة',
   stalled_deals:    'صفقات متأخرة',
@@ -263,7 +263,7 @@ function DealRow({ deal, onView, onFreeze, onCancel, onDelete, onReminder, busy 
 }) {
   const cfg = DEAL_STATUS_CONFIG[deal.status as keyof typeof DEAL_STATUS_CONFIG];
   const [showActions, setShowActions] = useState(false);
-  const isStalled = deal.status === 'inventory_reserved' &&
+  const isStalled = ['inventory_reserved', 'execution_in_progress', 'in_delivery'].includes(deal.status) &&
     deal.reserved_at != null &&
     new Date(deal.reserved_at).getTime() < Date.now() - 3 * 24 * 60 * 60 * 1000;
 
@@ -402,14 +402,14 @@ export default function DealsSection() {
 
   const metricCards = [
     {
-      id: 'new_deals' as AdminDealFilter,
-      label: 'صفقات جديدة',
-      sub: 'حالة: matched',
-      value: metrics?.new_deals ?? 0,
+      id: 'pending_supplier' as AdminDealFilter,
+      label: 'بانتظار المورد',
+      sub: 'صفقات جديدة تنتظر اعتماد المورد',
+      value: metrics?.pending_supplier ?? 0,
       icon: <Zap className="w-4 h-4" />,
-      color: '#f59e0b', bg: '#fffbeb',
-      badge: metrics?.new_deals ? 'جديد' : undefined,
-      badgeColor: '#f59e0b',
+      color: '#d97706', bg: '#fffbeb',
+      badge: (metrics?.pending_supplier ?? 0) > 0 ? 'جديد' : undefined,
+      badgeColor: '#d97706',
     },
     {
       id: 'awaiting_buyer' as AdminDealFilter,
@@ -421,8 +421,8 @@ export default function DealsSection() {
     },
     {
       id: 'active_deals' as AdminDealFilter,
-      label: 'صفقات نشطة',
-      sub: 'قيد التنفيذ الآن',
+      label: 'قيد التنفيذ',
+      sub: 'صفقات نشطة قيد التنفيذ',
       value: metrics?.active_deals ?? 0,
       icon: <BarChart2 className="w-4 h-4" />,
       color: '#16a34a', bg: '#f0fdf4',
@@ -430,7 +430,7 @@ export default function DealsSection() {
     {
       id: 'stalled_deals' as AdminDealFilter,
       label: 'صفقات متأخرة',
-      sub: 'محجوزة أكثر من 3 أيام',
+      sub: 'أكثر من 3 أيام بدون تقدم',
       value: metrics?.stalled_deals ?? 0,
       icon: <AlertTriangle className="w-4 h-4" />,
       color: '#dc2626', bg: '#fef2f2',
@@ -455,9 +455,9 @@ export default function DealsSection() {
     },
     {
       id: 'all' as AdminDealFilter,
-      label: 'حجم السوق اليوم',
-      sub: 'طبلية مكتملة اليوم',
-      value: (metrics?.volume_today ?? 0).toLocaleString('ar-SA'),
+      label: 'إجمالي الصفقات',
+      sub: `${(metrics?.volume_today ?? 0).toLocaleString('ar-SA')} طبلية اليوم`,
+      value: metrics?.total_deals ?? 0,
       icon: <Package className="w-4 h-4" />,
       color: '#0e7490', bg: '#ecfeff',
     },

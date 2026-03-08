@@ -3,12 +3,22 @@ import { supabase } from '../lib/supabase';
 
 export type TimeFilter = 'today' | 'week' | 'month';
 
-export interface ExecutiveMetrics {
-  gmv: number;
-  platform_revenue: number;
-  supplier_liabilities: number;
+export interface PlatformStats {
+  total_users: number;
+  total_suppliers: number;
+  total_buyers: number;
+  active_inventory: number;
+  published_to_market: number;
+  active_orders: number;
+  unmatched_orders: number;
   active_deals: number;
-  awaiting_payment: number;
+  completed_deals: number;
+  cancelled_deals: number;
+  total_deals: number;
+  pallets_traded: number;
+  total_pallets_in_platform: number;
+  negotiation_requests: number;
+  orders_from_market: number;
 }
 
 export interface CityStats {
@@ -31,18 +41,18 @@ export interface DealCard {
 }
 
 export interface DealFlow {
-  awaiting_payment: DealCard[];
-  paid: DealCard[];
-  preparing: DealCard[];
-  delivered: DealCard[];
-  settlement_pending: DealCard[];
+  pending_supplier: DealCard[];
+  awaiting_buyer: DealCard[];
+  execution_in_progress: DealCard[];
+  completed: DealCard[];
+  cancelled: DealCard[];
 }
 
 export interface FinancialSnapshot {
-  payments_today: number;
-  settlements_today: number;
-  net_balance: number;
-  outstanding_liabilities: number;
+  total_gmv: number;
+  platform_revenue: number;
+  outstanding_fees: number;
+  avg_deal_value: number;
 }
 
 export interface ActivityItem {
@@ -54,11 +64,17 @@ export interface ActivityItem {
   admin_phone: string;
 }
 
+export interface DailyActivity {
+  date: string;
+  deals: number;
+  orders: number;
+  inventory: number;
+}
+
 function getDateFilter(filter: TimeFilter): string {
   const now = new Date();
   if (filter === 'today') {
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    return start.toISOString();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
   }
   if (filter === 'week') {
     const start = new Date(now);
@@ -71,200 +87,152 @@ function getDateFilter(filter: TimeFilter): string {
 }
 
 export function useAdminDashboard(filter: TimeFilter) {
-  const [metrics, setMetrics] = useState<ExecutiveMetrics | null>(null);
+  const [stats, setStats] = useState<PlatformStats | null>(null);
   const [cities, setCities] = useState<CityStats[]>([]);
   const [dealFlow, setDealFlow] = useState<DealFlow | null>(null);
   const [financial, setFinancial] = useState<FinancialSnapshot | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [dailyActivity, setDailyActivity] = useState<DailyActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
-    console.log('🔄 لوحة التحكم: جلب جميع البيانات...');
     setLoading(true);
     const since = getDateFilter(filter);
-    const today = getDateFilter('today');
 
-    const [metricsRes, citiesRes, dealsRes, financialRes, activityRes] = await Promise.all([
-      supabase.rpc('admin_get_executive_metrics', { since_date: since }),
-      supabase.from('cities').select('id, name, status').order('name'),
-      supabase.from('deals')
-        .select('id, deal_ref, city, quantity, buyer_price, created_at, status')
-        .not('status', 'eq', 'cancelled')
-        .order('created_at', { ascending: false })
-        .limit(100),
-      supabase.rpc('admin_get_financial_snapshot', { today_start: today }),
-      supabase.from('audit_log')
-        .select('id, action, entity_type, entity_id, created_at, admin_phone')
-        .order('created_at', { ascending: false })
-        .limit(20),
-    ]);
+    try {
+      const [
+        usersRes,
+        inventoryRes,
+        ordersRes,
+        dealsRes,
+        negotiationsRes,
+        citiesRes,
+        activityRes,
+      ] = await Promise.all([
+        supabase.from('platform_users').select('id, user_type, created_at'),
+        supabase.from('inventory_batches').select('id, city, available_quantity, quantity, status, publish_to_market, inventory_source, supplier_phone, created_at'),
+        supabase.from('orders').select('id, city, quantity, status, order_source, phone, created_at, match_count'),
+        supabase.from('deals').select('id, deal_ref, city, quantity, buyer_price, supplier_price, platform_fee, final_price, status, created_at, reserved_at, completed_at'),
+        supabase.from('negotiation_requests').select('id, status, created_at'),
+        supabase.from('cities').select('id, name, status').order('name'),
+        supabase.from('audit_log')
+          .select('id, action, entity_type, entity_id, created_at, admin_phone')
+          .order('created_at', { ascending: false })
+          .limit(30),
+      ]);
 
-    if (metricsRes.data) {
-      setMetrics(metricsRes.data as ExecutiveMetrics);
-    } else {
-      const fallback = await supabase
-        .from('deals')
-        .select('id, final_price, buyer_price, platform_fee, status, created_at')
-        .gte('created_at', since);
+      const users = usersRes.data ?? [];
+      const inventory = inventoryRes.data ?? [];
+      const orders = ordersRes.data ?? [];
+      const deals = dealsRes.data ?? [];
+      const negotiations = negotiationsRes.data ?? [];
 
-      const rows = fallback.data ?? [];
-      const gmv = rows.reduce((s, r) => s + (r.buyer_price ?? 0) * ((r as { quantity?: number }).quantity ?? 1), 0);
-      const revenue = rows.reduce((s, r) => s + (r.platform_fee ?? 0), 0);
+      const filteredDeals = deals.filter(d => d.created_at >= since);
+      const filteredOrders = orders.filter(o => o.created_at >= since);
 
-      const liabRes = await supabase
-        .from('supplier_liabilities')
-        .select('amount_owed')
-        .in('status', ['pending', 'partial']);
-      const liabilities = (liabRes.data ?? []).reduce((s, r) => s + (r.amount_owed ?? 0), 0);
+      const supplierPhones = new Set(inventory.map(i => i.supplier_phone).filter(Boolean));
+      const buyerPhones = new Set(orders.map(o => o.phone).filter(Boolean));
 
-      const activeDealsRes = await supabase
-        .from('deals')
-        .select('id', { count: 'exact', head: true })
-        .not('status', 'in', '("cancelled","delivered")');
+      const platformStats: PlatformStats = {
+        total_users: users.length,
+        total_suppliers: supplierPhones.size || users.filter(u => u.user_type === 'supplier' || u.user_type === 'both').length,
+        total_buyers: buyerPhones.size || users.filter(u => u.user_type === 'buyer' || u.user_type === 'both').length,
+        active_inventory: inventory.filter(i => i.status === 'active').length,
+        published_to_market: inventory.filter(i => i.publish_to_market === true).length,
+        active_orders: orders.filter(o => !['cancelled', 'fulfilled'].includes(o.status)).length,
+        unmatched_orders: orders.filter(o => o.status === 'unmatched').length,
+        active_deals: deals.filter(d => !['cancelled', 'completed'].includes(d.status)).length,
+        completed_deals: deals.filter(d => d.status === 'completed').length,
+        cancelled_deals: deals.filter(d => d.status === 'cancelled').length,
+        total_deals: deals.length,
+        pallets_traded: deals.filter(d => d.status === 'completed').reduce((s, d) => s + (d.quantity ?? 0), 0),
+        total_pallets_in_platform: inventory.reduce((s, i) => s + (i.quantity ?? 0), 0),
+        negotiation_requests: negotiations.length,
+        orders_from_market: orders.filter(o => o.order_source === 'market').length,
+      };
+      setStats(platformStats);
 
-      const awaitingRes = await supabase
-        .from('deals')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'awaiting_payment');
-
-      setMetrics({
-        gmv,
-        platform_revenue: revenue,
-        supplier_liabilities: liabilities,
-        active_deals: activeDealsRes.count ?? 0,
-        awaiting_payment: awaitingRes.count ?? 0,
-      });
-    }
-
-    if (citiesRes.data) {
-      const cityRows = citiesRes.data;
-      const inventoryRes = await supabase
-        .from('inventory_batches')
-        .select('city, available_quantity, status');
-      const ordersRes = await supabase
-        .from('orders')
-        .select('city, quantity, status');
-      const dealsForCityRes = await supabase
-        .from('deals')
-        .select('city, status')
-        .not('status', 'in', '("cancelled","delivered")');
-
-      const inv = inventoryRes.data ?? [];
-      const ords = ordersRes.data ?? [];
-      const dls = dealsForCityRes.data ?? [];
-
-      const stats: CityStats[] = cityRows.map(c => ({
-        id: c.id,
-        name: c.name,
-        status: c.status,
-        total_supply: inv.filter(i => i.city === c.name && ['active', 'available'].includes(i.status)).reduce((s, i) => s + (i.available_quantity ?? 0), 0),
-        total_demand: ords.filter(o => o.city === c.name && ['unmatched', 'pending', 'processing'].includes(o.status)).reduce((s, o) => s + (o.quantity ?? 0), 0),
-        active_deals: dls.filter(d => d.city === c.name).length,
-      }));
-      setCities(stats);
-    }
-
-    if (dealsRes.data) {
-      const all = dealsRes.data as DealCard[];
-      setDealFlow({
-        awaiting_payment: all.filter(d => d.status === 'awaiting_payment').slice(0, 5),
-        paid: all.filter(d => d.status === 'paid').slice(0, 5),
-        preparing: all.filter(d => d.status === 'preparing').slice(0, 5),
-        delivered: all.filter(d => d.status === 'delivered').slice(0, 5),
-        settlement_pending: all.filter(d => d.status === 'settlement_pending').slice(0, 5),
-      });
-    }
-
-    if (financialRes.data) {
-      setFinancial(financialRes.data as FinancialSnapshot);
-    } else {
-      const paymentsRes = await supabase
-        .from('ledger_entries')
-        .select('amount')
-        .eq('entry_type', 'payment_received')
-        .gte('created_at', today);
-      const settlementsRes = await supabase
-        .from('ledger_entries')
-        .select('amount')
-        .eq('entry_type', 'settlement_paid')
-        .gte('created_at', today);
-      const liabRes2 = await supabase
-        .from('supplier_liabilities')
-        .select('amount_owed')
-        .in('status', ['pending', 'partial']);
-
-      const paymentsToday = (paymentsRes.data ?? []).reduce((s, r) => s + (r.amount ?? 0), 0);
-      const settlementsToday = (settlementsRes.data ?? []).reduce((s, r) => s + (r.amount ?? 0), 0);
-      const liabilities = (liabRes2.data ?? []).reduce((s, r) => s + (r.amount_owed ?? 0), 0);
+      const completedDeals = filteredDeals.filter(d => d.status === 'completed');
+      const totalGmv = completedDeals.reduce((s, d) => s + ((d.buyer_price ?? d.final_price ?? 0) * (d.quantity ?? 0)), 0);
+      const platformRevenue = filteredDeals.reduce((s, d) => s + (d.platform_fee ?? 0), 0);
+      const outstandingFees = deals
+        .filter(d => d.platform_fee && !['completed', 'cancelled'].includes(d.status))
+        .reduce((s, d) => s + (d.platform_fee ?? 0), 0);
 
       setFinancial({
-        payments_today: paymentsToday,
-        settlements_today: settlementsToday,
-        net_balance: paymentsToday - settlementsToday,
-        outstanding_liabilities: liabilities,
+        total_gmv: totalGmv,
+        platform_revenue: platformRevenue,
+        outstanding_fees: outstandingFees,
+        avg_deal_value: completedDeals.length > 0
+          ? totalGmv / completedDeals.length
+          : 0,
       });
+
+      if (citiesRes.data) {
+        const cityRows = citiesRes.data;
+        const cityStats: CityStats[] = cityRows.map(c => ({
+          id: c.id,
+          name: c.name,
+          status: c.status,
+          total_supply: inventory
+            .filter(i => i.city === c.name && i.status === 'active')
+            .reduce((s, i) => s + (i.available_quantity ?? 0), 0),
+          total_demand: orders
+            .filter(o => o.city === c.name && ['unmatched', 'pending', 'partially_matched'].includes(o.status))
+            .reduce((s, o) => s + (o.quantity ?? 0), 0),
+          active_deals: deals
+            .filter(d => d.city === c.name && !['cancelled', 'completed'].includes(d.status))
+            .length,
+        }));
+        setCities(cityStats);
+      }
+
+      const allDeals = (deals as DealCard[]);
+      setDealFlow({
+        pending_supplier: allDeals.filter(d => d.status === 'pending_supplier' || d.status === 'matched').slice(0, 5),
+        awaiting_buyer: allDeals.filter(d => d.status === 'awaiting_buyer').slice(0, 5),
+        execution_in_progress: allDeals.filter(d => d.status === 'execution_in_progress' || d.status === 'in_delivery' || d.status === 'inventory_reserved').slice(0, 5),
+        completed: allDeals.filter(d => d.status === 'completed').slice(0, 5),
+        cancelled: allDeals.filter(d => d.status === 'cancelled').slice(0, 5),
+      });
+
+      setActivity((activityRes.data as ActivityItem[]) ?? []);
+
+      const last14Days: DailyActivity[] = [];
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        last14Days.push({
+          date: dateStr,
+          deals: deals.filter(dl => dl.created_at?.startsWith(dateStr)).length,
+          orders: orders.filter(o => o.created_at?.startsWith(dateStr)).length,
+          inventory: inventory.filter(inv => inv.created_at?.startsWith(dateStr)).length,
+        });
+      }
+      setDailyActivity(last14Days);
+
+    } catch (err) {
+      console.error('Dashboard fetch error:', err);
     }
 
-    setActivity((activityRes.data as ActivityItem[]) ?? []);
     setLoading(false);
-    console.log('✅ لوحة التحكم: تم جلب جميع البيانات بنجاح');
-    console.log('📊 المقاييس:', metrics);
-    console.log('🌍 المدن:', cities.length);
-    console.log('💼 الصفقات:', dealFlow);
   }, [filter]);
 
   useEffect(() => {
     fetchAll();
 
-    // الاشتراك في التحديثات اللحظية
-    const dealsChannel = supabase
-      .channel('admin-dashboard-deals')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => {
-        console.log('🔄 تحديث لحظي: تغيير في الصفقات');
-        fetchAll();
-      })
-      .subscribe();
-
-    const ordersChannel = supabase
-      .channel('admin-dashboard-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        console.log('🔄 تحديث لحظي: تغيير في الطلبات');
-        fetchAll();
-      })
-      .subscribe();
-
-    const inventoryChannel = supabase
-      .channel('admin-dashboard-inventory')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_batches' }, () => {
-        console.log('🔄 تحديث لحظي: تغيير في المخزون');
-        fetchAll();
-      })
-      .subscribe();
-
-    const ledgerChannel = supabase
-      .channel('admin-dashboard-ledger')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ledger_entries' }, () => {
-        console.log('🔄 تحديث لحظي: تغيير في السجلات المالية');
-        fetchAll();
-      })
-      .subscribe();
-
-    const auditChannel = supabase
-      .channel('admin-dashboard-audit')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_log' }, () => {
-        console.log('🔄 تحديث لحظي: نشاط إداري جديد');
-        fetchAll();
-      })
+    const channel = supabase
+      .channel('admin-dashboard-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => fetchAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_batches' }, () => fetchAll())
       .subscribe();
 
     return () => {
-      supabase.removeChannel(dealsChannel);
-      supabase.removeChannel(ordersChannel);
-      supabase.removeChannel(inventoryChannel);
-      supabase.removeChannel(ledgerChannel);
-      supabase.removeChannel(auditChannel);
+      supabase.removeChannel(channel);
     };
   }, [fetchAll]);
 
-  return { metrics, cities, dealFlow, financial, activity, loading, refetch: fetchAll };
+  return { stats, cities, dealFlow, financial, activity, dailyActivity, loading, refetch: fetchAll };
 }

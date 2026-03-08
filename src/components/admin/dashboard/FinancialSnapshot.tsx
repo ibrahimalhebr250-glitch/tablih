@@ -1,4 +1,4 @@
-import { ArrowDownCircle, ArrowUpCircle, Scale, AlertTriangle } from 'lucide-react';
+import { TrendingUp, DollarSign, AlertCircle, Calculator } from 'lucide-react';
 import type { FinancialSnapshot as ISnapshot } from '../../../hooks/useAdminDashboard';
 
 interface Props {
@@ -15,68 +15,70 @@ function fmt(n: number): string {
 export default function FinancialSnapshot({ financial, loading }: Props) {
   const items = [
     {
-      label: 'مدفوعات اليوم',
-      value: financial?.payments_today ?? 0,
-      icon: ArrowDownCircle,
-      positive: true,
+      label: 'إجمالي حجم التداول',
+      value: financial?.total_gmv ?? 0,
+      icon: TrendingUp,
       color: '#16a34a',
       bg: '#f0fdf4',
       border: '#bbf7d0',
     },
     {
-      label: 'تسويات اليوم',
-      value: financial?.settlements_today ?? 0,
-      icon: ArrowUpCircle,
-      positive: false,
+      label: 'إيرادات المنصة',
+      value: financial?.platform_revenue ?? 0,
+      icon: DollarSign,
       color: '#2563eb',
       bg: '#eff6ff',
       border: '#bfdbfe',
     },
     {
-      label: 'الرصيد الصافي',
-      value: financial?.net_balance ?? 0,
-      icon: Scale,
-      positive: (financial?.net_balance ?? 0) >= 0,
-      color: (financial?.net_balance ?? 0) >= 0 ? '#16a34a' : '#dc2626',
-      bg: (financial?.net_balance ?? 0) >= 0 ? '#f0fdf4' : '#fef2f2',
-      border: (financial?.net_balance ?? 0) >= 0 ? '#bbf7d0' : '#fecaca',
-    },
-    {
-      label: 'مستحقات الموردين',
-      value: financial?.outstanding_liabilities ?? 0,
-      icon: AlertTriangle,
-      positive: false,
+      label: 'رسوم معلقة',
+      value: financial?.outstanding_fees ?? 0,
+      icon: AlertCircle,
       color: '#ca8a04',
       bg: '#fefce8',
       border: '#fde68a',
+    },
+    {
+      label: 'متوسط قيمة الصفقة',
+      value: financial?.avg_deal_value ?? 0,
+      icon: Calculator,
+      color: '#0891b2',
+      bg: '#ecfeff',
+      border: '#a5f3fc',
     },
   ];
 
   return (
     <div className="space-y-3">
-      <p className="text-[13px] font-bold text-[#4a7a94] uppercase tracking-wide">الملخص المالي</p>
+      <div className="flex items-center gap-2">
+        <DollarSign className="w-5 h-5 text-green-600" />
+        <div>
+          <p className="text-sm font-black text-slate-900">الملخص المالي</p>
+          <p className="text-xs text-slate-500">الأداء المالي للمنصة</p>
+        </div>
+      </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {items.map(({ label, value, icon: Icon, color, bg, border }) => (
           <div
             key={label}
-            className="rounded-2xl p-4 space-y-2"
-            style={{ background: bg, border: `1px solid ${border}` }}
+            className="rounded-2xl p-4 space-y-2 bg-white border"
+            style={{ borderColor: border }}
           >
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: `${color}18` }}
+              style={{ background: bg }}
             >
               <Icon className="w-5 h-5" style={{ color }} />
             </div>
             {loading ? (
-              <div className="h-7 w-24 bg-white rounded-lg animate-pulse" />
+              <div className="h-7 w-24 bg-slate-100 rounded-lg animate-pulse" />
             ) : (
-              <p className="text-[22px] font-black leading-none" style={{ color }}>
+              <p className="text-xl font-black leading-none" style={{ color }}>
                 {fmt(value)}
-                <span className="text-[11px] font-semibold mr-1" style={{ color: color + 'aa' }}>ر.س</span>
+                <span className="text-[10px] font-semibold mr-1 text-slate-400">ر.س</span>
               </p>
             )}
-            <p className="text-[11px] font-semibold text-[#7a9aab]">{label}</p>
+            <p className="text-[11px] font-semibold text-slate-500">{label}</p>
           </div>
         ))}
       </div>

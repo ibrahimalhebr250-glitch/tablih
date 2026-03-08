@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 
 export type AdminDealFilter =
   | 'all'
-  | 'new_deals'
+  | 'pending_supplier'
   | 'awaiting_buyer'
   | 'active_deals'
   | 'stalled_deals'
@@ -11,13 +11,14 @@ export type AdminDealFilter =
   | 'cancelled_deals';
 
 export interface AdminDealMetrics {
-  new_deals: number;
+  pending_supplier: number;
   awaiting_buyer: number;
   active_deals: number;
   stalled_deals: number;
   completed_deals: number;
   cancelled_deals: number;
   volume_today: number;
+  total_deals: number;
 }
 
 export interface AdminDealRow {
@@ -43,17 +44,19 @@ export interface AdminDealRow {
   cancelled_at: string | null;
   cancel_reason: string | null;
   admin_notes: string | null;
+  execution_deadline: string | null;
+  execution_hours: number | null;
 }
 
 function statusesForFilter(filter: AdminDealFilter): string[] {
   switch (filter) {
-    case 'new_deals':        return ['matched'];
-    case 'awaiting_buyer':   return ['awaiting_buyer'];
-    case 'active_deals':     return ['inventory_reserved', 'in_delivery'];
-    case 'stalled_deals':    return ['inventory_reserved', 'in_delivery'];
-    case 'completed_deals':  return ['completed'];
-    case 'cancelled_deals':  return ['cancelled'];
-    default:                 return [];
+    case 'pending_supplier':  return ['pending_supplier', 'matched'];
+    case 'awaiting_buyer':    return ['awaiting_buyer'];
+    case 'active_deals':      return ['execution_in_progress', 'in_delivery', 'inventory_reserved'];
+    case 'stalled_deals':     return ['execution_in_progress', 'in_delivery', 'inventory_reserved'];
+    case 'completed_deals':   return ['completed'];
+    case 'cancelled_deals':   return ['cancelled'];
+    default:                  return [];
   }
 }
 
@@ -67,8 +70,34 @@ export function useAdminDeals() {
 
   const fetchMetrics = useCallback(async () => {
     setLoadingMetrics(true);
-    const { data } = await supabase.rpc('admin_get_deal_metrics_v4');
-    if (data) setMetrics(data as AdminDealMetrics);
+
+    const { data: allDeals } = await supabase
+      .from('deals')
+      .select('id, status, quantity, reserved_at, completed_at, created_at');
+
+    const rows = allDeals ?? [];
+    const threshold = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const activeStatuses = ['execution_in_progress', 'in_delivery', 'inventory_reserved'];
+    const stalled = rows.filter(r =>
+      activeStatuses.includes(r.status) &&
+      r.reserved_at && r.reserved_at < threshold
+    );
+
+    setMetrics({
+      pending_supplier: rows.filter(r => r.status === 'pending_supplier' || r.status === 'matched').length,
+      awaiting_buyer: rows.filter(r => r.status === 'awaiting_buyer').length,
+      active_deals: rows.filter(r => activeStatuses.includes(r.status)).length,
+      stalled_deals: stalled.length,
+      completed_deals: rows.filter(r => r.status === 'completed').length,
+      cancelled_deals: rows.filter(r => r.status === 'cancelled').length,
+      volume_today: rows
+        .filter(r => r.status === 'completed' && r.completed_at && r.completed_at >= todayStart.toISOString())
+        .reduce((s, r) => s + (r.quantity ?? 0), 0),
+      total_deals: rows.length,
+    });
     setLoadingMetrics(false);
   }, []);
 
@@ -102,7 +131,7 @@ export function useAdminDeals() {
 
     let query = supabase
       .from('deals')
-      .select('id, deal_ref, buyer_phone, supplier_phone, city, size, pallet_type, quality, quantity, supplier_price, platform_fee, final_price, status, is_suspended, created_at, reserved_at, completed_at, cancelled_at, cancel_reason, admin_notes')
+      .select('id, deal_ref, buyer_phone, supplier_phone, city, size, pallet_type, quality, quantity, supplier_price, platform_fee, final_price, status, is_suspended, created_at, reserved_at, completed_at, cancelled_at, cancel_reason, admin_notes, execution_deadline, execution_hours')
       .order('created_at', { ascending: false })
       .limit(200);
 
@@ -121,8 +150,8 @@ export function useAdminDeals() {
     let enriched = await enrichWithNames(rows);
 
     if (filter === 'stalled_deals') {
-      const threshold = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-      enriched = enriched.filter(r => r.reserved_at && r.reserved_at < threshold);
+      const thresh = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+      enriched = enriched.filter(r => r.reserved_at && r.reserved_at < thresh);
     }
 
     setDeals(enriched);
@@ -137,6 +166,15 @@ export function useAdminDeals() {
   useEffect(() => {
     fetchMetrics();
     fetchDeals('all');
+
+    const channel = supabase
+      .channel('admin-deals-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => {
+        fetchMetrics();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [fetchMetrics, fetchDeals]);
 
   const withBusy = async (dealId: string, fn: () => Promise<void>) => {
@@ -174,7 +212,7 @@ export function useAdminDeals() {
 
   const sendBatchReminders = useCallback(async () => {
     const stalledDeals = deals.filter(d =>
-      d.status === 'inventory_reserved' &&
+      ['execution_in_progress', 'in_delivery', 'inventory_reserved'].includes(d.status) &&
       d.reserved_at &&
       new Date(d.reserved_at).getTime() < Date.now() - 3 * 24 * 60 * 60 * 1000
     );
@@ -190,18 +228,9 @@ export function useAdminDeals() {
   }, [fetchMetrics, fetchDeals, activeFilter]);
 
   return {
-    metrics,
-    deals,
-    activeFilter,
-    loadingMetrics,
-    loadingDeals,
-    actionBusy,
-    selectFilter,
-    freezeDeal,
-    cancelDeal,
-    deleteDeal,
-    sendReminder,
-    sendBatchReminders,
-    refresh,
+    metrics, deals, activeFilter,
+    loadingMetrics, loadingDeals, actionBusy,
+    selectFilter, freezeDeal, cancelDeal, deleteDeal,
+    sendReminder, sendBatchReminders, refresh,
   };
 }
