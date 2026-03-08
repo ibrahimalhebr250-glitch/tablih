@@ -65,7 +65,7 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
         supabase.from('inventory_batches').select('quantity', { count: 'exact' }).eq('phone', phone),
         supabase.from('buyer_inventory').select('id', { count: 'exact' }).eq('buyer_phone', phone),
         supabase.from('deals').select('id', { count: 'exact' }).or(`buyer_phone.eq.${phone},supplier_phone.eq.${phone}`).in('status', ['pending_supplier', 'matched', 'supplier_confirmed', 'awaiting_buyer', 'inventory_reserved', 'in_delivery']),
-        supabase.from('orders').select('id', { count: 'exact' }).eq('phone', phone).in('status', ['pending', 'partially_matched', 'matched']),
+        supabase.from('orders').select('id', { count: 'exact' }).eq('phone', phone).in('status', ['pending', 'unmatched', 'partially_matched', 'matched']),
       ]);
 
       if (profileRes.data?.profile_image_url) {
@@ -92,7 +92,7 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
       case 'deals':
         return <DealsTab phone={session.profile.phone} />;
       case 'orders':
-        return <MyOrdersTab phone={session.profile.phone} onCreateOrder={onCreateOrder} />;
+        return <MyOrdersTab phone={session.profile.phone} onCreateOrder={onCreateOrder} onGoToDeals={() => setActiveTab('deals')} onGoToWarehouse={() => setActiveTab('warehouse')} />;
       case 'settings':
         return <SettingsTab session={session} onLogout={onLogout} />;
       default:

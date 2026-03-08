@@ -1,126 +1,180 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   ClipboardList,
   Clock,
   CheckCircle2,
   Plus,
-  Zap,
-  MapPin,
+  Handshake,
+  RefreshCw,
+  Radar,
+  XCircle,
 } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { useAccountOrders } from '../../../hooks/useAccountOrders';
+import { ActiveOrderCard, MatchedOrderCard, CompletedOrderCard } from '../orders/OrderCards';
+import OrderDetailSheet from '../orders/OrderDetailSheet';
+import { ActionToast } from '../../shared/ActionToast';
+import type { ToastConfig } from '../../shared/ActionToast';
+import type { AccountOrder } from '../../../hooks/useAccountOrders';
 
-type OrderFilter = 'open' | 'matching' | 'completed';
-
-interface Order {
-  id: string;
-  order_number: string;
-  pallet_type: string;
-  size: string;
-  quality: string;
-  quantity: number;
-  city: string;
-  status: string;
-  created_at: string;
-  pallet_condition: string;
-}
+type OrderFilter = 'active' | 'matched' | 'completed';
 
 interface Props {
   phone: string;
   onCreateOrder: () => void;
+  onGoToDeals?: () => void;
+  onGoToWarehouse?: () => void;
 }
 
-const ORDER_STATUS: Record<string, { label: string; color: string; bg: string }> = {
-  pending: { label: 'مفتوح', color: '#b45309', bg: '#FFFBEB' },
-  partially_matched: { label: 'قيد المطابقة', color: '#0369a1', bg: '#EFF6FF' },
-  matched: { label: 'تمت المطابقة', color: '#059669', bg: '#ECFDF5' },
-  fulfilled: { label: 'مكتمل', color: '#059669', bg: '#ECFDF5' },
-  cancelled: { label: 'ملغى', color: '#dc2626', bg: '#FEF2F2' },
-};
+const FILTERS: { key: OrderFilter; label: string; icon: typeof Clock; color: string }[] = [
+  { key: 'active', label: 'النشطة', icon: Radar, color: '#B45309' },
+  { key: 'matched', label: 'تمت المطابقة', icon: Handshake, color: '#059669' },
+  { key: 'completed', label: 'المكتملة', icon: CheckCircle2, color: '#6b7280' },
+];
 
-export default function MyOrdersTab({ phone, onCreateOrder }: Props) {
-  const [filter, setFilter] = useState<OrderFilter>('open');
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function MyOrdersTab({ phone, onCreateOrder, onGoToDeals, onGoToWarehouse }: Props) {
+  const {
+    activeOrders, matchedOrders, completedOrders,
+    loading, actionLoading,
+    canEdit, canCancel,
+    updateOrder, cancelOrder,
+    refresh,
+  } = useAccountOrders(phone);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      setLoading(true);
-      let query = supabase
-        .from('orders')
-        .select('*')
-        .eq('phone', phone)
-        .order('created_at', { ascending: false });
+  const [filter, setFilter] = useState<OrderFilter>('active');
+  const [selectedOrder, setSelectedOrder] = useState<AccountOrder | null>(null);
+  const [toast, setToast] = useState<ToastConfig | null>(null);
 
-      if (filter === 'open') {
-        query = query.eq('status', 'pending');
-      } else if (filter === 'matching') {
-        query = query.in('status', ['partially_matched', 'matched']);
-      } else {
-        query = query.in('status', ['fulfilled', 'cancelled']);
-      }
+  const counts = {
+    active: activeOrders.length,
+    matched: matchedOrders.length,
+    completed: completedOrders.length,
+  };
+  const totalOrders = counts.active + counts.matched + counts.completed;
 
-      const { data } = await query;
-      setOrders(data || []);
-      setLoading(false);
-    };
-    fetchOrders();
-  }, [phone, filter]);
+  const currentOrders = filter === 'active' ? activeOrders
+    : filter === 'matched' ? matchedOrders
+    : completedOrders;
 
-  const filters: { key: OrderFilter; label: string; icon: typeof Clock }[] = [
-    { key: 'open', label: 'المفتوحة', icon: Clock },
-    { key: 'matching', label: 'قيد المطابقة', icon: Zap },
-    { key: 'completed', label: 'المكتملة', icon: CheckCircle2 },
-  ];
+  const handleGoToDeal = (order: AccountOrder) => {
+    if (onGoToDeals) {
+      onGoToDeals();
+    }
+  };
 
   return (
-    <div className="space-y-4" dir="rtl">
-      {/* Filter Tabs */}
-      <div className="flex gap-2">
-        {filters.map(f => {
+    <div className="space-y-3" dir="rtl">
+      {toast && (
+        <ActionToast
+          title={toast.title}
+          message={toast.message}
+          variant={toast.variant}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-[#7a9aab]">{totalOrders} طلب</span>
+          <button
+            onClick={refresh}
+            className={`w-7 h-7 rounded-lg bg-white/80 border border-[#e2edf5] flex items-center justify-center ${loading ? 'animate-spin' : ''}`}
+          >
+            <RefreshCw className="w-3 h-3 text-[#7a9aab]" />
+          </button>
+        </div>
+      </div>
+
+      <div
+        className="flex gap-1 p-1 rounded-2xl"
+        style={{ background: 'rgba(255,255,255,0.7)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', border: '1px solid rgba(255,255,255,0.9)' }}
+      >
+        {FILTERS.map(f => {
           const Icon = f.icon;
+          const isActive = filter === f.key;
+          const count = counts[f.key];
           return (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-bold transition-all ${
-                filter === f.key
-                  ? 'bg-white text-[#1a4a5e] shadow-sm border border-gray-200'
-                  : 'text-[#7a9aab] hover:bg-white/50'
+                isActive
+                  ? 'text-white shadow-lg'
+                  : 'text-[#5a7a8a] hover:text-[#1a4a5e] hover:bg-white/50'
               }`}
+              style={isActive ? {
+                background: 'linear-gradient(135deg, #1a4a5e 0%, #2c6f8a 100%)',
+                boxShadow: '0 4px 12px rgba(26,74,94,0.3)',
+              } : undefined}
             >
               <Icon className="w-3.5 h-3.5" />
-              {f.label}
+              <span>{f.label}</span>
+              {count > 0 && (
+                <span
+                  className="text-[9px] font-black min-w-[18px] rounded-full flex items-center justify-center"
+                  style={{
+                    background: isActive ? 'rgba(255,255,255,0.25)' : f.key === 'active' ? '#F59E0B' : '#e2ecf3',
+                    color: isActive ? 'white' : f.key === 'active' ? 'white' : '#2c5f7c',
+                    padding: '2px 6px',
+                  }}
+                >
+                  {count}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
 
-      {/* Orders List */}
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white/60 rounded-2xl p-4 animate-pulse">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gray-200" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3 bg-gray-200 rounded w-2/3" />
-                  <div className="h-2 bg-gray-200 rounded w-1/2" />
-                </div>
+            <div key={i} className="bg-white/60 rounded-2xl p-5 animate-pulse">
+              <div className="h-3 bg-gray-200 rounded w-1/3 mb-3" />
+              <div className="space-y-2">
+                <div className="h-2.5 bg-gray-200 rounded w-2/3" />
+                <div className="h-2.5 bg-gray-200 rounded w-1/2" />
+                <div className="h-2.5 bg-gray-200 rounded w-3/4" />
               </div>
+              <div className="h-10 bg-gray-200 rounded-xl mt-3" />
             </div>
           ))}
         </div>
-      ) : orders.length === 0 ? (
+      ) : currentOrders.length === 0 ? (
         <EmptyOrders filter={filter} onCreateOrder={onCreateOrder} />
       ) : (
-        <div className="space-y-2">
-          {orders.map(order => (
-            <OrderCard key={order.id} order={order} />
-          ))}
+        <div className="space-y-3">
+          {currentOrders.map(order => {
+            if (filter === 'active') {
+              return (
+                <ActiveOrderCard
+                  key={order.id}
+                  order={order}
+                  onViewDetail={setSelectedOrder}
+                />
+              );
+            }
+            if (filter === 'matched') {
+              return (
+                <MatchedOrderCard
+                  key={order.id}
+                  order={order}
+                  onViewDetail={setSelectedOrder}
+                  onGoToDeal={handleGoToDeal}
+                />
+              );
+            }
+            return (
+              <CompletedOrderCard
+                key={order.id}
+                order={order}
+                onViewDetail={setSelectedOrder}
+                onGoToWarehouse={onGoToWarehouse}
+              />
+            );
+          })}
         </div>
       )}
 
-      {/* Create Order Button */}
       <button
         onClick={onCreateOrder}
         className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[13px] font-bold text-white active:scale-[0.98] transition-transform"
@@ -129,78 +183,83 @@ export default function MyOrdersTab({ phone, onCreateOrder }: Props) {
         <Plus className="w-4 h-4" />
         إنشاء طلب جديد
       </button>
-    </div>
-  );
-}
 
-function OrderCard({ order }: { order: Order }) {
-  const statusConf = ORDER_STATUS[order.status] || ORDER_STATUS.pending;
-
-  return (
-    <div
-      className="bg-white rounded-2xl p-4"
-      style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.04)' }}
-    >
-      <div className="flex items-start gap-3">
-        <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', border: '1px solid #fde68a' }}
-        >
-          <ClipboardList className="w-5 h-5 text-[#b45309]" />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1">
-            <span
-              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-              style={{ background: statusConf.bg, color: statusConf.color }}
-            >
-              {statusConf.label}
-            </span>
-            <p className="text-[13px] font-bold text-[#1a3a4a]">{order.pallet_type} - {order.size}</p>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1 text-[10px] text-[#7a9aab]">
-              <MapPin className="w-3 h-3" />
-              {order.city}
-            </span>
-            <span className="text-[12px] font-bold text-[#b45309]">{order.quantity?.toLocaleString('ar-SA')} طبلية</span>
-          </div>
-
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
-            <span className="text-[9px] text-[#b0c4d0]">
-              {new Date(order.created_at).toLocaleDateString('ar-SA')}
-            </span>
-            <span className="text-[9px] text-[#b0c4d0]" dir="ltr">{order.order_number}</span>
-          </div>
-        </div>
-      </div>
+      {selectedOrder && (
+        <OrderDetailSheet
+          order={selectedOrder}
+          actionLoading={actionLoading}
+          canEdit={canEdit(selectedOrder)}
+          canCancel={canCancel(selectedOrder)}
+          onClose={() => setSelectedOrder(null)}
+          onUpdate={async (id, data) => {
+            const result = await updateOrder(id, data);
+            if (result.success) {
+              setToast({ title: 'تم تعديل الطلب', message: 'تم حفظ التعديلات بنجاح', variant: 'success' });
+            }
+            return result;
+          }}
+          onCancel={async (id) => {
+            const result = await cancelOrder(id);
+            if (result.success) {
+              setToast({ title: 'تم إلغاء الطلب', message: 'تم حذف الطلب بنجاح', variant: 'info' });
+            }
+            return result;
+          }}
+          onGoToDeal={onGoToDeals ? handleGoToDeal : undefined}
+          onGoToWarehouse={onGoToWarehouse}
+        />
+      )}
     </div>
   );
 }
 
 function EmptyOrders({ filter, onCreateOrder }: { filter: OrderFilter; onCreateOrder: () => void }) {
   const config = {
-    open: { title: 'لا توجد طلبات مفتوحة', desc: 'أنشئ طلب شراء جديد وسنجد لك المورد المناسب', showButton: true },
-    matching: { title: 'لا توجد طلبات قيد المطابقة', desc: 'الطلبات التي يتم البحث عن موردين لها ستظهر هنا', showButton: false },
-    completed: { title: 'لا توجد طلبات مكتملة', desc: 'الطلبات التي تم تنفيذها ستظهر هنا', showButton: false },
+    active: {
+      title: 'لا توجد طلبات نشطة',
+      desc: 'أنشئ طلب شراء جديد وسنبحث لك عن المورد المناسب تلقائيا',
+      color: '#B45309',
+      bgFrom: '#FFFBEB',
+      border: '#FDE68A',
+      icon: Radar,
+      showButton: true,
+    },
+    matched: {
+      title: 'لا توجد طلبات تمت مطابقتها',
+      desc: 'الطلبات التي يتم العثور لها على مخزون مطابق ستظهر هنا',
+      color: '#059669',
+      bgFrom: '#ECFDF5',
+      border: '#A7F3D0',
+      icon: Handshake,
+      showButton: false,
+    },
+    completed: {
+      title: 'لا توجد طلبات مكتملة',
+      desc: 'الطلبات التي تم تنفيذها بنجاح ونقل الطبليات إلى مشترياتك ستظهر هنا',
+      color: '#6b7280',
+      bgFrom: '#f3f4f6',
+      border: '#e5e7eb',
+      icon: CheckCircle2,
+      showButton: false,
+    },
   };
+
   const c = config[filter];
+  const Icon = c.icon;
 
   return (
     <div
       className="rounded-2xl p-8 text-center"
-      style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,251,235,0.8) 100%)', border: '2px dashed #fde68a' }}
+      style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.8) 0%, ${c.bgFrom}80 100%)`, border: `2px dashed ${c.border}` }}
     >
       <div
         className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-        style={{ background: '#FFFBEB' }}
+        style={{ background: c.bgFrom }}
       >
-        <ClipboardList className="w-7 h-7 text-[#b45309]" />
+        <Icon className="w-7 h-7" style={{ color: c.color }} />
       </div>
       <h3 className="text-[15px] font-bold text-[#1a3a4a] mb-1.5">{c.title}</h3>
-      <p className="text-[12px] text-[#7a9aab] leading-relaxed max-w-[240px] mx-auto mb-4">{c.desc}</p>
+      <p className="text-[12px] text-[#7a9aab] leading-relaxed max-w-[260px] mx-auto mb-4">{c.desc}</p>
       {c.showButton && (
         <button
           onClick={onCreateOrder}
