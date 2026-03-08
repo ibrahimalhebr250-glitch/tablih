@@ -156,20 +156,18 @@ export default function DepositResultScreen({
       <div className="sticky bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-gray-100">
         <div className="grid grid-cols-3 gap-2">
           <button
-            onClick={onClose}
+            onClick={onGoHome || onClose}
             className="py-3.5 border-2 border-[#1a4a5e] text-[#1a4a5e] font-bold text-[13px] rounded-2xl active:scale-[0.98] transition-transform flex items-center justify-center gap-1"
           >
-            العودة
+            حسابي
           </button>
-          {onGoHome && (
-            <button
-              onClick={onGoHome}
-              className="py-3.5 bg-[#2196F3] text-white font-bold text-[13px] rounded-2xl active:scale-[0.98] transition-transform flex items-center justify-center gap-1"
-            >
-              <Home className="w-4 h-4" />
-              الرئيسية
-            </button>
-          )}
+          <button
+            onClick={onClose}
+            className="py-3.5 bg-[#2196F3] text-white font-bold text-[13px] rounded-2xl active:scale-[0.98] transition-transform flex items-center justify-center gap-1"
+          >
+            <Home className="w-4 h-4" />
+            الرئيسية
+          </button>
           <button
             onClick={onNewDeposit}
             className="py-3.5 bg-[#1a4a5e] text-white font-bold text-[13px] rounded-2xl active:scale-[0.98] transition-transform flex items-center justify-center gap-1"

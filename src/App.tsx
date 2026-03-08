@@ -429,7 +429,8 @@ function App() {
             onLoginComplete={async (phone, pin) => { await handleInlineLogin(phone, pin); await activateRole('buyer'); }}
             onOpenDeals={() => { setModal('buyerDeals'); dashboardRefresh.current?.(); }}
             onOpenAccount={() => {
-              setModal('none');
+              setAccountInitialTab('orders');
+              setModal('account');
               dashboardRefresh.current?.();
             }}
           />
@@ -439,7 +440,11 @@ function App() {
           <InventoryBuilder
             onClose={() => { setModal('none'); setAuthError(''); setInventoryPrefill(undefined); setInventorySource('supplier_added'); dashboardRefresh.current?.(); }}
             phone={session?.profile.phone}
-            onDepositComplete={() => activateRole('supplier')}
+            onDepositComplete={() => {
+              activateRole('supplier');
+              setAccountInitialTab('warehouse');
+              setModal('account');
+            }}
             authError={authError}
             onRegisterComplete={async (data) => { await handleInlineRegister(data); await activateRole('supplier'); }}
             onLoginComplete={async (phone, pin) => { await handleInlineLogin(phone, pin); await activateRole('supplier'); }}
