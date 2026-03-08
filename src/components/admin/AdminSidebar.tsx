@@ -1,4 +1,4 @@
-import { LayoutDashboard, TrendingUp, Handshake, DollarSign, Users, Star, MessageSquare, Settings, X, User, Package, ClipboardList, ShoppingBag, Brain, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Handshake, DollarSign, Users, Star, MessageSquare, Settings, X, User, Package, ClipboardList, ShoppingBag, BarChart3 } from 'lucide-react';
 import type { AdminSection } from '../../types/admin';
 import type { AdminStaffData } from './AdminLoginSheet';
 
@@ -13,7 +13,6 @@ interface Props {
 const navItems: { id: AdminSection; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard },
   { id: 'analytics', label: 'التحليلات', icon: BarChart3 },
-  { id: 'matching', label: 'المطابقة الذكية', icon: Brain },
   { id: 'inventory', label: 'إدارة المخزون', icon: Package },
   { id: 'market', label: 'السوق', icon: TrendingUp },
   { id: 'orders', label: 'إدارة الطلبات', icon: ClipboardList },

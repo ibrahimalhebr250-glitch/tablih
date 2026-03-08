@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import AdminSidebar from './AdminSidebar';
 import DashboardSection from './sections/DashboardSection';
 import AnalyticsSection from './sections/AnalyticsSection';
-import MatchingSection from './sections/MatchingSection';
 import InventorySection from './sections/InventorySection';
 import MarketSection from './sections/MarketSection';
 import OrdersSection from './sections/OrdersSection';
@@ -28,7 +27,6 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
 
     if (perms.dashboard?.can_view) sections.push('dashboard');
     if (perms.dashboard?.can_view) sections.push('analytics');
-    if (perms.market?.can_view) sections.push('matching');
     if (perms.market?.can_view) sections.push('inventory');
     if (perms.market?.can_view) sections.push('market');
     if (perms.market?.can_view) sections.push('orders');
@@ -77,11 +75,6 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
         {section === 'analytics' && canViewSection('analytics') && (
           <div className="p-6 max-w-7xl mx-auto">
             <AnalyticsSection adminEmail={adminStaff.email} />
-          </div>
-        )}
-        {section === 'matching' && canViewSection('matching') && (
-          <div className="p-6 max-w-7xl mx-auto">
-            <MatchingSection />
           </div>
         )}
         {section === 'inventory' && canViewSection('inventory') && <InventorySection adminEmail={adminStaff.email} />}
