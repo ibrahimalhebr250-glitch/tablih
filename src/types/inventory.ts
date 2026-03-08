@@ -45,6 +45,7 @@ export interface InventoryFormData {
   city: string;
   description: string;
   activateImmediately: boolean;
+  publishToMarket?: boolean;
 }
 
 export interface ActiveDemand {

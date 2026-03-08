@@ -20,6 +20,7 @@ const initialForm: InventoryFormData = {
   city: '',
   description: '',
   activateImmediately: true,
+  publishToMarket: true,
 };
 
 interface PrefillData {
@@ -84,6 +85,10 @@ export function useInventoryBuilder(initialPhone?: string, prefill?: PrefillData
 
   const setActivateImmediately = useCallback((v: boolean) => {
     setForm((p) => ({ ...p, activateImmediately: v }));
+  }, []);
+
+  const setPublishToMarket = useCallback((v: boolean) => {
+    setForm((p) => ({ ...p, publishToMarket: v }));
   }, []);
 
   const isStep1Complete = Boolean(form.palletType && form.size && form.quality);
@@ -161,6 +166,7 @@ export function useInventoryBuilder(initialPhone?: string, prefill?: PrefillData
     setCity,
     setDescription,
     setActivateImmediately,
+    setPublishToMarket,
     reset,
   };
 }

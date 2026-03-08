@@ -7,6 +7,7 @@ interface Props {
   onNewDeposit: () => void;
   onClose: () => void;
   onGoHome?: () => void;
+  publishedToMarket?: boolean;
 }
 
 export default function DepositResultScreen({
@@ -16,38 +17,39 @@ export default function DepositResultScreen({
   onNewDeposit,
   onClose,
   onGoHome,
+  publishedToMarket = true,
 }: Props) {
   return (
     <div className="px-4 pt-6 pb-36">
       <div className="flex flex-col items-center mb-6">
         <div
           className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 ${
-            matchFound ? 'bg-[#E8F8F0]' : 'bg-[#EBF5FF]'
+            publishedToMarket ? 'bg-[#E8F8F0]' : 'bg-[#EFF6FF]'
           }`}
         >
-          {matchFound ? (
-            <Zap className="w-10 h-10 text-[#27AE60]" />
+          {publishedToMarket ? (
+            <CheckCircle className="w-10 h-10 text-[#27AE60]" />
           ) : (
-            <CheckCircle className="w-10 h-10 text-[#2196F3]" />
+            <CloudCog className="w-10 h-10 text-[#0284c7]" />
           )}
         </div>
 
-        {matchFound ? (
+        {publishedToMarket ? (
           <>
-            <h2 className="text-[20px] font-bold text-[#1a4a5e] text-center mb-1">
-              يمكن تصريف الدفعة الآن!
+            <h2 className="text-[22px] font-bold text-[#1a4a5e] text-center mb-2 leading-snug">
+              تم نشر المخزون في السوق
             </h2>
-            <p className="text-[13px] text-[#7a9aab] text-center leading-relaxed">
-              وُجد طلب نشط مطابق لمواصفات دفعتك
+            <p className="text-[13px] text-[#7a9aab] text-center leading-relaxed max-w-[300px]">
+              مخزونك الآن متاح للمشترين ويمكنهم إنشاء صفقات معك
             </p>
           </>
         ) : (
           <>
             <h2 className="text-[22px] font-bold text-[#1a4a5e] text-center mb-2 leading-snug">
-              تم إنشاء بطاقة مستودع سحابي
+              تم حفظ المخزون في المستودع السحابي
             </h2>
-            <p className="text-[13px] text-[#7a9aab] text-center leading-relaxed max-w-[280px]">
-              بالكمية والمواصفات المسجلة، وهي الآن نشطة ضمن الشبكة الوطنية
+            <p className="text-[13px] text-[#7a9aab] text-center leading-relaxed max-w-[300px]">
+              يمكنك نشره لاحقاً من حسابي → مستودعي السحابي
             </p>
           </>
         )}
@@ -87,8 +89,17 @@ export default function DepositResultScreen({
         </div>
         <div className="flex justify-between items-center">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 bg-[#27AE60] rounded-full animate-pulse" />
-            <span className="text-[12px] text-[#27AE60] font-bold">نشطة في الشبكة</span>
+            {publishedToMarket ? (
+              <>
+                <span className="w-2 h-2 bg-[#27AE60] rounded-full animate-pulse" />
+                <span className="text-[12px] text-[#27AE60] font-bold">منشور في السوق</span>
+              </>
+            ) : (
+              <>
+                <span className="w-2 h-2 bg-[#0284c7] rounded-full" />
+                <span className="text-[12px] text-[#0284c7] font-bold">محفوظ في المستودع</span>
+              </>
+            )}
           </span>
           <span className="text-[12px] text-[#7a9aab]">الحالة</span>
         </div>
@@ -126,11 +137,21 @@ export default function DepositResultScreen({
         </div>
       </div>
 
-      <div className="bg-[#FFFBEB] rounded-2xl border border-[#FDE68A] p-4 mb-4">
-        <p className="text-[12px] text-[#92400E] leading-relaxed text-right font-medium">
-          ستتلقى إشعاراً فورياً عند مطابقة دفعتك مع طلب مشترٍ من الشبكة
-        </p>
-      </div>
+      {publishedToMarket && (
+        <div className="bg-[#FFFBEB] rounded-2xl border border-[#FDE68A] p-4 mb-4">
+          <p className="text-[12px] text-[#92400E] leading-relaxed text-right font-medium">
+            ستتلقى إشعاراً فورياً عند إنشاء صفقة مع أي مشترٍ من الشبكة
+          </p>
+        </div>
+      )}
+
+      {!publishedToMarket && (
+        <div className="bg-[#EFF6FF] rounded-2xl border border-[#BFDBFE] p-4 mb-4">
+          <p className="text-[12px] text-[#1e40af] leading-relaxed text-right font-medium">
+            يمكنك نشر المخزون في السوق في أي وقت من خلال صفحة "حسابي → مستودعي السحابي"
+          </p>
+        </div>
+      )}
 
       <div className="sticky bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-gray-100">
         <div className="grid grid-cols-3 gap-2">

@@ -1,4 +1,4 @@
-import { MapPin, Package, Layers, CheckCircle, Wrench, Image as ImageIcon, DollarSign } from 'lucide-react';
+import { MapPin, Package, Layers, CheckCircle, Wrench, Image as ImageIcon, DollarSign, Store, Cloud } from 'lucide-react';
 import type { InventoryFormData, PalletQuality } from '../../../types/inventory';
 import { QUALITY_LABELS, CONDITION_LABELS } from '../../../types/inventory';
 
@@ -11,6 +11,8 @@ interface Props {
   form: InventoryFormData;
   images: UploadedImage[];
   approvalMode: 'auto_publish' | 'require_approval';
+  publishToMarket: boolean;
+  onPublishToMarketChange: (value: boolean) => void;
 }
 
 const QUALITY_STYLE: Record<string, { text: string; bg: string; border: string }> = {
@@ -20,7 +22,7 @@ const QUALITY_STYLE: Record<string, { text: string; bg: string; border: string }
   Scrap: { text: '#6B7280', bg: '#F3F4F6', border: '#E5E7EB' },
 };
 
-export default function Step4PreviewPublish({ form, images, approvalMode }: Props) {
+export default function Step4PreviewPublish({ form, images, approvalMode, publishToMarket, onPublishToMarketChange }: Props) {
   const qs = QUALITY_STYLE[form.quality ?? 'B'];
   const qualityLabel = form.quality ? QUALITY_LABELS[form.quality as PalletQuality] : null;
   const conditionLabel = CONDITION_LABELS[form.condition];
@@ -30,8 +32,77 @@ export default function Step4PreviewPublish({ form, images, approvalMode }: Prop
     <div className="space-y-5" dir="rtl">
       <div className="bg-[#F5F9FC] border border-[#d0e5f2] rounded-xl px-3.5 py-3">
         <p className="text-[12px] text-[#2c5f7c] font-semibold text-center">
-          هذا ما سيراه المشترون في السوق
+          {publishToMarket ? 'هذا ما سيراه المشترون في السوق' : 'معاينة المخزون'}
         </p>
+      </div>
+
+      {/* خيارات النشر */}
+      <div className="space-y-3">
+        <p className="text-[13px] font-bold text-[#1a3a4a] text-center">
+          هل ترغب بنشر هذا المخزون في السوق؟
+        </p>
+
+        <div className="grid grid-cols-1 gap-3">
+          <button
+            onClick={() => onPublishToMarketChange(true)}
+            className={`relative rounded-2xl p-4 transition-all ${
+              publishToMarket
+                ? 'bg-gradient-to-br from-[#1a4a5e] to-[#2c6f8a] text-white shadow-lg shadow-[#1a4a5e]/20'
+                : 'bg-white border-2 border-gray-200 text-gray-600 hover:border-[#1a4a5e]/30'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                publishToMarket ? 'bg-white/20' : 'bg-[#1a4a5e]/10'
+              }`}>
+                <Store className={`w-5 h-5 ${publishToMarket ? 'text-white' : 'text-[#1a4a5e]'}`} />
+              </div>
+              <div className="flex-1 text-right">
+                <h4 className={`text-[14px] font-bold mb-1 ${publishToMarket ? 'text-white' : 'text-[#1a3a4a]'}`}>
+                  نشر المخزون في السوق
+                </h4>
+                <p className={`text-[11px] leading-relaxed ${publishToMarket ? 'text-white/80' : 'text-gray-500'}`}>
+                  سيظهر مخزونك للمشترين فوراً ويمكنهم إنشاء صفقات معك
+                </p>
+              </div>
+              {publishToMarket && (
+                <div className="absolute top-3 left-3">
+                  <CheckCircle className="w-5 h-5 text-white" fill="white" />
+                </div>
+              )}
+            </div>
+          </button>
+
+          <button
+            onClick={() => onPublishToMarketChange(false)}
+            className={`relative rounded-2xl p-4 transition-all ${
+              !publishToMarket
+                ? 'bg-gradient-to-br from-[#0369a1] to-[#0284c7] text-white shadow-lg shadow-[#0369a1]/20'
+                : 'bg-white border-2 border-gray-200 text-gray-600 hover:border-[#0369a1]/30'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                !publishToMarket ? 'bg-white/20' : 'bg-[#0369a1]/10'
+              }`}>
+                <Cloud className={`w-5 h-5 ${!publishToMarket ? 'text-white' : 'text-[#0369a1]'}`} />
+              </div>
+              <div className="flex-1 text-right">
+                <h4 className={`text-[14px] font-bold mb-1 ${!publishToMarket ? 'text-white' : 'text-[#1a3a4a]'}`}>
+                  حفظ في المستودع السحابي
+                </h4>
+                <p className={`text-[11px] leading-relaxed ${!publishToMarket ? 'text-white/80' : 'text-gray-500'}`}>
+                  سيتم حفظ المخزون ويمكنك نشره لاحقاً من حسابي → مستودعي السحابي
+                </p>
+              </div>
+              {!publishToMarket && (
+                <div className="absolute top-3 left-3">
+                  <CheckCircle className="w-5 h-5 text-white" fill="white" />
+                </div>
+              )}
+            </div>
+          </button>
+        </div>
       </div>
 
       <div

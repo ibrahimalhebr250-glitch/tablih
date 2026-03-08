@@ -31,6 +31,7 @@ interface Props {
   onLoginComplete?: (phone: string, pin: string) => Promise<void>;
   authError?: string;
   prefillOpportunity?: PrefillOpportunity;
+  inventorySource?: 'supplier_added' | 'purchase_transfer';
 }
 
 const STEP_LABELS: Record<InventoryWizardStep, string> = {
@@ -44,6 +45,7 @@ export default function InventoryBuilder({
   onClose, phone: sessionPhone, onDepositComplete,
   onRegisterComplete, onLoginComplete, authError,
   prefillOpportunity,
+  inventorySource = 'supplier_added',
 }: Props) {
   const prefill = prefillOpportunity ? {
     palletType: prefillOpportunity.pallet_type as PalletType | undefined,
@@ -55,7 +57,7 @@ export default function InventoryBuilder({
 
   const { settings } = usePlatformSettings();
   const builder = useInventoryBuilder(sessionPhone, prefill, settings.inventory_submission.fields_config);
-  const { supplierStock, runDepositMatch } = useInventoryMatch(builder.form, builder.phone);
+  const { supplierStock } = useInventoryMatch(builder.form, builder.phone);
 
   const [showRegistration, setShowRegistration] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<{ url: string; preview: string; file?: File; id?: string; uploading?: boolean; error?: string }[]>([]);
@@ -193,10 +195,11 @@ export default function InventoryBuilder({
     }
 
     const approvalMode = invSettings.approval_mode;
-    const batchStatus = builder.form.activateImmediately
+    const shouldPublish = builder.form.publishToMarket !== false;
+    const batchStatus = shouldPublish && builder.form.activateImmediately
       ? (approvalMode === 'require_approval' ? 'draft' : 'active')
       : 'draft';
-    const approvalStatus = builder.form.activateImmediately && approvalMode === 'require_approval'
+    const approvalStatus = shouldPublish && builder.form.activateImmediately && approvalMode === 'require_approval'
       ? 'pending'
       : 'approved';
 
@@ -216,6 +219,7 @@ export default function InventoryBuilder({
           status: batchStatus,
           description: builder.form.description || '',
           approval_status: approvalStatus,
+          inventory_source: inventorySource,
         })
         .eq('id', builder.batchId)
         .select('id, batch_id')
@@ -241,6 +245,7 @@ export default function InventoryBuilder({
           status: batchStatus,
           description: builder.form.description || '',
           approval_status: approvalStatus,
+          inventory_source: inventorySource,
         })
         .select('id, batch_id')
         .maybeSingle();
@@ -292,9 +297,8 @@ export default function InventoryBuilder({
       }
     }
 
-    const result = await runDepositMatch(batch.id);
-    builder.setMatchFound(result.found);
-    builder.setMatchableQty(result.qty);
+    builder.setMatchFound(false);
+    builder.setMatchableQty(0);
     builder.setStep('result');
     onDepositComplete?.();
   };
@@ -390,6 +394,8 @@ export default function InventoryBuilder({
               form={builder.form}
               images={uploadedImages}
               approvalMode={invSettings.approval_mode}
+              publishToMarket={builder.form.publishToMarket !== false}
+              onPublishToMarketChange={builder.setPublishToMarket}
             />
           );
         default:
@@ -530,6 +536,7 @@ export default function InventoryBuilder({
                 if (onDepositComplete) onDepositComplete();
                 onClose();
               }}
+              publishedToMarket={builder.form.publishToMarket !== false}
             />
           )}
         </div>
