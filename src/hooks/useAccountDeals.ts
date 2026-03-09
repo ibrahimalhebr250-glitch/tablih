@@ -10,7 +10,7 @@ export interface CounterpartyInfo {
   phone: string;
 }
 
-const ACTIVE_STATUSES = ['pending_supplier', 'matched', 'supplier_confirmed', 'awaiting_buyer', 'inventory_reserved', 'in_delivery', 'execution_in_progress'];
+const ACTIVE_STATUSES = ['pending_confirmation', 'pending_supplier', 'matched', 'supplier_confirmed', 'awaiting_buyer', 'inventory_reserved', 'in_delivery', 'execution_in_progress'];
 const COMPLETED_STATUSES = ['completed'];
 const CANCELLED_STATUSES = ['cancelled'];
 

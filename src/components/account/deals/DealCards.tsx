@@ -146,7 +146,7 @@ function CountdownBadge({ deadline }: { deadline: string }) {
 function getStatusIndicator(deal: Deal, isBuyer: boolean) {
   const isExecution = deal.status === 'execution_in_progress';
   const isInDelivery = deal.status === 'in_delivery';
-  const isWaitingSupplier = deal.status === 'pending_supplier' || deal.status === 'matched';
+  const isWaitingSupplier = deal.status === 'pending_confirmation' || deal.status === 'pending_supplier' || deal.status === 'matched';
   const isWaitingBuyer = deal.status === 'awaiting_buyer' || deal.status === 'supplier_confirmed';
   const isReserved = deal.status === 'inventory_reserved';
 
@@ -171,7 +171,7 @@ export function ActiveDealCard({ deal, isBuyer, counterparty, onViewDetail }: Ac
   const indicator = getStatusIndicator(deal, isBuyer);
   const IndicatorIcon = indicator.icon;
 
-  const isWaitingSupplier = deal.status === 'pending_supplier' || deal.status === 'matched';
+  const isWaitingSupplier = deal.status === 'pending_confirmation' || deal.status === 'pending_supplier' || deal.status === 'matched';
   const isWaitingBuyer = deal.status === 'awaiting_buyer' || deal.status === 'supplier_confirmed';
   const isExecution = deal.status === 'execution_in_progress' || deal.status === 'in_delivery';
   const isReserved = deal.status === 'inventory_reserved';

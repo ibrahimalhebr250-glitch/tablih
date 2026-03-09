@@ -1,4 +1,5 @@
 export type DealStatus =
+  | 'pending_confirmation'
   | 'pending_supplier'
   | 'matched'
   | 'supplier_confirmed'
@@ -45,6 +46,7 @@ export interface Deal {
 }
 
 export const DEAL_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  pending_confirmation:   { label: 'بانتظار اعتماد المورد', color: '#B45309', bg: '#FFFBEB' },
   pending_supplier:       { label: 'بانتظار اعتماد المورد', color: '#B45309', bg: '#FFFBEB' },
   matched:                { label: 'بانتظار اعتماد المورد', color: '#B45309', bg: '#FFFBEB' },
   supplier_confirmed:     { label: 'تم اعتماد المورد',      color: '#059669', bg: '#ECFDF5' },

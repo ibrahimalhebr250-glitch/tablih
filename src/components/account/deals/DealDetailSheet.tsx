@@ -229,7 +229,7 @@ export default function DealDetailSheet({
 
   const isLoading = actionLoading === deal.id;
 
-  const isWaitingSupplier = deal.status === 'pending_supplier' || deal.status === 'matched';
+  const isWaitingSupplier = deal.status === 'pending_confirmation' || deal.status === 'pending_supplier' || deal.status === 'matched';
   const isSupplierConfirmed = deal.status === 'supplier_confirmed';
   const isWaitingBuyer = deal.status === 'awaiting_buyer' || isSupplierConfirmed;
   const isReserved = deal.status === 'inventory_reserved';
