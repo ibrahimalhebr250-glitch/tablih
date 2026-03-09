@@ -19,35 +19,45 @@ interface FloatingSupportChatProps {
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-
 const GUEST_PHONE = 'guest-visitor';
+const POLL_INTERVAL = 3000;
 
 async function fetchMessagesForPhone(phone: string): Promise<SupportMessage[]> {
-  const { data } = await supabase.rpc('user_get_support_messages', { p_user_phone: phone });
-  return (data as SupportMessage[]) ?? [];
+  try {
+    const { data } = await supabase.rpc('user_get_support_messages', { p_user_phone: phone });
+    return (data as SupportMessage[]) ?? [];
+  } catch {
+    return [];
+  }
 }
 
 async function markReadForPhone(phone: string) {
-  await supabase.rpc('user_mark_support_messages_read', { p_user_phone: phone });
+  try {
+    await supabase.rpc('user_mark_support_messages_read', { p_user_phone: phone });
+  } catch {}
 }
 
 async function sendSupportMessage(phone: string, message: string, imageUrl?: string) {
-  await supabase.rpc('user_send_support_message', {
-    p_user_phone: phone,
-    p_message: message,
-    p_image_url: imageUrl ?? null,
-  });
+  try {
+    await supabase.rpc('user_send_support_message', {
+      p_user_phone: phone,
+      p_message: message,
+      p_image_url: imageUrl ?? null,
+    });
+  } catch {}
 }
 
-function triggerAIReply(phone: string, message: string) {
-  fetch(`${SUPABASE_URL}/functions/v1/ai-support-reply`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-    body: JSON.stringify({ user_phone: phone, message }),
-  }).catch(() => {});
+async function triggerAIReply(phone: string, message: string) {
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/ai-support-reply`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ user_phone: phone, message }),
+    });
+  } catch {}
 }
 
 export default function FloatingSupportChat({ userPhone, userName }: FloatingSupportChatProps) {
@@ -57,76 +67,106 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
   const [sending, setSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [hasNewMessage, setHasNewMessage] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastCountRef = useRef(0);
   const isOpenRef = useRef(isOpen);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
 
   const effectivePhone = userPhone || GUEST_PHONE;
   const effectiveName = userName || 'زائر';
 
-  const refreshMessages = useCallback(async (phone: string) => {
-    const msgs = await fetchMessagesForPhone(phone);
-    setMessages(msgs);
+  const syncMessages = useCallback(async (phone: string, silent = false) => {
+    const fresh = await fetchMessagesForPhone(phone);
+    if (fresh.length === 0 && silent) return;
+
+    setMessages((prev) => {
+      const realIds = new Set(fresh.map((m) => m.id));
+      const optimistic = prev.filter((m) => m.id.startsWith('temp-') && !realIds.has(m.id));
+      const merged = [...fresh, ...optimistic].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+
+      const newAdminCount = fresh.filter((m) => m.sender === 'admin' && !m.is_read).length;
+      if (newAdminCount > lastCountRef.current) {
+        if (!isOpenRef.current) {
+          setUnreadCount(newAdminCount);
+          setHasNewMessage(true);
+          setTimeout(() => setHasNewMessage(false), 4000);
+        }
+        setIsTyping(false);
+        if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      }
+      lastCountRef.current = newAdminCount;
+
+      return merged;
+    });
   }, []);
 
   useEffect(() => {
-    if (channelRef.current) supabase.removeChannel(channelRef.current);
+    syncMessages(effectivePhone);
 
-    refreshMessages(effectivePhone);
+    pollRef.current = setInterval(() => {
+      syncMessages(effectivePhone, true);
+    }, POLL_INTERVAL);
 
-    const channel = supabase
-      .channel(`support-chat-${effectivePhone}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'support_messages',
-          filter: `user_phone=eq.${effectivePhone}`,
-        },
-        async (payload) => {
-          const newRow = payload.new as { user_phone?: string; sender?: string };
-          if (newRow.user_phone !== effectivePhone) return;
-          const fresh = await fetchMessagesForPhone(effectivePhone);
-          setMessages(fresh);
-          if (newRow.sender === 'admin' && !isOpenRef.current) {
-            setUnreadCount((c) => c + 1);
-            setHasNewMessage(true);
-            setTimeout(() => setHasNewMessage(false), 3000);
-          }
-        }
-      )
-      .subscribe();
-
-    channelRef.current = channel;
-    return () => { supabase.removeChannel(channel); };
-  }, [effectivePhone, refreshMessages]);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [effectivePhone, syncMessages]);
 
   useEffect(() => {
     if (isOpen) {
       markReadForPhone(effectivePhone);
       setUnreadCount(0);
+      lastCountRef.current = 0;
     }
   }, [isOpen, effectivePhone]);
 
   useEffect(() => {
     if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isTyping]);
 
   const sendMessage = useCallback(async () => {
     if (!inputText.trim() || sending) return;
     const msg = inputText.trim();
     setInputText('');
     setSending(true);
+
+    const optimistic: SupportMessage = {
+      id: `temp-${Date.now()}`,
+      user_phone: effectivePhone,
+      sender: 'user',
+      message: msg,
+      image_url: null,
+      is_read: true,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
     await sendSupportMessage(effectivePhone, msg);
-    await refreshMessages(effectivePhone);
-    triggerAIReply(effectivePhone, msg);
     setSending(false);
     textareaRef.current?.focus();
-  }, [effectivePhone, inputText, sending, refreshMessages]);
+
+    setIsTyping(true);
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+
+    triggerAIReply(effectivePhone, msg).then(() => {
+      typingTimerRef.current = setTimeout(async () => {
+        setIsTyping(false);
+        const fresh = await fetchMessagesForPhone(effectivePhone);
+        if (fresh.length > 0) {
+          setMessages(fresh);
+          lastCountRef.current = fresh.filter((m) => m.sender === 'admin' && !m.is_read).length;
+        }
+      }, 3500);
+    });
+  }, [effectivePhone, inputText, sending]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -137,6 +177,8 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
 
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+
+  const visibleMessages = messages.filter((m) => !m.id.startsWith('temp-') || m.sender === 'user');
 
   return (
     <>
@@ -191,7 +233,7 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
 
           <div className="bg-white flex flex-col" style={{ height: '420px' }}>
             <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-2" dir="rtl">
-              {messages.length === 0 && (
+              {visibleMessages.length === 0 && !isTyping && (
                 <div className="flex-1 flex flex-col items-center justify-center gap-3 py-8">
                   <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
                     <Bot size={22} className="text-slate-400" />
@@ -214,7 +256,7 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
                 </div>
               )}
 
-              {messages.map((msg) => (
+              {visibleMessages.map((msg) => (
                 <div
                   key={msg.id}
                   className={`flex gap-2 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
@@ -232,7 +274,7 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
                       msg.sender === 'user'
                         ? 'rounded-tr-sm text-white'
                         : 'rounded-tl-sm text-slate-800 bg-slate-100'
-                    }`}
+                    } ${msg.id.startsWith('temp-') ? 'opacity-70' : ''}`}
                     style={
                       msg.sender === 'user'
                         ? { background: 'linear-gradient(135deg, #1a4a5e, #0e2233)' }
@@ -253,6 +295,23 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
                   </div>
                 </div>
               ))}
+
+              {isTyping && (
+                <div className="flex gap-2 flex-row">
+                  <div
+                    className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5"
+                    style={{ background: 'linear-gradient(135deg, #1a4a5e, #0e2233)' }}
+                  >
+                    <Bot size={13} className="text-white" />
+                  </div>
+                  <div className="rounded-2xl rounded-tl-sm bg-slate-100 px-4 py-3 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
 
