@@ -178,6 +178,36 @@ export function useInventoryOperations(adminEmail: string) {
     }
   };
 
+  const deleteOperations = async (ids: string[]): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { error } = await supabase
+        .from('inventory_operations_log')
+        .delete()
+        .in('id', ids);
+      if (error) throw error;
+      await fetchOperations();
+      return { success: true };
+    } catch (err: any) {
+      console.error('Error deleting operations:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  const deleteAllOperations = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { error } = await supabase
+        .from('inventory_operations_log')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (error) throw error;
+      await fetchOperations();
+      return { success: true };
+    } catch (err: any) {
+      console.error('Error deleting all operations:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
   return {
     operations,
     analytics,
@@ -186,6 +216,8 @@ export function useInventoryOperations(adminEmail: string) {
     fetchSupplierSummary,
     fetchBatchTimeline,
     searchOperations,
+    deleteOperations,
+    deleteAllOperations,
     refetch: () => {
       fetchOperations();
       fetchAnalytics();
