@@ -243,7 +243,7 @@ export default function MarketSection({
         supabase
           .from('orders')
           .select('id, phone, pallet_type, size, quality, quantity, city, accept_close_quality, accept_close_city, accept_partial_delivery, created_at, status')
-          .in('status', ['pending', 'partially_matched'])
+          .in('status', ['pending', 'unmatched', 'partially_matched'])
           .order('created_at', { ascending: false })
           .limit(60),
       ]);
