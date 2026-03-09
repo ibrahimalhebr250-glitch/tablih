@@ -26,6 +26,7 @@ export interface SupplyCard {
   image_urls: string[];
   created_at: string;
   trust_rating?: number;
+  is_sold?: boolean;
 }
 
 export interface DemandCard {
@@ -121,16 +122,30 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
   const hasImages = card.image_urls.length > 0 && !imgFailed;
   const q = QUALITY_COLORS[card.quality] || QUALITY_COLORS.C;
   const cond = CONDITION_MAP[card.pallet_condition] || CONDITION_MAP.used;
+  const isSold = card.is_sold;
 
   return (
+    <div className="relative">
+      {isSold && (
+        <div
+          className="absolute inset-x-0 top-0 z-10 flex items-center justify-center gap-1.5 py-1.5 rounded-t-[20px]"
+          style={{ background: 'linear-gradient(135deg, #dc2626, #ef4444)', boxShadow: '0 2px 6px rgba(220,38,38,0.25)' }}
+        >
+          <CheckCircle2 className="w-3 h-3 text-white" />
+          <span className="text-[10px] font-black text-white tracking-wide">تم البيع</span>
+        </div>
+      )}
     <button
-      onClick={onClick}
+      onClick={isSold ? undefined : onClick}
+      disabled={isSold}
       className="w-full text-right group transition-all duration-200 active:scale-[0.985] overflow-hidden"
       style={{
         background: 'white',
-        border: '1px solid rgba(21,101,64,0.08)',
+        border: isSold ? '1px solid rgba(220,38,38,0.12)' : '1px solid rgba(21,101,64,0.08)',
         borderRadius: 20,
-        boxShadow: '0 2px 12px rgba(21,101,64,0.06)',
+        boxShadow: isSold ? 'none' : '0 2px 12px rgba(21,101,64,0.06)',
+        cursor: isSold ? 'default' : 'pointer',
+        paddingTop: isSold ? 28 : 0,
       }}
     >
       <div className="flex flex-row-reverse gap-0">
@@ -198,6 +213,7 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
         </div>
       </div>
     </button>
+    </div>
   );
 }
 
@@ -213,10 +229,10 @@ function DemandCardItem({ card, onClick }: { card: DemandCard; onClick: () => vo
       {isFullyMatched && (
         <div
           className="absolute inset-x-0 top-0 z-10 flex items-center justify-center gap-1.5 py-1.5 rounded-t-[20px]"
-          style={{ background: 'linear-gradient(135deg, #15803d, #16a34a)', boxShadow: '0 2px 6px rgba(21,128,61,0.25)' }}
+          style={{ background: 'linear-gradient(135deg, #b45309, #d97706)', boxShadow: '0 2px 6px rgba(180,83,9,0.25)' }}
         >
           <CheckCircle2 className="w-3 h-3 text-white" />
-          <span className="text-[10px] font-black text-white tracking-wide">تمت المطابقة</span>
+          <span className="text-[10px] font-black text-white tracking-wide">تم البيع</span>
         </div>
       )}
       <button
@@ -225,10 +241,10 @@ function DemandCardItem({ card, onClick }: { card: DemandCard; onClick: () => vo
         className="w-full text-right transition-all duration-200 overflow-hidden"
         style={{
           background: 'white',
-          border: isFullyMatched ? '1px solid rgba(21,128,61,0.15)' : '1px solid rgba(217,119,6,0.1)',
+          border: isFullyMatched ? '1px solid rgba(217,119,6,0.15)' : '1px solid rgba(217,119,6,0.1)',
           borderRadius: 20,
           boxShadow: isFullyMatched ? 'none' : '0 2px 12px rgba(217,119,6,0.06)',
-          opacity: isFullyMatched ? 0.65 : 1,
+          opacity: 1,
           cursor: isFullyMatched ? 'default' : 'pointer',
           paddingTop: isFullyMatched ? 28 : 0,
         }}
@@ -658,9 +674,8 @@ export default function MarketSection({
         .from('inventory_batches')
         .select('id, phone, pallet_type, size, quality, pallet_condition, available_quantity, price_per_pallet, city, description, created_at, inventory_images(url, is_primary, sort_order)')
         .eq('status', 'active')
-        .gt('available_quantity', 0)
         .order('created_at', { ascending: false })
-        .limit(30),
+        .limit(40),
       supabase
         .from('orders')
         .select('id, phone, pallet_type, size, quality, quantity, city, accept_close_quality, accept_close_city, accept_partial_delivery, created_at, matched_quantity, status')
@@ -698,6 +713,7 @@ export default function MarketSection({
         image_urls: sorted.map((i: any) => i.url),
         created_at: b.created_at,
         trust_rating: userRatings.get(b.phone) ?? 3,
+        is_sold: b.available_quantity <= 0,
       };
     });
 
@@ -775,10 +791,14 @@ export default function MarketSection({
       return (palletFilter === 'all' || i.pallet_type === palletFilter) && (cityFilter === 'all' || i.city === cityFilter);
     })
     .sort((a, b) => {
-      const aMatched = a.kind === 'demand' && ((a as DemandCard).status === 'matched' || (a as DemandCard).status === 'fulfilled');
-      const bMatched = b.kind === 'demand' && ((b as DemandCard).status === 'matched' || (b as DemandCard).status === 'fulfilled');
-      if (aMatched && !bMatched) return 1;
-      if (!aMatched && bMatched) return -1;
+      const aSold =
+        (a.kind === 'supply' && (a as SupplyCard).is_sold) ||
+        (a.kind === 'demand' && ((a as DemandCard).status === 'matched' || (a as DemandCard).status === 'fulfilled'));
+      const bSold =
+        (b.kind === 'supply' && (b as SupplyCard).is_sold) ||
+        (b.kind === 'demand' && ((b as DemandCard).status === 'matched' || (b as DemandCard).status === 'fulfilled'));
+      if (aSold && !bSold) return 1;
+      if (!aSold && bSold) return -1;
       return 0;
     });
 
