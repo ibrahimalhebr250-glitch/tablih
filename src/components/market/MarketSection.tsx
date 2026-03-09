@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Warehouse, ShoppingBag, RefreshCw, MapPin, Package,
   Star, Wrench, LayoutGrid, ImageOff,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, CheckCircle2
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import SupplyDetailSheet from './SupplyDetailSheet';
@@ -205,124 +205,160 @@ function DemandCardItem({ card, onClick }: { card: DemandCard; onClick: () => vo
   const q = QUALITY_COLORS[card.quality] || QUALITY_COLORS.C;
   const flexCount = [card.accept_close_quality, card.accept_close_city, card.accept_partial_delivery].filter(Boolean).length;
   const isPartiallyMatched = card.status === 'partially_matched';
+  const isFullyMatched = card.status === 'matched' || card.status === 'fulfilled';
   const remainingQty = isPartiallyMatched ? card.quantity - (card.matched_quantity || 0) : card.quantity;
 
   return (
-    <button
-      onClick={onClick}
-      className="w-full text-right transition-all duration-200 active:scale-[0.985] overflow-hidden"
-      style={{
-        background: 'white',
-        border: '1px solid rgba(217,119,6,0.1)',
-        borderRadius: 20,
-        boxShadow: '0 2px 12px rgba(217,119,6,0.06)',
-      }}
-    >
-      <div className="relative flex flex-row-reverse gap-0">
+    <div className="relative">
+      {isFullyMatched && (
         <div
-          className="absolute bottom-0 left-0 w-40 h-40 rounded-full opacity-[0.07] pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle, #F59E0B 0%, transparent 70%)',
-            transform: 'translate(-30%, 30%)',
-          }}
-        />
-
-        <div
-          className="flex-shrink-0 flex flex-col items-center justify-center gap-1.5 relative rounded-r-2xl"
-          style={{ width: 120, height: 140, background: 'linear-gradient(145deg, #FFF7ED 0%, #FEF3C7 50%, #FDE68A 100%)' }}
+          className="absolute inset-x-0 top-0 z-10 flex items-center justify-center gap-1.5 py-1.5 rounded-t-[20px]"
+          style={{ background: 'linear-gradient(135deg, #15803d, #16a34a)', boxShadow: '0 2px 6px rgba(21,128,61,0.25)' }}
         >
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.15)' }}>
-            <ShoppingBag className="w-5 h-5 text-amber-500" />
-          </div>
-          <div className="flex items-baseline gap-0.5">
-            <span className="text-[20px] font-black text-amber-700">{remainingQty.toLocaleString()}</span>
-          </div>
-          <span className="text-[8px] font-bold text-amber-600/50 -mt-1">
-            {isPartiallyMatched ? 'متبقي' : 'طبلية'}
-          </span>
-          {isPartiallyMatched && (
-            <div className="absolute top-2 right-2 bg-green-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full">
-              {((card.matched_quantity! / card.quantity) * 100).toFixed(0)}% مؤمن
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1 min-w-0 flex flex-col justify-between p-3">
-          <div>
-            <div className="flex items-start justify-between gap-1.5 mb-1">
-              <span
-                className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
-                style={{ background: q.bg, color: q.text, border: `1px solid ${q.dot}30` }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: q.dot }} />
-                {q.label}
-              </span>
-              <p className="text-[14px] font-black text-[#1a3a4a] leading-tight truncate">{card.pallet_type}</p>
-            </div>
-
-            <div className="flex items-center gap-1.5 flex-wrap justify-end mb-1.5">
-              {card.size && (
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style={{ background: '#f0f4f8', color: '#4a7a8a' }}>
-                  {card.size}
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-1 justify-end">
-              <span className="text-[11px] font-semibold text-[#4a7a8a]">{card.city}</span>
-              <MapPin className="w-3 h-3 text-amber-400" />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[9px] text-[#a0b5c0]">{timeAgo(card.created_at)}</span>
-              {flexCount > 0 && (
-                <span
-                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5"
-                  style={{ background: '#FFF7ED', color: '#b45309', border: '1px solid #FED7AA' }}
-                >
-                  <Star className="w-2.5 h-2.5" />
-                  {flexCount}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1 px-2 py-1 rounded-lg" style={{ background: isPartiallyMatched ? '#f0fdf4' : '#fff7ed', border: `1px solid ${isPartiallyMatched ? 'rgba(21,128,61,0.08)' : 'rgba(217,119,6,0.08)'}` }}>
-              <span className="text-[12px] font-black" style={{ color: isPartiallyMatched ? '#15803d' : '#b45309' }}>
-                {remainingQty.toLocaleString()}
-              </span>
-              <Package className="w-3 h-3" style={{ color: isPartiallyMatched ? '#22c55e' : '#f59e0b' }} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {(isPartiallyMatched || card.accept_close_quality || card.accept_close_city || card.accept_partial_delivery) && (
-        <div className="flex gap-1.5 flex-wrap px-3 pb-2.5 pt-0.5">
-          {isPartiallyMatched && (
-            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
-              <Package className="w-2.5 h-2.5" />
-              مطابق جزئياً: {card.matched_quantity!.toLocaleString()} من {card.quantity.toLocaleString()}
-            </span>
-          )}
-          {card.accept_close_quality && (
-            <span className="text-[9px] font-medium px-2 py-0.5 rounded-full" style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
-              جودة قريبة
-            </span>
-          )}
-          {card.accept_close_city && (
-            <span className="text-[9px] font-medium px-2 py-0.5 rounded-full" style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
-              مدينة قريبة
-            </span>
-          )}
-          {card.accept_partial_delivery && (
-            <span className="text-[9px] font-medium px-2 py-0.5 rounded-full" style={{ background: '#fef9c3', color: '#a16207', border: '1px solid #fef08a' }}>
-              توريد جزئي
-            </span>
-          )}
+          <CheckCircle2 className="w-3 h-3 text-white" />
+          <span className="text-[10px] font-black text-white tracking-wide">تمت المطابقة</span>
         </div>
       )}
-    </button>
+      <button
+        onClick={isFullyMatched ? undefined : onClick}
+        disabled={isFullyMatched}
+        className="w-full text-right transition-all duration-200 overflow-hidden"
+        style={{
+          background: 'white',
+          border: isFullyMatched ? '1px solid rgba(21,128,61,0.15)' : '1px solid rgba(217,119,6,0.1)',
+          borderRadius: 20,
+          boxShadow: isFullyMatched ? 'none' : '0 2px 12px rgba(217,119,6,0.06)',
+          opacity: isFullyMatched ? 0.65 : 1,
+          cursor: isFullyMatched ? 'default' : 'pointer',
+          paddingTop: isFullyMatched ? 28 : 0,
+        }}
+      >
+        <div className="relative flex flex-row-reverse gap-0">
+          <div
+            className="absolute bottom-0 left-0 w-40 h-40 rounded-full opacity-[0.07] pointer-events-none"
+            style={{
+              background: `radial-gradient(circle, ${isFullyMatched ? '#15803d' : '#F59E0B'} 0%, transparent 70%)`,
+              transform: 'translate(-30%, 30%)',
+            }}
+          />
+
+          <div
+            className="flex-shrink-0 flex flex-col items-center justify-center gap-1.5 relative rounded-r-2xl"
+            style={{
+              width: 120,
+              height: 140,
+              background: isFullyMatched
+                ? 'linear-gradient(145deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%)'
+                : 'linear-gradient(145deg, #FFF7ED 0%, #FEF3C7 50%, #FDE68A 100%)',
+            }}
+          >
+            <div
+              className="w-10 h-10 rounded-2xl flex items-center justify-center"
+              style={{ background: isFullyMatched ? 'rgba(21,128,61,0.15)' : 'rgba(245,158,11,0.15)' }}
+            >
+              {isFullyMatched
+                ? <CheckCircle2 className="w-5 h-5 text-green-600" />
+                : <ShoppingBag className="w-5 h-5 text-amber-500" />
+              }
+            </div>
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-[20px] font-black" style={{ color: isFullyMatched ? '#15803d' : '#92400e' }}>
+                {remainingQty.toLocaleString()}
+              </span>
+            </div>
+            <span className="text-[8px] font-bold -mt-1" style={{ color: isFullyMatched ? '#16a34a80' : '#92400e80' }}>
+              {isPartiallyMatched ? 'متبقي' : 'طبلية'}
+            </span>
+            {isPartiallyMatched && (
+              <div className="absolute top-2 right-2 bg-green-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full">
+                {((card.matched_quantity! / card.quantity) * 100).toFixed(0)}% مؤمن
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0 flex flex-col justify-between p-3">
+            <div>
+              <div className="flex items-start justify-between gap-1.5 mb-1">
+                <span
+                  className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                  style={{ background: q.bg, color: q.text, border: `1px solid ${q.dot}30` }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: q.dot }} />
+                  {q.label}
+                </span>
+                <p className="text-[14px] font-black text-[#1a3a4a] leading-tight truncate">{card.pallet_type}</p>
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-wrap justify-end mb-1.5">
+                {card.size && (
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style={{ background: '#f0f4f8', color: '#4a7a8a' }}>
+                    {card.size}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1 justify-end">
+                <span className="text-[11px] font-semibold text-[#4a7a8a]">{card.city}</span>
+                <MapPin className="w-3 h-3" style={{ color: isFullyMatched ? '#22c55e' : '#f59e0b' }} />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] text-[#a0b5c0]">{timeAgo(card.created_at)}</span>
+                {!isFullyMatched && flexCount > 0 && (
+                  <span
+                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5"
+                    style={{ background: '#FFF7ED', color: '#b45309', border: '1px solid #FED7AA' }}
+                  >
+                    <Star className="w-2.5 h-2.5" />
+                    {flexCount}
+                  </span>
+                )}
+              </div>
+              <div
+                className="flex items-center gap-1 px-2 py-1 rounded-lg"
+                style={{
+                  background: isFullyMatched ? '#f0fdf4' : isPartiallyMatched ? '#f0fdf4' : '#fff7ed',
+                  border: `1px solid ${isFullyMatched ? 'rgba(21,128,61,0.12)' : isPartiallyMatched ? 'rgba(21,128,61,0.08)' : 'rgba(217,119,6,0.08)'}`,
+                }}
+              >
+                <span className="text-[12px] font-black" style={{ color: isFullyMatched ? '#15803d' : isPartiallyMatched ? '#15803d' : '#b45309' }}>
+                  {remainingQty.toLocaleString()}
+                </span>
+                <Package className="w-3 h-3" style={{ color: isFullyMatched ? '#22c55e' : isPartiallyMatched ? '#22c55e' : '#f59e0b' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {(isPartiallyMatched || (!isFullyMatched && (card.accept_close_quality || card.accept_close_city || card.accept_partial_delivery))) && (
+          <div className="flex gap-1.5 flex-wrap px-3 pb-2.5 pt-0.5">
+            {isPartiallyMatched && (
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
+                <Package className="w-2.5 h-2.5" />
+                مطابق جزئياً: {card.matched_quantity!.toLocaleString()} من {card.quantity.toLocaleString()}
+              </span>
+            )}
+            {!isFullyMatched && card.accept_close_quality && (
+              <span className="text-[9px] font-medium px-2 py-0.5 rounded-full" style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
+                جودة قريبة
+              </span>
+            )}
+            {!isFullyMatched && card.accept_close_city && (
+              <span className="text-[9px] font-medium px-2 py-0.5 rounded-full" style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                مدينة قريبة
+              </span>
+            )}
+            {!isFullyMatched && card.accept_partial_delivery && (
+              <span className="text-[9px] font-medium px-2 py-0.5 rounded-full" style={{ background: '#fef9c3', color: '#a16207', border: '1px solid #fef08a' }}>
+                توريد جزئي
+              </span>
+            )}
+          </div>
+        )}
+      </button>
+    </div>
   );
 }
 
@@ -628,9 +664,9 @@ export default function MarketSection({
       supabase
         .from('orders')
         .select('id, phone, pallet_type, size, quality, quantity, city, accept_close_quality, accept_close_city, accept_partial_delivery, created_at, matched_quantity, status')
-        .in('status', ['pending', 'unmatched', 'partially_matched'])
+        .in('status', ['pending', 'unmatched', 'partially_matched', 'matched', 'fulfilled'])
         .order('created_at', { ascending: false })
-        .limit(30),
+        .limit(40),
     ]);
 
     const supplyPhones = [...new Set((supplyRes.data || []).map((b: any) => b.phone).filter(Boolean))];
@@ -734,9 +770,17 @@ export default function MarketSection({
   const allPalletTypes = [...new Set(baseItems.map((i) => i.pallet_type))].filter(Boolean);
   const allCities = [...new Set(baseItems.map((i) => i.city))].filter(Boolean);
 
-  const filtered = baseItems.filter((i) => {
-    return (palletFilter === 'all' || i.pallet_type === palletFilter) && (cityFilter === 'all' || i.city === cityFilter);
-  });
+  const filtered = baseItems
+    .filter((i) => {
+      return (palletFilter === 'all' || i.pallet_type === palletFilter) && (cityFilter === 'all' || i.city === cityFilter);
+    })
+    .sort((a, b) => {
+      const aMatched = a.kind === 'demand' && ((a as DemandCard).status === 'matched' || (a as DemandCard).status === 'fulfilled');
+      const bMatched = b.kind === 'demand' && ((b as DemandCard).status === 'matched' || (b as DemandCard).status === 'fulfilled');
+      if (aMatched && !bMatched) return 1;
+      if (!aMatched && bMatched) return -1;
+      return 0;
+    });
 
   const updatedText = lastUpdated
     ? (() => { const m = Math.floor((Date.now() - lastUpdated.getTime()) / 60000); return m < 1 ? 'تم التحديث الآن' : `تحديث قبل ${m} د`; })()
