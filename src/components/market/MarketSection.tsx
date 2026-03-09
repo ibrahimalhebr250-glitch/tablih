@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, SlidersHorizontal, X, Package, ShoppingBag, RefreshCw, ChevronDown, MapPin, Star, Layers, ArrowDownToLine } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Package, ShoppingBag, RefreshCw, ChevronDown, MapPin, Star, Layers } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from '../../lib/i18n';
 import SupplyDetailSheet from './SupplyDetailSheet';
@@ -208,18 +208,7 @@ function DemandCardItem({ card, onClick, index = 0 }: { card: DemandCard; onClic
         </div>
 
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-          <div
-            className="w-11 h-11 rounded-2xl flex items-center justify-center"
-            style={{
-              background: 'rgba(255,255,255,0.18)',
-              border: '1.5px solid rgba(255,255,255,0.35)',
-              backdropFilter: 'blur(8px)',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-            }}
-          >
-            <ArrowDownToLine className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-[22px] font-black text-white leading-none mt-1" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+          <span className="text-[22px] font-black text-white leading-none" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
             {card.quantity.toLocaleString()}
           </span>
           <span className="text-[10px] font-semibold text-white/80">
