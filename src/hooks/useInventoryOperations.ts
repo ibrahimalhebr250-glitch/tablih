@@ -180,11 +180,12 @@ export function useInventoryOperations(adminEmail: string) {
 
   const deleteOperations = async (ids: string[]): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { error } = await supabase
-        .from('inventory_operations_log')
-        .delete()
-        .in('id', ids);
+      const { data, error } = await supabase.rpc('delete_inventory_operations', {
+        p_ids: ids,
+        p_admin_email: adminEmail,
+      });
       if (error) throw error;
+      if (data && !data.success) throw new Error(data.error || 'Delete failed');
       await fetchOperations();
       return { success: true };
     } catch (err: any) {
@@ -195,11 +196,11 @@ export function useInventoryOperations(adminEmail: string) {
 
   const deleteAllOperations = async (): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { error } = await supabase
-        .from('inventory_operations_log')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000');
+      const { data, error } = await supabase.rpc('delete_all_inventory_operations', {
+        p_admin_email: adminEmail,
+      });
       if (error) throw error;
+      if (data && !data.success) throw new Error(data.error || 'Delete failed');
       await fetchOperations();
       return { success: true };
     } catch (err: any) {
