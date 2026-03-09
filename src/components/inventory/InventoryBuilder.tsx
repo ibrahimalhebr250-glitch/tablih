@@ -534,7 +534,7 @@ export default function InventoryBuilder({
               onClose={onClose}
               onGoHome={() => {
                 if (onDepositComplete) onDepositComplete();
-                onClose();
+                else onClose();
               }}
               publishedToMarket={builder.form.publishToMarket !== false}
             />
