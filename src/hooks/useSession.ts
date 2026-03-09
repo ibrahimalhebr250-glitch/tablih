@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { sessionManager } from '../lib/sessionManager';
+import { logSessionError, logDBError } from '../lib/errorLogger';
 import type { AppSession, UserProfile, UserRole } from '../types/session';
 
 const SESSION_KEY = 'tbl_session';
@@ -64,7 +65,8 @@ export function useSession() {
           setSession(s);
         }
       } catch (err) {
-        console.error('Session initialization failed:', err);
+        const message = err instanceof Error ? err.message : String(err);
+        logSessionError(`Session initialization failed: ${message}`, undefined, { action: 'init_session' });
       } finally {
         setLoading(false);
       }
@@ -106,6 +108,7 @@ export function useSession() {
       .eq('refresh_token', s.refreshToken);
 
     if (error) {
+      logSessionError(`Session refresh failed: ${error.message}`, s.profile?.phone, { action: 'refresh_session' });
       clearSession();
       return null;
     }
@@ -237,6 +240,7 @@ export function useSession() {
         if (error.code === '23505') {
           return { success: false, error: 'رقم الجوال مسجل مسبقاً. يرجى تسجيل الدخول.' };
         }
+        logDBError(`Registration failed: ${error.message}`, formattedPhone, { action: 'register', extra: { code: error.code } });
         return { success: false, error: 'حدث خطأ أثناء التسجيل. يرجى المحاولة مرة أخرى.' };
       }
       if (!newUser) {

@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { logMatchFailure, logDBError } from '../lib/errorLogger';
 import type { OrderFormData, MatchResult } from '../types/order';
 
 export function useMatching() {
@@ -40,8 +41,14 @@ export function useMatching() {
           .select('id, request_id')
           .maybeSingle();
 
-        if (insertError) throw insertError;
-        if (!savedOrder) throw new Error('Failed to create order');
+        if (insertError) {
+          logDBError(`Order insert failed: ${insertError.message}`, phone, { action: 'create_order', extra: { code: insertError.code } });
+          throw insertError;
+        }
+        if (!savedOrder) {
+          logDBError('Order insert returned null', phone, { action: 'create_order' });
+          throw new Error('Failed to create order');
+        }
 
         const { data: existingUser } = await supabase
           .from('platform_users')
@@ -104,10 +111,15 @@ export function useMatching() {
         }
 
         setMatchResult({ found: false });
+        logMatchFailure('No match found after max attempts', phone, {
+          action: 'run_matching',
+          orderId: savedOrder.id,
+        });
         onDone(savedOrder.id, savedOrder.request_id);
       } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        logMatchFailure(`Matching error: ${message}`, phone, { action: 'run_matching' });
         setError('حدث خطأ أثناء المطابقة. يرجى المحاولة مرة أخرى.');
-        console.error(err);
       } finally {
         setIsLoading(false);
         runningRef.current = false;
