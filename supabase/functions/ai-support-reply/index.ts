@@ -79,11 +79,10 @@ function findLearnedMatch(
   learned: LearnedResponse[]
 ): LearnedResponse | null {
   const normalizedMsg = normalizeArabic(message);
-  const approved = learned.filter((l) => l.is_approved && l.confidence >= 0.7);
 
   let bestMatch: { item: LearnedResponse; score: number } | null = null;
 
-  for (const item of approved) {
+  for (const item of learned) {
     const normalizedTrigger = item.normalized_trigger || normalizeArabic(item.trigger_message);
 
     const triggerWords = normalizedTrigger.split(/\s+/).filter((w) => w.length >= 3);
@@ -117,6 +116,78 @@ function getFallbackResponse(platformName: string): string {
   return responses[Math.floor(Math.random() * responses.length)];
 }
 
+async function doReply(
+  supabase: ReturnType<typeof createClient>,
+  user_phone: string,
+  message: string,
+  delaySeconds: number,
+  autoReplyLabel: string,
+  platformName: string,
+  knowledgeBase: KnowledgeEntry[],
+  learnedResponses: LearnedResponse[]
+) {
+  if (delaySeconds > 0) {
+    await new Promise((resolve) => setTimeout(resolve, delaySeconds * 1000));
+  }
+
+  const { data: adminReply } = await supabase
+    .from("support_messages")
+    .select("id")
+    .eq("user_phone", user_phone)
+    .eq("sender", "admin")
+    .gte("created_at", new Date(Date.now() - 5 * 60 * 1000).toISOString())
+    .limit(1)
+    .maybeSingle();
+
+  if (adminReply) return;
+
+  let aiAnswer: string | null = null;
+  let matchSource: "learned" | "knowledge" | "fallback" = "fallback";
+  let matchedKnowledgeId: string | null = null;
+
+  const learnedMatch = findLearnedMatch(message, learnedResponses);
+  if (learnedMatch) {
+    aiAnswer = learnedMatch.learned_answer;
+    matchSource = "learned";
+  }
+
+  if (!aiAnswer) {
+    const knowledgeMatch = findBestKnowledgeMatch(message, knowledgeBase);
+    if (knowledgeMatch) {
+      aiAnswer = knowledgeMatch.entry.answer;
+      matchSource = "knowledge";
+      matchedKnowledgeId = knowledgeMatch.entry.id;
+    }
+  }
+
+  if (!aiAnswer) {
+    aiAnswer = getFallbackResponse(platformName);
+    matchSource = "fallback";
+  }
+
+  const finalAnswer = `[${autoReplyLabel}]\n${aiAnswer}`;
+
+  await supabase.from("support_messages").insert({
+    user_phone,
+    sender: "admin",
+    message: finalAnswer,
+    image_url: null,
+    is_read: false,
+  });
+
+  if (matchedKnowledgeId) {
+    await supabase.rpc("increment_knowledge_usage", { entry_id: matchedKnowledgeId }).catch(() => {});
+  }
+
+  await supabase.from("ai_auto_reply_logs").insert({
+    user_phone,
+    user_message: message,
+    ai_response: finalAnswer,
+    matched: matchSource !== "fallback",
+    match_source: matchSource,
+  });
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -145,7 +216,7 @@ Deno.serve(async (req: Request) => {
 
     const settings = settingsResult.data;
     const isEnabled = settings?.is_enabled ?? false;
-    const delaySeconds = settings?.delay_seconds ?? 3;
+    const delaySeconds = Math.min(settings?.delay_seconds ?? 2, 5);
     const autoReplyLabel = settings?.auto_reply_label ?? "مساعد ذكي";
     const platformName = settings?.platform_name ?? "شبكة الطبليات الوطنية";
 
@@ -156,96 +227,15 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { data: recentAdminMsg } = await supabase
-      .from("support_messages")
-      .select("id")
-      .eq("user_phone", user_phone)
-      .eq("sender", "admin")
-      .gte("created_at", new Date(Date.now() - 10 * 60 * 1000).toISOString())
-      .limit(1)
-      .maybeSingle();
-
-    if (recentAdminMsg) {
-      return new Response(
-        JSON.stringify({ success: true, replied: false, reason: "admin_recently_replied" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, delaySeconds * 1000));
-
-    const { data: laterMsg } = await supabase
-      .from("support_messages")
-      .select("id")
-      .eq("user_phone", user_phone)
-      .eq("sender", "admin")
-      .gte("created_at", new Date(Date.now() - 10 * 60 * 1000).toISOString())
-      .limit(1)
-      .maybeSingle();
-
-    if (laterMsg) {
-      return new Response(
-        JSON.stringify({ success: true, replied: false, reason: "admin_replied_during_delay" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const knowledgeBase: KnowledgeEntry[] = (knowledgeResult.data ?? []) as KnowledgeEntry[];
     const learnedResponses: LearnedResponse[] = (learnedResult.data ?? []) as LearnedResponse[];
 
-    let aiAnswer: string | null = null;
-    let matchSource: "learned" | "knowledge" | "fallback" = "fallback";
-    let matchedKnowledgeId: string | null = null;
-
-    const learnedMatch = findLearnedMatch(message, learnedResponses);
-    if (learnedMatch) {
-      aiAnswer = learnedMatch.learned_answer;
-      matchSource = "learned";
-    }
-
-    if (!aiAnswer) {
-      const knowledgeMatch = findBestKnowledgeMatch(message, knowledgeBase);
-      if (knowledgeMatch) {
-        aiAnswer = knowledgeMatch.entry.answer;
-        matchSource = "knowledge";
-        matchedKnowledgeId = knowledgeMatch.entry.id;
-      }
-    }
-
-    if (!aiAnswer) {
-      aiAnswer = getFallbackResponse(platformName);
-      matchSource = "fallback";
-    }
-
-    const finalAnswer = `[${autoReplyLabel}]\n${aiAnswer}`;
-
-    const [insertResult] = await Promise.all([
-      supabase.from("support_messages").insert({
-        user_phone,
-        sender: "admin",
-        message: finalAnswer,
-        image_url: null,
-        is_read: false,
-      }),
-      matchedKnowledgeId
-        ? supabase.rpc("increment_knowledge_usage", { entry_id: matchedKnowledgeId }).catch(() => {})
-        : Promise.resolve(),
-    ]);
-
-    if (insertResult.error) {
-      throw new Error(insertResult.error.message);
-    }
-
-    await supabase.from("ai_auto_reply_logs").insert({
-      user_phone,
-      user_message: message,
-      ai_response: finalAnswer,
-      matched: matchSource !== "fallback",
-      match_source: matchSource,
-    });
+    EdgeRuntime.waitUntil(
+      doReply(supabase, user_phone, message, delaySeconds, autoReplyLabel, platformName, knowledgeBase, learnedResponses)
+    );
 
     return new Response(
-      JSON.stringify({ success: true, replied: true, source: matchSource }),
+      JSON.stringify({ success: true, queued: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
