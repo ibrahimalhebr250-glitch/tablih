@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 export type Language = 'ar' | 'en';
 
 export interface TranslationKeys {
@@ -33,6 +35,7 @@ export interface TranslationKeys {
     and: string;
   };
   navigation: {
+    home: string;
     marketplace: string;
     orders: string;
     inventory: string;
@@ -40,6 +43,9 @@ export interface TranslationKeys {
     account: string;
     admin: string;
     dashboard: string;
+    addInventory: string;
+    createOrder: string;
+    myAccount: string;
   };
   auth: {
     phoneNumber: string;
@@ -56,6 +62,7 @@ export interface TranslationKeys {
   };
   marketplace: {
     title: string;
+    subtitle: string;
     searchPlaceholder: string;
     noResults: string;
     supply: string;
@@ -78,8 +85,13 @@ export interface TranslationKeys {
     status: string;
     pending: string;
     matched: string;
+    partiallyMatched: string;
     completed: string;
     cancelled: string;
+    fulfilled: string;
+    activeOrders: string;
+    executedOrders: string;
+    newOrder: string;
   };
   inventory: {
     title: string;
@@ -91,6 +103,8 @@ export interface TranslationKeys {
     description: string;
     images: string;
     pricePerPallet: string;
+    cloudWarehouse: string;
+    myPurchases: string;
   };
   deals: {
     title: string;
@@ -106,6 +120,7 @@ export interface TranslationKeys {
     completed: string;
     cancelled: string;
     failed: string;
+    soldMatched: string;
   };
   admin: {
     title: string;
@@ -116,6 +131,11 @@ export interface TranslationKeys {
     reports: string;
     backups: string;
     invoices: string;
+  };
+  language: {
+    switchLabel: string;
+    arabic: string;
+    english: string;
   };
 }
 
@@ -153,6 +173,7 @@ const translations: Record<Language, TranslationKeys> = {
       and: 'و',
     },
     navigation: {
+      home: 'الرئيسية',
       marketplace: 'السوق',
       orders: 'الطلبات',
       inventory: 'المخزون',
@@ -160,6 +181,9 @@ const translations: Record<Language, TranslationKeys> = {
       account: 'الحساب',
       admin: 'الإدارة',
       dashboard: 'لوحة التحكم',
+      addInventory: 'إضافة مخزون',
+      createOrder: 'إنشاء طلب',
+      myAccount: 'حسابي',
     },
     auth: {
       phoneNumber: 'رقم الجوال',
@@ -176,6 +200,7 @@ const translations: Record<Language, TranslationKeys> = {
     },
     marketplace: {
       title: 'سوق الطبليات',
+      subtitle: 'منصة توريد الطبليات',
       searchPlaceholder: 'ابحث عن طبليات...',
       noResults: 'لا توجد نتائج',
       supply: 'العرض',
@@ -197,9 +222,14 @@ const translations: Record<Language, TranslationKeys> = {
       price: 'السعر',
       status: 'الحالة',
       pending: 'قيد الانتظار',
-      matched: 'تم المطابقة',
+      matched: 'تمت المطابقة',
+      partiallyMatched: 'مطابقة جزئية',
       completed: 'مكتمل',
       cancelled: 'ملغي',
+      fulfilled: 'تم التنفيذ',
+      activeOrders: 'الطلبات النشطة',
+      executedOrders: 'طلبات تم تنفيذها',
+      newOrder: 'طلب جديد',
     },
     inventory: {
       title: 'المخزون',
@@ -207,10 +237,12 @@ const translations: Record<Language, TranslationKeys> = {
       myInventory: 'مخزوني',
       available: 'متاح',
       reserved: 'محجوز',
-      sold: 'مباع',
+      sold: 'تم البيع',
       description: 'الوصف',
       images: 'الصور',
       pricePerPallet: 'سعر الطبلية',
+      cloudWarehouse: 'المستودع السحابي',
+      myPurchases: 'مشترياتي',
     },
     deals: {
       title: 'الصفقات',
@@ -226,6 +258,7 @@ const translations: Record<Language, TranslationKeys> = {
       completed: 'مكتملة',
       cancelled: 'ملغاة',
       failed: 'فشلت',
+      soldMatched: 'تم البيع / تمت المطابقة',
     },
     admin: {
       title: 'لوحة الإدارة',
@@ -236,6 +269,11 @@ const translations: Record<Language, TranslationKeys> = {
       reports: 'التقارير',
       backups: 'النسخ الاحتياطية',
       invoices: 'الفواتير',
+    },
+    language: {
+      switchLabel: 'اللغة',
+      arabic: 'العربية',
+      english: 'English',
     },
   },
   en: {
@@ -271,6 +309,7 @@ const translations: Record<Language, TranslationKeys> = {
       and: 'And',
     },
     navigation: {
+      home: 'Home',
       marketplace: 'Marketplace',
       orders: 'Orders',
       inventory: 'Inventory',
@@ -278,6 +317,9 @@ const translations: Record<Language, TranslationKeys> = {
       account: 'Account',
       admin: 'Admin',
       dashboard: 'Dashboard',
+      addInventory: 'Add Inventory',
+      createOrder: 'New Order',
+      myAccount: 'My Account',
     },
     auth: {
       phoneNumber: 'Phone Number',
@@ -293,7 +335,8 @@ const translations: Record<Language, TranslationKeys> = {
       alreadyHaveAccount: 'Already have an account?',
     },
     marketplace: {
-      title: 'Pallet Marketplace',
+      title: 'Pallet Market',
+      subtitle: 'Pallet Supply Platform',
       searchPlaceholder: 'Search for pallets...',
       noResults: 'No results found',
       supply: 'Supply',
@@ -316,8 +359,13 @@ const translations: Record<Language, TranslationKeys> = {
       status: 'Status',
       pending: 'Pending',
       matched: 'Matched',
+      partiallyMatched: 'Partially Matched',
       completed: 'Completed',
       cancelled: 'Cancelled',
+      fulfilled: 'Fulfilled',
+      activeOrders: 'Active Orders',
+      executedOrders: 'Executed Orders',
+      newOrder: 'New Order',
     },
     inventory: {
       title: 'Inventory',
@@ -329,6 +377,8 @@ const translations: Record<Language, TranslationKeys> = {
       description: 'Description',
       images: 'Images',
       pricePerPallet: 'Price Per Pallet',
+      cloudWarehouse: 'Cloud Warehouse',
+      myPurchases: 'My Purchases',
     },
     deals: {
       title: 'Deals',
@@ -344,6 +394,7 @@ const translations: Record<Language, TranslationKeys> = {
       completed: 'Completed',
       cancelled: 'Cancelled',
       failed: 'Failed',
+      soldMatched: 'Sold / Matched',
     },
     admin: {
       title: 'Admin Panel',
@@ -355,19 +406,24 @@ const translations: Record<Language, TranslationKeys> = {
       backups: 'Backups',
       invoices: 'Invoices',
     },
+    language: {
+      switchLabel: 'Language',
+      arabic: 'العربية',
+      english: 'English',
+    },
   },
 };
 
-class I18n {
+class I18nManager {
   private currentLanguage: Language = 'ar';
-  private listeners: Array<(lang: Language) => void> = [];
+  private listeners: Set<() => void> = new Set();
 
   constructor() {
     const savedLang = localStorage.getItem('app_language') as Language;
-    if (savedLang && (savedLang === 'ar' || savedLang === 'en')) {
+    if (savedLang === 'ar' || savedLang === 'en') {
       this.currentLanguage = savedLang;
     }
-    this.updateDocumentDirection();
+    this.applyDirection();
   }
 
   getLanguage(): Language {
@@ -377,37 +433,26 @@ class I18n {
   setLanguage(lang: Language) {
     this.currentLanguage = lang;
     localStorage.setItem('app_language', lang);
-    this.updateDocumentDirection();
-    this.notifyListeners();
+    this.applyDirection();
+    this.listeners.forEach(fn => fn());
   }
 
   t(key: string): string {
     const keys = key.split('.');
     let value: any = translations[this.currentLanguage];
-
     for (const k of keys) {
-      if (value && typeof value === 'object') {
-        value = value[k];
-      } else {
-        return key;
-      }
+      if (value && typeof value === 'object') value = value[k];
+      else return key;
     }
-
     return typeof value === 'string' ? value : key;
   }
 
-  subscribe(listener: (lang: Language) => void) {
-    this.listeners.push(listener);
-    return () => {
-      this.listeners = this.listeners.filter(l => l !== listener);
-    };
+  subscribe(fn: () => void): () => void {
+    this.listeners.add(fn);
+    return () => this.listeners.delete(fn);
   }
 
-  private notifyListeners() {
-    this.listeners.forEach(listener => listener(this.currentLanguage));
-  }
-
-  private updateDocumentDirection() {
+  private applyDirection() {
     document.documentElement.dir = this.currentLanguage === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = this.currentLanguage;
   }
@@ -417,9 +462,16 @@ class I18n {
   }
 }
 
-export const i18n = new I18n();
+export const i18n = new I18nManager();
 
 export function useTranslation() {
+  const [, forceUpdate] = useState(0);
+
+  useEffect(() => {
+    const unsubscribe = i18n.subscribe(() => forceUpdate(n => n + 1));
+    return unsubscribe;
+  }, []);
+
   return {
     t: (key: string) => i18n.t(key),
     language: i18n.getLanguage(),

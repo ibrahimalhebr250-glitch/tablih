@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useSession } from './hooks/useSession';
+import { useTranslation } from './lib/i18n';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
 import BottomNavigation from './components/BottomNavigation';
@@ -48,6 +49,7 @@ const LoadingFallback = () => (
 
 function App() {
   const { session, loading, register, login, updateProfile, activateRole, logout } = useSession();
+  const { isRTL } = useTranslation();
   const [modal, setModal] = useState<ModalView>('none');
   const [mainView, setMainView] = useState<MainView>('marketplace');
   const pendingAfterAuth = useRef<ModalView | null>(null);

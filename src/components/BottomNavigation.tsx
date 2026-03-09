@@ -1,4 +1,5 @@
 import { Warehouse, ShoppingBag, User } from 'lucide-react';
+import { useTranslation } from '../lib/i18n';
 
 interface Props {
   onAddInventory: () => void;
@@ -7,6 +8,8 @@ interface Props {
 }
 
 export default function BottomNavigation({ onAddInventory, onCreateOrder, onOpenAccount }: Props) {
+  const { t } = useTranslation();
+
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
@@ -27,7 +30,7 @@ export default function BottomNavigation({ onAddInventory, onCreateOrder, onOpen
               style={{ background: 'linear-gradient(135deg, #1565C0, #1E88E5)' }}
             >
               <Warehouse className="w-[18px] h-[18px] text-white" />
-              <span className="text-[12px] font-bold text-white">إضافة مخزون</span>
+              <span className="text-[12px] font-bold text-white">{t('navigation.addInventory')}</span>
             </button>
 
             <button
@@ -47,7 +50,7 @@ export default function BottomNavigation({ onAddInventory, onCreateOrder, onOpen
               style={{ background: 'linear-gradient(135deg, #B45309, #D97706)' }}
             >
               <ShoppingBag className="w-[18px] h-[18px] text-white" />
-              <span className="text-[12px] font-bold text-white">إنشاء طلب</span>
+              <span className="text-[12px] font-bold text-white">{t('navigation.createOrder')}</span>
             </button>
           </div>
         </div>
