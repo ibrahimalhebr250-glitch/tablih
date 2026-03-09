@@ -226,7 +226,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ background: 'linear-gradient(135deg, #bbd0df 0%, #cbdeef 40%, #dbe8f3 70%, #c3d9e8 100%)', maxWidth: '100vw' }}>
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #bbd0df 0%, #cbdeef 40%, #dbe8f3 70%, #c3d9e8 100%)' }}>
 
       {/* ── Desktop Layout ── */}
       <div
@@ -345,7 +345,7 @@ function App() {
       </div>
 
       {/* ── Mobile Layout ── */}
-      <div className="lg:hidden min-h-screen overflow-x-hidden" style={{ background: 'linear-gradient(180deg, #c3d1e0 0%, #cdd9e6 30%, #d5e1ea 50%, #cdd9e6 70%, #c3d1e0 100%)', maxWidth: '100vw' }}>
+      <div className="lg:hidden min-h-screen" style={{ background: 'linear-gradient(180deg, #c3d1e0 0%, #cdd9e6 30%, #d5e1ea 50%, #cdd9e6 70%, #c3d1e0 100%)' }}>
         {session ? (
           <>
             <TopNavigation
