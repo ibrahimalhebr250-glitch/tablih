@@ -22,6 +22,7 @@ const SupplierInventory = lazy(() => import('./components/inventory/SupplierInve
 const MarketSection = lazy(() => import('./components/market/MarketSection'));
 const AccountPage = lazy(() => import('./components/account/AccountPage'));
 const MatchingHub = lazy(() => import('./components/matching/MatchingHub'));
+import FloatingSupportChat from './components/shared/FloatingSupportChat';
 
 type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'account' | 'matchingHub';
 type MainView = 'marketplace' | 'dashboard' | 'matching';
@@ -541,6 +542,11 @@ function App() {
           />
         )}
       </Suspense>
+
+      <FloatingSupportChat
+        userPhone={session?.profile?.phone}
+        userName={session?.profile?.display_name}
+      />
 
     </div>
   );
