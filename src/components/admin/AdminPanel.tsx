@@ -13,6 +13,7 @@ import { CommentsModeration } from './sections/CommentsModeration';
 import BuyerInventorySection from './sections/BuyerInventorySection';
 import OrderMatchingSection from './sections/OrderMatchingSection';
 import SettingsSection from './sections/SettingsSection';
+import SupportSection from './sections/SupportSection';
 import WhatsAppSection from './whatsapp/WhatsAppSection';
 import type { AdminSection } from '../../types/admin';
 import type { AdminStaffData } from './AdminLoginSheet';
@@ -40,6 +41,7 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
     if (perms.deals?.can_view) sections.push('buyer_inventory');
     if (perms.market?.can_view || perms.deals?.can_view) sections.push('order_matching');
     if (perms.settings?.can_view || perms.dashboard?.can_view) sections.push('whatsapp');
+    if (perms.settings?.can_view || perms.users?.can_view || perms.dashboard?.can_view) sections.push('support');
     if (perms.settings?.can_view) sections.push('settings');
 
     return sections;
@@ -107,6 +109,11 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
         {section === 'order_matching' && canViewSection('order_matching') && <OrderMatchingSection />}
         {section === 'whatsapp' && canViewSection('whatsapp') && (
           <WhatsAppSection adminEmail={adminStaff.email} />
+        )}
+        {section === 'support' && canViewSection('support') && (
+          <div className="h-full flex flex-col">
+            <SupportSection adminEmail={adminStaff.email} />
+          </div>
         )}
         {section === 'settings' && canViewSection('settings') && <SettingsSection />}
       </div>
