@@ -220,6 +220,7 @@ export default function InventoryBuilder({
           description: builder.form.description || '',
           approval_status: approvalStatus,
           inventory_source: inventorySource,
+          publish_to_market: shouldPublish,
         })
         .eq('id', builder.batchId)
         .select('id, batch_id')
@@ -246,6 +247,7 @@ export default function InventoryBuilder({
           description: builder.form.description || '',
           approval_status: approvalStatus,
           inventory_source: inventorySource,
+          publish_to_market: shouldPublish,
         })
         .select('id, batch_id')
         .maybeSingle();
@@ -300,7 +302,6 @@ export default function InventoryBuilder({
     builder.setMatchFound(false);
     builder.setMatchableQty(0);
     builder.setStep('result');
-    onDepositComplete?.();
   };
 
   const isDemandFulfillment = !!prefillOpportunity?.request_id;
