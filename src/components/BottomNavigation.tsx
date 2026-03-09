@@ -8,11 +8,21 @@ interface Props {
 
 export default function BottomNavigation({ onAddInventory, onCreateOrder, onOpenAccount }: Props) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden" style={{ maxWidth: '100vw', overflow: 'hidden' }}>
+    <nav
+      className="fixed left-0 right-0 z-50 lg:hidden"
+      style={{
+        bottom: 'env(safe-area-inset-bottom, 0px)',
+        WebkitTransform: 'translateZ(0)',
+        transform: 'translateZ(0)',
+      }}
+    >
       <div className="w-full">
         <div
-          className="px-5 pt-1.5 pb-6"
-          style={{ background: 'linear-gradient(to top, white 70%, rgba(255,255,255,0.95) 85%, rgba(255,255,255,0) 100%)' }}
+          className="px-5 pt-1.5"
+          style={{
+            paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+            background: 'linear-gradient(to top, white 70%, rgba(255,255,255,0.95) 85%, rgba(255,255,255,0) 100%)'
+          }}
         >
           <div className="flex items-center justify-center gap-3">
             <button

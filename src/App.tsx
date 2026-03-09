@@ -354,7 +354,7 @@ function App() {
               onNavigate={handleNavigation}
               onLogout={handleLogout}
             />
-            <div className="overflow-y-auto" style={{ height: 'calc(100vh - 56px)' }}>
+            <div className="overflow-y-auto" style={{ height: 'calc(100vh - 56px)', paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
               <Suspense fallback={<LoadingFallback />}>
                 <div key={mainView} className="animate-in fade-in slide-in-from-bottom-4 duration-300">
                   {mainView === 'marketplace' ? (
@@ -383,6 +383,13 @@ function App() {
                 </div>
               </Suspense>
             </div>
+            {!isDetailSheetOpen && (
+              <BottomNavigation
+                onAddInventory={openInventory}
+                onCreateOrder={openOrder}
+                onOpenAccount={() => { setAccountInitialTab(undefined); setModal('account'); }}
+              />
+            )}
           </>
         ) : (
           <>
@@ -396,7 +403,7 @@ function App() {
               onOpenDashboard={() => setMainView('dashboard')}
               onLogout={handleLogout}
             />
-            <div className="overflow-y-auto" style={{ height: 'calc(100vh - 65px)' }}>
+            <div className="overflow-y-auto" style={{ height: 'calc(100vh - 65px)', paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
               <Suspense fallback={<LoadingFallback />}>
                 <HeroSection />
                 <MarketSection
@@ -408,14 +415,14 @@ function App() {
                   onGoToDeals={() => openAuth('none')}
                 />
               </Suspense>
-              {!isDetailSheetOpen && (
-                <BottomNavigation
-                  onAddInventory={openInventory}
-                  onCreateOrder={openOrder}
-                  onOpenAccount={() => openAuth('none')}
-                />
-              )}
             </div>
+            {!isDetailSheetOpen && (
+              <BottomNavigation
+                onAddInventory={openInventory}
+                onCreateOrder={openOrder}
+                onOpenAccount={() => openAuth('none')}
+              />
+            )}
           </>
         )}
       </div>
