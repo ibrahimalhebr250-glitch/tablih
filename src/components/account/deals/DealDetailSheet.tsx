@@ -25,6 +25,8 @@ import type { Deal } from '../../../types/deal';
 import { DEAL_STATUS_CONFIG } from '../../../types/deal';
 import type { CounterpartyInfo } from '../../../hooks/useAccountDeals';
 import { buildWhatsAppLink } from './DealCards';
+import { logWhatsAppContact } from '../../../hooks/useWhatsAppTemplates';
+import { supabase } from '../../../lib/supabase';
 
 interface Props {
   deal: Deal;
@@ -195,6 +197,26 @@ export default function DealDetailSheet({
   const [supplierPledge, setSupplierPledge] = useState(false);
   const [selectedDeadline, setSelectedDeadline] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeTemplate, setActiveTemplate] = useState<{ id: string; text: string } | null>(null);
+
+  useEffect(() => {
+    async function loadTemplate() {
+      try {
+        const role = isBuyer ? 'buyer' : 'supplier';
+        const { data } = await supabase
+          .from('whatsapp_templates')
+          .select('id, template_text')
+          .eq('is_active', true)
+          .eq('is_default', true)
+          .or(`sender_role.eq.${role},sender_role.eq.both`)
+          .maybeSingle();
+        if (data) setActiveTemplate({ id: data.id, text: data.template_text });
+      } catch {
+        // silently fail
+      }
+    }
+    loadTemplate();
+  }, [isBuyer]);
 
   const counterpartyName = counterparty?.company_name || counterparty?.display_name || (isBuyer ? 'مورد' : 'مشتري');
   const statusCfg = DEAL_STATUS_CONFIG[deal.status];
@@ -448,11 +470,23 @@ export default function DealDetailSheet({
             </div>
           )}
 
-          {showWhatsApp && (
+          {showWhatsApp && otherPhone && (
             <a
-              href={buildWhatsAppLink(otherPhone, myRole, deal)}
+              href={buildWhatsAppLink(otherPhone, myRole, deal, activeTemplate?.text)}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => {
+                logWhatsAppContact({
+                  deal_id: deal.id,
+                  deal_ref: deal.deal_ref,
+                  sender_phone: myRole === 'buyer' ? (deal.buyer_phone ?? '') : (deal.supplier_phone ?? ''),
+                  sender_role: myRole,
+                  recipient_phone: otherPhone,
+                  template_id: activeTemplate?.id,
+                  message_preview: activeTemplate ? activeTemplate.text.slice(0, 100) : undefined,
+                  context_data: { pallet_type: deal.pallet_type, quantity: deal.quantity, city: deal.city },
+                });
+              }}
               className="flex items-center justify-center gap-2.5 w-full py-3 rounded-xl text-[13px] font-bold text-white active:scale-[0.97] transition-transform"
               style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 4px 14px rgba(37,211,102,0.3)' }}
             >

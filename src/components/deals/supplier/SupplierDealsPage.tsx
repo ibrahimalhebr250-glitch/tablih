@@ -6,6 +6,9 @@ import type { Deal } from '../../../types/deal';
 import { ActionToast } from '../../shared/ActionToast';
 import type { ToastConfig } from '../../shared/ActionToast';
 import RatingDialog from '../shared/RatingDialog';
+import { buildWhatsAppLink } from '../../account/deals/DealCards';
+import { logWhatsAppContact } from '../../../hooks/useWhatsAppTemplates';
+import { supabase } from '../../../lib/supabase';
 
 type Tab = 'new' | 'reserved' | 'delivery' | 'ended';
 
@@ -14,26 +17,19 @@ interface Props {
   onClose: () => void;
 }
 
-function buildWhatsAppLink(phone: string, senderRole: 'supplier' | 'buyer', deal: Deal): string {
-  const cleanPhone = phone.replace(/^0/, '966').replace('+', '');
-  const otherRole = senderRole === 'supplier' ? 'المشتري' : 'المورد';
-  const myRole = senderRole === 'supplier' ? 'المورد' : 'المشتري';
-  const message = [
-    `السلام عليكم`,
-    ``,
-    `تواصل معك عبر *منصة العاديات* بخصوص الصفقة رقم *${deal.deal_ref}*`,
-    ``,
-    `--- تفاصيل الصفقة ---`,
-    `النوع: ${deal.pallet_type} · ${deal.size} · درجة ${deal.quality}`,
-    `الكمية: ${deal.quantity} طبلية`,
-    `المدينة: ${deal.city}`,
-    `السعر: ${deal.supplier_price ?? deal.final_price} ر.س / طبلية`,
-    ``,
-    `انا ${myRole} في هذه الصفقة وأنت ${otherRole}`,
-    ``,
-    `شكرا لتعاملك مع منصة العاديات`,
-  ].join('\n');
-  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+async function getDefaultTemplate(role: 'buyer' | 'supplier'): Promise<{ id: string; text: string } | null> {
+  try {
+    const { data } = await supabase
+      .from('whatsapp_templates')
+      .select('id, template_text')
+      .eq('is_active', true)
+      .eq('is_default', true)
+      .or(`sender_role.eq.${role},sender_role.eq.both`)
+      .maybeSingle();
+    return data ? { id: data.id, text: data.template_text } : null;
+  } catch {
+    return null;
+  }
 }
 
 const TABS: { id: Tab; label: string; icon: typeof Bell }[] = [
@@ -297,6 +293,19 @@ function ReservedDealCard({ deal, onStartDelivery, loading }: {
             href={buildWhatsAppLink(deal.buyer_phone, 'supplier', deal)}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => {
+              getDefaultTemplate('supplier').then(tpl => {
+                logWhatsAppContact({
+                  deal_id: deal.id,
+                  deal_ref: deal.deal_ref,
+                  sender_phone: deal.supplier_phone ?? '',
+                  sender_role: 'supplier',
+                  recipient_phone: deal.buyer_phone ?? '',
+                  template_id: tpl?.id,
+                  context_data: { pallet_type: deal.pallet_type, quantity: deal.quantity, city: deal.city },
+                });
+              });
+            }}
             className="flex items-center justify-center gap-2.5 w-full py-3 rounded-xl text-[13px] font-bold text-white active:scale-[0.97] transition-transform"
             style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 4px 14px rgba(37,211,102,0.3)' }}
           >
@@ -365,6 +374,19 @@ function InDeliveryCard({ deal, onConfirmDelivery, onFailDelivery, loading }: {
             href={buildWhatsAppLink(deal.buyer_phone, 'supplier', deal)}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => {
+              getDefaultTemplate('supplier').then(tpl => {
+                logWhatsAppContact({
+                  deal_id: deal.id,
+                  deal_ref: deal.deal_ref,
+                  sender_phone: deal.supplier_phone ?? '',
+                  sender_role: 'supplier',
+                  recipient_phone: deal.buyer_phone ?? '',
+                  template_id: tpl?.id,
+                  context_data: { pallet_type: deal.pallet_type, quantity: deal.quantity, city: deal.city },
+                });
+              });
+            }}
             className="flex items-center justify-center gap-2.5 w-full py-3 rounded-xl text-[13px] font-bold text-white active:scale-[0.97] transition-transform"
             style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 4px 14px rgba(37,211,102,0.3)' }}
           >
@@ -510,6 +532,19 @@ function EndedDealCard({ deal, onRate }: { deal: Deal; onRate: () => void }) {
               href={buildWhatsAppLink(deal.buyer_phone, 'supplier', deal)}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => {
+                getDefaultTemplate('supplier').then(tpl => {
+                  logWhatsAppContact({
+                    deal_id: deal.id,
+                    deal_ref: deal.deal_ref,
+                    sender_phone: deal.supplier_phone ?? '',
+                    sender_role: 'supplier',
+                    recipient_phone: deal.buyer_phone ?? '',
+                    template_id: tpl?.id,
+                    context_data: { pallet_type: deal.pallet_type, quantity: deal.quantity, city: deal.city },
+                  });
+                });
+              }}
               className="flex items-center justify-center gap-2.5 w-full py-2.5 rounded-xl text-[12px] font-bold text-white active:scale-[0.97] transition-transform"
               style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 3px 10px rgba(37,211,102,0.3)' }}
             >

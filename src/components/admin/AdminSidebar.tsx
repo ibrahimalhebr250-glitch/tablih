@@ -1,4 +1,4 @@
-import { LayoutDashboard, TrendingUp, Handshake, DollarSign, Users, Star, MessageSquare, Settings, X, User, Package, ClipboardList, ShoppingBag, BarChart3, Radar } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Handshake, DollarSign, Users, Star, MessageSquare, Settings, X, User, Package, ClipboardList, ShoppingBag, BarChart3, Radar, MessageCircle } from 'lucide-react';
 import type { AdminSection } from '../../types/admin';
 import type { AdminStaffData } from './AdminLoginSheet';
 
@@ -23,6 +23,7 @@ const navItems: { id: AdminSection; label: string; icon: typeof LayoutDashboard 
   { id: 'comments', label: 'التعليقات', icon: MessageSquare },
   { id: 'buyer_inventory', label: 'مشتريات المشترين', icon: ShoppingBag },
   { id: 'order_matching', label: 'مطابقة الطلبات', icon: Radar },
+  { id: 'whatsapp', label: 'إدارة واتساب', icon: MessageCircle },
   { id: 'settings', label: 'الإعدادات', icon: Settings },
 ];
 
