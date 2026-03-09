@@ -110,7 +110,7 @@ export function useAdminDashboard(filter: TimeFilter) {
         activityRes,
       ] = await Promise.all([
         supabase.from('platform_users').select('id, user_type, created_at'),
-        supabase.from('inventory_batches').select('id, city, available_quantity, quantity, status, publish_to_market, inventory_source, supplier_phone, created_at'),
+        supabase.from('inventory_batches').select('id, city, available_quantity, quantity, status, publish_to_market, inventory_source, phone, created_at'),
         supabase.from('orders').select('id, city, quantity, status, order_source, phone, created_at, match_count'),
         supabase.from('deals').select('id, deal_ref, city, quantity, buyer_price, supplier_price, platform_fee, final_price, status, created_at, reserved_at, completed_at'),
         supabase.from('negotiation_requests').select('id, status, created_at'),
@@ -130,7 +130,7 @@ export function useAdminDashboard(filter: TimeFilter) {
       const filteredDeals = deals.filter(d => d.created_at >= since);
       const filteredOrders = orders.filter(o => o.created_at >= since);
 
-      const supplierPhones = new Set(inventory.map(i => i.supplier_phone).filter(Boolean));
+      const supplierPhones = new Set(inventory.map(i => i.phone).filter(Boolean));
       const buyerPhones = new Set(orders.map(o => o.phone).filter(Boolean));
 
       const platformStats: PlatformStats = {
