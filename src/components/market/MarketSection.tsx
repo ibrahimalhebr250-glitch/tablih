@@ -235,39 +235,62 @@ export default function MarketSection({
       const [supplyRes, demandRes] = await Promise.all([
         supabase
           .from('inventory_batches')
-          .select('id, phone, pallet_type, size, quality, pallet_condition, quantity_available, price_per_pallet, city, description, image_urls, created_at, publish_to_market')
+          .select('id, phone, pallet_type, size, quality, pallet_condition, quantity_available, price_per_pallet, city, description, image_url, created_at, publish_to_market')
           .eq('publish_to_market', true)
           .gt('quantity_available', 0)
           .order('created_at', { ascending: false })
           .limit(60),
         supabase
           .from('orders')
-          .select('id, buyer_phone, pallet_type, size, quality, quantity, city, accept_close_quality, accept_close_city, accept_partial_delivery, created_at, status')
+          .select('id, phone, pallet_type, size, quality, quantity, city, accept_close_quality, accept_close_city, accept_partial_delivery, created_at, status')
           .in('status', ['pending', 'partially_matched'])
           .order('created_at', { ascending: false })
           .limit(60),
       ]);
 
-      const supplyItems: SupplyCard[] = (supplyRes.data || []).map((r: any) => ({
-        id: r.id,
-        phone: r.phone,
-        pallet_type: r.pallet_type,
-        size: r.size,
-        quality: r.quality,
-        pallet_condition: r.pallet_condition,
-        available_quantity: r.quantity_available,
-        price_per_pallet: r.price_per_pallet || 0,
-        city: r.city,
-        description: r.description || '',
-        image_urls: r.image_urls || [],
-        created_at: r.created_at,
-        trust_rating: undefined,
-        kind: 'supply',
-      }));
+      const batchIds = (supplyRes.data || []).map((r: any) => r.id);
+      let imagesByBatch: Record<string, string[]> = {};
+      if (batchIds.length > 0) {
+        const { data: imgs } = await supabase
+          .from('inventory_images')
+          .select('batch_id, url, is_primary, sort_order')
+          .in('batch_id', batchIds)
+          .order('sort_order', { ascending: true });
+        if (imgs) {
+          for (const img of imgs) {
+            if (!imagesByBatch[img.batch_id]) imagesByBatch[img.batch_id] = [];
+            if (img.is_primary) {
+              imagesByBatch[img.batch_id].unshift(img.url);
+            } else {
+              imagesByBatch[img.batch_id].push(img.url);
+            }
+          }
+        }
+      }
+
+      const supplyItems: SupplyCard[] = (supplyRes.data || []).map((r: any) => {
+        const imgs = imagesByBatch[r.id] || (r.image_url ? [r.image_url] : []);
+        return {
+          id: r.id,
+          phone: r.phone,
+          pallet_type: r.pallet_type,
+          size: r.size,
+          quality: r.quality,
+          pallet_condition: r.pallet_condition,
+          available_quantity: r.quantity_available,
+          price_per_pallet: r.price_per_pallet || 0,
+          city: r.city,
+          description: r.description || '',
+          image_urls: imgs,
+          created_at: r.created_at,
+          trust_rating: undefined,
+          kind: 'supply',
+        };
+      });
 
       const demandItems: DemandCard[] = (demandRes.data || []).map((r: any) => ({
         id: r.id,
-        phone: r.buyer_phone,
+        phone: r.phone,
         pallet_type: r.pallet_type,
         size: r.size,
         quality: r.quality,
@@ -289,7 +312,7 @@ export default function MarketSection({
       }
       setItems(merged);
     } catch (e) {
-      console.error(e);
+      console.error('Market load error:', e);
     } finally {
       setLoading(false);
     }
