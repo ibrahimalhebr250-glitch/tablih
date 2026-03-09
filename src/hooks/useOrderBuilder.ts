@@ -3,6 +3,7 @@ import type { OrderFormData, PalletType, PalletSize, PalletQuality, BuilderStep 
 import type { RequestFieldsConfig } from './usePlatformSettings';
 import { supabase } from '../lib/supabase';
 
+
 interface PrefillData {
   palletType?: string | null;
   size?: string | null;
@@ -39,58 +40,12 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
   const [isAuthenticated, setIsAuthenticated] = useState(!!prefilledPhone);
   const [savedOrderId, setSavedOrderId] = useState<string | null>(null);
   const [savedRequestId, setSavedRequestId] = useState<string | null>(null);
-  const [draftId, setDraftId] = useState<string | null>(null);
 
   const phoneRef = useRef(phone);
-  const draftIdRef = useRef(draftId);
   useEffect(() => { phoneRef.current = phone; }, [phone]);
-  useEffect(() => { draftIdRef.current = draftId; }, [draftId]);
-
-  useEffect(() => {
-    if (phone && form.palletType && step === 'form') {
-      saveDraft();
-    }
-  }, [form, phone, step]);
-
-  const saveDraft = async () => {
-    if (!phone) return;
-
-    try {
-      const draftData = {
-        phone,
-        pallet_type: form.palletType,
-        size: form.size,
-        quality: form.quality,
-        quantity: form.quantity,
-        city: form.city,
-        stage: step,
-        data: form
-      };
-
-      if (draftId) {
-        await supabase
-          .from('orders')
-          .update({ ...draftData, updated_at: new Date().toISOString() })
-          .eq('id', draftId);
-      } else {
-        const { data, error } = await supabase
-          .from('orders')
-          .insert([{ ...draftData, status: 'unmatched' }])
-          .select('id')
-          .single();
-
-        if (!error && data) {
-          setDraftId(data.id);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to save draft:', err);
-    }
-  };
 
   const logOperation = useCallback(async (action: string, details?: any) => {
     const currentPhone = phoneRef.current;
-    const currentDraftId = draftIdRef.current;
     if (!currentPhone) return;
 
     try {
@@ -98,7 +53,6 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
         .from('order_operations_log')
         .insert([{
           phone: currentPhone,
-          order_id: currentDraftId,
           action,
           details,
           timestamp: new Date().toISOString()
