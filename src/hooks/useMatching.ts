@@ -23,8 +23,6 @@ export function useMatching() {
 
       try {
         const getToken = (): string | null => {
-          const t = localStorage.getItem('pallet_session_token');
-          if (t) return t;
           try {
             const s = JSON.parse(localStorage.getItem('tbl_session') || '{}');
             if (s?.accessToken && new Date(s.expiresAt) > new Date()) return s.accessToken;
