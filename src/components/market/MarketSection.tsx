@@ -477,14 +477,12 @@ export default function MarketSection({ sessionPhone, onAuthRequired }: MarketSe
   }, []);
 
   const handleSupplyClick = useCallback((card: SupplyCard) => {
-    if (!sessionPhone) { setShowAuthPrompt(true); return; }
     setSelectedSupply(card);
-  }, [sessionPhone]);
+  }, []);
 
   const handleDemandClick = useCallback((card: DemandCard) => {
-    if (!sessionPhone) { setShowAuthPrompt(true); return; }
     setSelectedDemand(card);
-  }, [sessionPhone]);
+  }, []);
 
   const baseItems = tab === 'all' ? items : tab === 'supply' ? items.filter(i => i.kind === 'supply') : items.filter(i => i.kind === 'demand');
   const allPalletTypes = [...new Set(baseItems.map((i) => i.pallet_type))].filter(Boolean);

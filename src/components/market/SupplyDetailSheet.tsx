@@ -307,12 +307,12 @@ function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisti
 interface Props {
   card: SupplyCard;
   onClose: () => void;
-  isAuthenticated: boolean;
-  buyerPhone?: string;
-  onShowAuthPrompt: () => void;
+  sessionPhone?: string | null;
 }
 
-export default function SupplyDetailSheet({ card, onClose, isAuthenticated, buyerPhone, onShowAuthPrompt }: Props) {
+export default function SupplyDetailSheet({ card, onClose, sessionPhone }: Props) {
+  const isAuthenticated = !!sessionPhone;
+  const buyerPhone = sessionPhone ?? undefined;
   const [imgIndex, setImgIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
   const [showRatingDialog, setShowRatingDialog] = useState(false);
@@ -357,7 +357,7 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, buye
   const goPrev = () => setImgIndex((i) => (i - 1 + card.image_urls.length) % card.image_urls.length);
 
   const handleFavorite = () => {
-    if (!isAuthenticated) onShowAuthPrompt();
+    if (!isAuthenticated) setShowWelcomeMessage(true);
     else setIsFavorited(!isFavorited);
   };
 
@@ -378,7 +378,7 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, buye
     }));
     setShowWelcomeMessage(false);
     onClose();
-    onShowAuthPrompt();
+    window.location.hash = '#/account';
   };
 
   const handleRequestSent = () => {
