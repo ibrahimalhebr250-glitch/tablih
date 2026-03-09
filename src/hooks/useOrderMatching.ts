@@ -69,12 +69,47 @@ export interface MarketAnalysis {
   supply_demand_gap: { city: string; demand_qty: number; supply_qty: number; gap: number }[];
 }
 
+export interface NearMatch {
+  order_id: string;
+  request_id: string;
+  order_phone: string;
+  order_pallet_type: string;
+  order_size: string;
+  order_quality: string;
+  order_city: string;
+  order_quantity: number;
+  batch_id: string;
+  batch_ref: string;
+  batch_phone: string;
+  batch_pallet_type: string;
+  batch_size: string;
+  batch_quality: string;
+  batch_city: string;
+  batch_available: number;
+  match_score: number;
+  score_type: number;
+  score_size: number;
+  score_quality: number;
+  score_city: number;
+  score_quantity: number;
+  norm_order_type: string;
+  norm_batch_type: string;
+  norm_order_size: string;
+  norm_batch_size: string;
+  norm_order_quality: string;
+  norm_batch_quality: string;
+  same_owner: boolean;
+  primary_blocker: string;
+  blockers: { factor: string; order_val: string; batch_val: string; norm_order?: string; norm_batch?: string; score: number }[];
+}
+
 export function useOrderMatching() {
   const [candidates, setCandidates] = useState<MatchCandidate[]>([]);
   const [opportunities, setOpportunities] = useState<MarketOpportunities | null>(null);
   const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
+  const [nearMatches, setNearMatches] = useState<NearMatch[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'board' | 'opportunities' | 'analysis'>('board');
+  const [activeTab, setActiveTab] = useState<'board' | 'opportunities' | 'analysis' | 'near_matches'>('board');
 
   const fetchCandidates = useCallback(async (status = 'active', minScore = 0) => {
     const { data, error } = await supabase.rpc('om_get_candidates_board', {
@@ -101,6 +136,13 @@ export function useOrderMatching() {
     }
   }, []);
 
+  const fetchNearMatches = useCallback(async () => {
+    const { data, error } = await supabase.rpc('om_get_near_matches', { p_limit: 50 });
+    if (!error && data) {
+      setNearMatches(data as NearMatch[]);
+    }
+  }, []);
+
   const createDealFromCandidate = useCallback(async (candidateId: string) => {
     const { data, error } = await supabase.rpc('om_admin_create_deal_from_candidate', {
       p_candidate_id: candidateId,
@@ -111,9 +153,9 @@ export function useOrderMatching() {
 
   const refreshAll = useCallback(async () => {
     setLoading(true);
-    await Promise.all([fetchCandidates(), fetchOpportunities(), fetchAnalysis()]);
+    await Promise.all([fetchCandidates(), fetchOpportunities(), fetchAnalysis(), fetchNearMatches()]);
     setLoading(false);
-  }, [fetchCandidates, fetchOpportunities, fetchAnalysis]);
+  }, [fetchCandidates, fetchOpportunities, fetchAnalysis, fetchNearMatches]);
 
   useEffect(() => {
     refreshAll();
@@ -140,12 +182,14 @@ export function useOrderMatching() {
     candidates,
     opportunities,
     analysis,
+    nearMatches,
     loading,
     activeTab,
     setActiveTab,
     fetchCandidates,
     fetchOpportunities,
     fetchAnalysis,
+    fetchNearMatches,
     createDealFromCandidate,
     refreshAll,
   };

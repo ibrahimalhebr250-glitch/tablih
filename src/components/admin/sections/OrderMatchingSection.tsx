@@ -1,13 +1,15 @@
-import { RefreshCw, Radar, Handshake, AlertTriangle, BarChart3 } from 'lucide-react';
+import { RefreshCw, Radar, Handshake, AlertTriangle, BarChart3, SearchX } from 'lucide-react';
 import { useOrderMatching } from '../../../hooks/useOrderMatching';
 import MatchingBoard from '../order-matching/MatchingBoard';
 import MarketOpportunities from '../order-matching/MarketOpportunities';
 import MarketAnalysis from '../order-matching/MarketAnalysis';
+import NearMatchesDiagnostics from '../order-matching/NearMatchesDiagnostics';
 
-type Tab = 'board' | 'opportunities' | 'analysis';
+type Tab = 'board' | 'opportunities' | 'analysis' | 'near_matches';
 
 const TABS: { id: Tab; label: string; icon: typeof Handshake }[] = [
   { id: 'board', label: 'لوحة المطابقات', icon: Handshake },
+  { id: 'near_matches', label: 'تطابقات قريبة', icon: SearchX },
   { id: 'opportunities', label: 'فرص السوق', icon: AlertTriangle },
   { id: 'analysis', label: 'تحليل السوق', icon: BarChart3 },
 ];
@@ -17,6 +19,7 @@ export default function OrderMatchingSection() {
     candidates,
     opportunities,
     analysis,
+    nearMatches,
     loading,
     activeTab,
     setActiveTab,
@@ -98,6 +101,11 @@ export default function OrderMatchingSection() {
                     activeTab === id ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
                   }`}>{candidates.length}</span>
                 )}
+                {id === 'near_matches' && nearMatches.length > 0 && (
+                  <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
+                    activeTab === id ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+                  }`}>{nearMatches.length}</span>
+                )}
               </button>
             ))}
           </div>
@@ -113,6 +121,9 @@ export default function OrderMatchingSection() {
             )}
             {activeTab === 'opportunities' && (
               <MarketOpportunities data={opportunities} loading={loading} />
+            )}
+            {activeTab === 'near_matches' && (
+              <NearMatchesDiagnostics data={nearMatches} loading={loading} />
             )}
             {activeTab === 'analysis' && (
               <MarketAnalysis data={analysis} loading={loading} />
