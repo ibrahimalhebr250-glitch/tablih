@@ -106,7 +106,7 @@ export function useMyInventory(phone: string) {
     fetchInventory();
 
     const channel = supabase
-      .channel('my_inventory_changes')
+      .channel(`my_inventory_changes_${phone}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_batches', filter: `phone=eq.${phone}` }, () => {
         fetchInventory();
       })
