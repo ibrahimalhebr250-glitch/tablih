@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  BookOpen, Plus, Trash2, Edit3, Save, X, ChevronDown, ChevronUp,
-  Tag, AlertCircle, CheckCircle2, Loader2, Search, Hash
-} from 'lucide-react';
+import { BookOpen, Plus, Trash2, CreditCard as Edit3, Save, X, ChevronDown, ChevronUp, Tag, AlertCircle, CheckCircle2, Loader2, Search, Hash } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 interface KnowledgeEntry {
