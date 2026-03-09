@@ -43,6 +43,10 @@ export interface DynamicQualityGrade {
   name_en: string;
   description_ar?: string;
   description_en?: string;
+  color_hex?: string;
+  badge_color?: string;
+  bg_color?: string;
+  border_color?: string;
   is_active: boolean;
   sort_order: number;
 }
