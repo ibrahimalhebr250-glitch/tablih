@@ -40,11 +40,11 @@ function timeAgo(dateStr: string): string {
 interface Props {
   card: DemandCard;
   onClose: () => void;
-  isAuthenticated: boolean;
-  onShowAuthPrompt: () => void;
+  sessionPhone?: string | null;
 }
 
-export default function DemandDetailSheet({ card, onClose, isAuthenticated, onShowAuthPrompt }: Props) {
+export default function DemandDetailSheet({ card, onClose, sessionPhone }: Props) {
+  const isAuthenticated = !!sessionPhone;
   const [isFavorited, setIsFavorited] = useState(false);
   const [showRatingDialog, setShowRatingDialog] = useState(false);
   const [ratingSummary, setRatingSummary] = useState<{ average_rating: number; total_ratings: number } | null>(null);
@@ -68,8 +68,7 @@ export default function DemandDetailSheet({ card, onClose, isAuthenticated, onSh
   ].filter((f) => f.active);
 
   const handleFavorite = () => {
-    if (!isAuthenticated) onShowAuthPrompt();
-    else setIsFavorited(!isFavorited);
+    setIsFavorited(!isFavorited);
   };
 
   return (
