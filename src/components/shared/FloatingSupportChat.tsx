@@ -20,6 +20,26 @@ interface FloatingSupportChatProps {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
+async function fetchMessagesForPhone(phone: string): Promise<SupportMessage[]> {
+  const { data } = await supabase
+    .from('support_messages')
+    .select('*')
+    .eq('user_phone', phone)
+    .order('created_at', { ascending: true })
+    .setHeader('x-user-phone', phone);
+  return (data as SupportMessage[]) ?? [];
+}
+
+async function markReadForPhone(phone: string) {
+  await supabase
+    .from('support_messages')
+    .update({ is_read: true })
+    .eq('user_phone', phone)
+    .eq('sender', 'admin')
+    .eq('is_read', false)
+    .setHeader('x-user-phone', phone);
+}
+
 function triggerAIReply(phone: string, message: string) {
   fetch(`${SUPABASE_URL}/functions/v1/ai-support-reply`, {
     method: 'POST',
@@ -52,36 +72,27 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
   const effectivePhone = userPhone || (guestSubmitted ? guestPhone : null);
   const effectiveName = userName || guestName;
 
-  const fetchMessages = useCallback(async (phone: string) => {
-    const { data } = await supabase
-      .from('support_messages')
-      .select('*')
-      .eq('user_phone', phone)
-      .order('created_at', { ascending: true });
-    setMessages(data ?? []);
-  }, []);
-
-  const markAdminMessagesRead = useCallback(async (phone: string) => {
-    await supabase
-      .from('support_messages')
-      .update({ is_read: true })
-      .eq('user_phone', phone)
-      .eq('sender', 'admin')
-      .eq('is_read', false);
-    setUnreadCount(0);
+  const refreshMessages = useCallback(async (phone: string) => {
+    const msgs = await fetchMessagesForPhone(phone);
+    setMessages(msgs);
   }, []);
 
   useEffect(() => {
     if (!effectivePhone) return;
-    fetchMessages(effectivePhone);
+    refreshMessages(effectivePhone);
 
     if (channelRef.current) supabase.removeChannel(channelRef.current);
 
     const channel = supabase
-      .channel(`floating-support-${effectivePhone}`)
+      .channel(`support-chat-${effectivePhone}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `user_phone=eq.${effectivePhone}` },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'support_messages',
+          filter: `user_phone=eq.${effectivePhone}`,
+        },
         (payload) => {
           const msg = payload.new as SupportMessage;
           setMessages((prev) => (prev.find((m) => m.id === msg.id) ? prev : [...prev, msg]));
@@ -98,14 +109,14 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
 
     channelRef.current = channel;
     return () => { supabase.removeChannel(channel); };
-  }, [effectivePhone, fetchMessages, isOpen]);
+  }, [effectivePhone, refreshMessages, isOpen]);
 
   useEffect(() => {
     if (isOpen && effectivePhone) {
-      markAdminMessagesRead(effectivePhone);
+      markReadForPhone(effectivePhone);
       setUnreadCount(0);
     }
-  }, [isOpen, effectivePhone, markAdminMessagesRead]);
+  }, [isOpen, effectivePhone]);
 
   useEffect(() => {
     if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -116,12 +127,9 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
     const msg = inputText.trim();
     setInputText('');
     setSending(true);
-    await supabase.from('support_messages').insert({
-      user_phone: effectivePhone,
-      sender: 'user',
-      message: msg,
-      image_url: null,
-    });
+    await supabase
+      .from('support_messages')
+      .insert({ user_phone: effectivePhone, sender: 'user', message: msg, image_url: null });
     triggerAIReply(effectivePhone, msg);
     setSending(false);
     textareaRef.current?.focus();
@@ -145,16 +153,18 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
     }
     setGuestError('');
     setSubmittingGuest(true);
+    const phone = guestPhone.trim();
+    const name = guestName.trim();
     await supabase.from('support_messages').insert({
-      user_phone: guestPhone.trim(),
+      user_phone: phone,
       sender: 'user',
-      message: `[زائر جديد] ${guestName.trim()}`,
+      message: `مرحباً، أنا ${name}`,
       image_url: null,
     });
-    triggerAIReply(guestPhone.trim(), `مرحباً، أنا ${guestName.trim()}، زائر جديد للمنصة`);
+    triggerAIReply(phone, `مرحباً، أنا ${name}، أريد الاستفسار`);
     setGuestSubmitted(true);
     setSubmittingGuest(false);
-    await fetchMessages(guestPhone.trim());
+    await refreshMessages(phone);
   };
 
   const formatTime = (iso: string) =>
@@ -163,7 +173,10 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
   return (
     <>
       {hasNewMessage && !isOpen && (
-        <div className="fixed bottom-24 left-4 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300" style={{ direction: 'rtl' }}>
+        <div
+          className="fixed bottom-24 left-4 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300"
+          style={{ direction: 'rtl' }}
+        >
           <div
             className="bg-white rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3 border border-slate-100 max-w-xs"
             style={{ boxShadow: '0 8px 32px rgba(26,74,94,0.18)' }}
@@ -209,7 +222,7 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
           </div>
 
           <div className="bg-white flex flex-col" style={{ height: '420px' }}>
-            {!effectivePhone && !guestSubmitted ? (
+            {!effectivePhone ? (
               <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 gap-5" dir="rtl">
                 <div
                   className="w-16 h-16 rounded-2xl flex items-center justify-center"
@@ -284,7 +297,10 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
                   )}
 
                   {messages.map((msg) => (
-                    <div key={msg.id} className={`flex gap-2 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                    <div
+                      key={msg.id}
+                      className={`flex gap-2 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                    >
                       {msg.sender === 'admin' && (
                         <div
                           className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5"
@@ -299,11 +315,21 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
                             ? 'rounded-tr-sm text-white'
                             : 'rounded-tl-sm text-slate-800 bg-slate-100'
                         }`}
-                        style={msg.sender === 'user' ? { background: 'linear-gradient(135deg, #1a4a5e, #0e2233)' } : {}}
+                        style={
+                          msg.sender === 'user'
+                            ? { background: 'linear-gradient(135deg, #1a4a5e, #0e2233)' }
+                            : {}
+                        }
                       >
-                        {msg.image_url && <img src={msg.image_url} alt="" className="rounded-lg mb-1 max-w-full" />}
+                        {msg.image_url && (
+                          <img src={msg.image_url} alt="" className="rounded-lg mb-1 max-w-full" />
+                        )}
                         <p className="whitespace-pre-wrap break-words">{msg.message}</p>
-                        <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-white/60' : 'text-slate-400'}`}>
+                        <p
+                          className={`text-xs mt-1 ${
+                            msg.sender === 'user' ? 'text-white/60' : 'text-slate-400'
+                          }`}
+                        >
                           {formatTime(msg.created_at)}
                         </p>
                       </div>
@@ -320,7 +346,11 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
                       className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-95 disabled:opacity-40"
                       style={{ background: 'linear-gradient(135deg, #1a4a5e, #0e2233)' }}
                     >
-                      {sending ? <Loader2 size={15} className="text-white animate-spin" /> : <Send size={15} className="text-white" />}
+                      {sending ? (
+                        <Loader2 size={15} className="text-white animate-spin" />
+                      ) : (
+                        <Send size={15} className="text-white" />
+                      )}
                     </button>
                     <textarea
                       ref={textareaRef}
