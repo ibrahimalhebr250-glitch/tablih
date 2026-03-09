@@ -180,12 +180,22 @@ export function useInventoryOperations(adminEmail: string) {
 
   const deleteOperations = async (ids: string[]): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { data, error } = await supabase.rpc('delete_inventory_operations', {
-        p_ids: ids,
-        p_admin_email: adminEmail,
-      });
-      if (error) throw error;
-      if (data && !data.success) throw new Error(data.error || 'Delete failed');
+      if (!ids.length) return { success: true };
+
+      const { error } = await supabase
+        .from('inventory_operations_log')
+        .delete()
+        .in('id', ids);
+
+      if (error) {
+        const { data: rpcData, error: rpcError } = await supabase.rpc('delete_inventory_operations', {
+          p_ids: ids,
+          p_admin_email: adminEmail,
+        });
+        if (rpcError) throw rpcError;
+        if (rpcData && !rpcData.success) throw new Error(rpcData.error || 'Delete failed');
+      }
+
       await fetchOperations();
       return { success: true };
     } catch (err: any) {
@@ -196,11 +206,22 @@ export function useInventoryOperations(adminEmail: string) {
 
   const deleteAllOperations = async (): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { data, error } = await supabase.rpc('delete_all_inventory_operations', {
-        p_admin_email: adminEmail,
-      });
-      if (error) throw error;
-      if (data && !data.success) throw new Error(data.error || 'Delete failed');
+      const ids = operations.map(op => op.id);
+      if (!ids.length) return { success: true };
+
+      const { error } = await supabase
+        .from('inventory_operations_log')
+        .delete()
+        .in('id', ids);
+
+      if (error) {
+        const { data: rpcData, error: rpcError } = await supabase.rpc('delete_all_inventory_operations', {
+          p_admin_email: adminEmail,
+        });
+        if (rpcError) throw rpcError;
+        if (rpcData && !rpcData.success) throw new Error(rpcData.error || 'Delete failed');
+      }
+
       await fetchOperations();
       return { success: true };
     } catch (err: any) {
