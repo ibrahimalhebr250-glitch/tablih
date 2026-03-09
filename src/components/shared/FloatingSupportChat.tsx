@@ -21,23 +21,20 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 async function fetchMessagesForPhone(phone: string): Promise<SupportMessage[]> {
-  const { data } = await supabase
-    .from('support_messages')
-    .select('*')
-    .eq('user_phone', phone)
-    .order('created_at', { ascending: true })
-    .setHeader('x-user-phone', phone);
+  const { data } = await supabase.rpc('user_get_support_messages', { p_user_phone: phone });
   return (data as SupportMessage[]) ?? [];
 }
 
 async function markReadForPhone(phone: string) {
-  await supabase
-    .from('support_messages')
-    .update({ is_read: true })
-    .eq('user_phone', phone)
-    .eq('sender', 'admin')
-    .eq('is_read', false)
-    .setHeader('x-user-phone', phone);
+  await supabase.rpc('user_mark_support_messages_read', { p_user_phone: phone });
+}
+
+async function sendSupportMessage(phone: string, message: string, imageUrl?: string) {
+  await supabase.rpc('user_send_support_message', {
+    p_user_phone: phone,
+    p_message: message,
+    p_image_url: imageUrl ?? null,
+  });
 }
 
 function triggerAIReply(phone: string, message: string) {
@@ -77,6 +74,9 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
     setMessages(msgs);
   }, []);
 
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+
   useEffect(() => {
     if (!effectivePhone) return;
     refreshMessages(effectivePhone);
@@ -93,15 +93,15 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
           table: 'support_messages',
           filter: `user_phone=eq.${effectivePhone}`,
         },
-        (payload) => {
-          const msg = payload.new as SupportMessage;
-          setMessages((prev) => (prev.find((m) => m.id === msg.id) ? prev : [...prev, msg]));
-          if (msg.sender === 'admin') {
-            if (!isOpen) {
-              setUnreadCount((c) => c + 1);
-              setHasNewMessage(true);
-              setTimeout(() => setHasNewMessage(false), 3000);
-            }
+        async (payload) => {
+          const newRow = payload.new as { user_phone?: string; sender?: string };
+          if (newRow.user_phone !== effectivePhone) return;
+          const fresh = await fetchMessagesForPhone(effectivePhone);
+          setMessages(fresh);
+          if (newRow.sender === 'admin' && !isOpenRef.current) {
+            setUnreadCount((c) => c + 1);
+            setHasNewMessage(true);
+            setTimeout(() => setHasNewMessage(false), 3000);
           }
         }
       )
@@ -109,7 +109,7 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
 
     channelRef.current = channel;
     return () => { supabase.removeChannel(channel); };
-  }, [effectivePhone, refreshMessages, isOpen]);
+  }, [effectivePhone, refreshMessages]);
 
   useEffect(() => {
     if (isOpen && effectivePhone) {
@@ -127,9 +127,7 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
     const msg = inputText.trim();
     setInputText('');
     setSending(true);
-    await supabase
-      .from('support_messages')
-      .insert({ user_phone: effectivePhone, sender: 'user', message: msg, image_url: null });
+    await sendSupportMessage(effectivePhone, msg);
     triggerAIReply(effectivePhone, msg);
     setSending(false);
     textareaRef.current?.focus();
@@ -155,12 +153,7 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
     setSubmittingGuest(true);
     const phone = guestPhone.trim();
     const name = guestName.trim();
-    await supabase.from('support_messages').insert({
-      user_phone: phone,
-      sender: 'user',
-      message: `مرحباً، أنا ${name}`,
-      image_url: null,
-    });
+    await sendSupportMessage(phone, `مرحباً، أنا ${name}`);
     triggerAIReply(phone, `مرحباً، أنا ${name}، أريد الاستفسار`);
     setGuestSubmitted(true);
     setSubmittingGuest(false);

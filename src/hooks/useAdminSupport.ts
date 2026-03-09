@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 export interface AdminSupportConversation {
@@ -143,6 +143,9 @@ export function useAdminSupport(adminEmail: string) {
     ]).finally(() => setLoading(false));
   }, [fetchConversations, fetchStats]);
 
+  const activePhoneRef = useRef<string | null>(null);
+  useEffect(() => { activePhoneRef.current = activePhone; }, [activePhone]);
+
   useEffect(() => {
     const channel = supabase
       .channel('admin-support-realtime')
@@ -155,8 +158,13 @@ export function useAdminSupport(adminEmail: string) {
         if (newMsg.sender === 'user') {
           await fetchConversations(search, filter);
           await fetchStats();
-          if (activePhone === newMsg.user_phone) {
-            setMessages(prev => [...prev, newMsg]);
+          if (activePhoneRef.current === newMsg.user_phone) {
+            await supabase.rpc('admin_get_support_messages', {
+              p_admin_email: adminEmail,
+              p_user_phone: newMsg.user_phone,
+            }).then(({ data }) => {
+              if (data) setMessages(data as AdminSupportMessage[]);
+            });
             await supabase.rpc('admin_mark_messages_read', {
               p_admin_email: adminEmail,
               p_user_phone: newMsg.user_phone,
@@ -167,7 +175,7 @@ export function useAdminSupport(adminEmail: string) {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [activePhone, adminEmail, fetchConversations, fetchStats, search, filter]);
+  }, [adminEmail, fetchConversations, fetchStats, search, filter]);
 
   const applySearch = useCallback((val: string) => {
     setSearch(val);
