@@ -122,10 +122,11 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
     setInputText('');
     setSending(true);
     await sendSupportMessage(effectivePhone, msg);
+    await refreshMessages(effectivePhone);
     triggerAIReply(effectivePhone, msg);
     setSending(false);
     textareaRef.current?.focus();
-  }, [effectivePhone, inputText, sending]);
+  }, [effectivePhone, inputText, sending, refreshMessages]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
