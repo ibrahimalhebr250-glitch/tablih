@@ -11,6 +11,7 @@ import UsersSection from './sections/UsersSection';
 import RatingsSection from './sections/RatingsSection';
 import { CommentsModeration } from './sections/CommentsModeration';
 import BuyerInventorySection from './sections/BuyerInventorySection';
+import OrderMatchingSection from './sections/OrderMatchingSection';
 import SettingsSection from './sections/SettingsSection';
 import type { AdminSection } from '../../types/admin';
 import type { AdminStaffData } from './AdminLoginSheet';
@@ -36,6 +37,7 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
     if (perms.ratings?.can_view) sections.push('ratings');
     if (perms.comments?.can_view) sections.push('comments');
     if (perms.deals?.can_view) sections.push('buyer_inventory');
+    if (perms.market?.can_view || perms.deals?.can_view) sections.push('order_matching');
     if (perms.settings?.can_view) sections.push('settings');
 
     return sections;
@@ -100,6 +102,7 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
         {section === 'buyer_inventory' && canViewSection('buyer_inventory') && (
           <BuyerInventorySection adminEmail={adminStaff.email} />
         )}
+        {section === 'order_matching' && canViewSection('order_matching') && <OrderMatchingSection />}
         {section === 'settings' && canViewSection('settings') && <SettingsSection />}
       </div>
     </div>
