@@ -23,6 +23,7 @@ const MarketSection = lazy(() => import('./components/market/MarketSection'));
 const AccountPage = lazy(() => import('./components/account/AccountPage'));
 const MatchingHub = lazy(() => import('./components/matching/MatchingHub'));
 import FloatingSupportChat from './components/shared/FloatingSupportChat';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'account' | 'matchingHub';
 type MainView = 'marketplace' | 'dashboard' | 'matching';
@@ -548,6 +549,7 @@ function App() {
         userName={session?.profile?.display_name}
       />
 
+      <SpeedInsights />
     </div>
   );
 }
