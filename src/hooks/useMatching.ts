@@ -22,33 +22,54 @@ export function useMatching() {
       setError(null);
 
       try {
-        const { data: savedOrder, error: insertError } = await supabase
-          .from('orders')
-          .insert({
-            pallet_type: form.palletType,
-            size: form.size,
-            quality: form.quality,
-            quantity: form.quantity,
-            city: form.city,
-            pallet_condition: form.condition || 'new',
-            accept_close_quality: form.acceptCloseQuality,
-            accept_close_city: form.acceptCloseCity,
-            accept_partial_delivery: form.acceptPartialDelivery,
-            phone,
-            status: 'unmatched',
-            order_source: 'manual_order',
-          })
-          .select('id, request_id')
-          .maybeSingle();
+        const getToken = (): string | null => {
+          const t = localStorage.getItem('pallet_session_token');
+          if (t) return t;
+          try {
+            const s = JSON.parse(localStorage.getItem('tbl_session') || '{}');
+            if (s?.accessToken && new Date(s.expiresAt) > new Date()) return s.accessToken;
+          } catch { /* ignore */ }
+          return null;
+        };
 
-        if (insertError) {
-          logDBError(`Order insert failed: ${insertError.message}`, phone, { action: 'create_order', extra: { code: insertError.code } });
-          throw insertError;
+        let sessionToken = getToken();
+        if (!sessionToken) {
+          for (let i = 0; i < 10; i++) {
+            await new Promise((r) => setTimeout(r, 300));
+            sessionToken = getToken();
+            if (sessionToken) break;
+          }
         }
-        if (!savedOrder) {
-          logDBError('Order insert returned null', phone, { action: 'create_order' });
-          throw new Error('Failed to create order');
+
+        if (!sessionToken) {
+          throw new Error('no_session');
         }
+
+        const { data: rpcResult, error: rpcError } = await supabase.rpc('create_order_for_session', {
+          p_session_token: sessionToken,
+          p_pallet_type: form.palletType,
+          p_size: form.size,
+          p_quality: form.quality,
+          p_quantity: form.quantity,
+          p_city: form.city,
+          p_pallet_condition: form.condition || 'new',
+          p_accept_close_quality: form.acceptCloseQuality,
+          p_accept_close_city: form.acceptCloseCity,
+          p_accept_partial_delivery: form.acceptPartialDelivery,
+          p_order_source: 'manual_order',
+        });
+
+        if (rpcError) {
+          logDBError(`Order insert failed: ${rpcError.message}`, phone, { action: 'create_order', extra: { code: rpcError.code } });
+          throw rpcError;
+        }
+        if (!rpcResult?.success) {
+          const errMsg = rpcResult?.error || 'Failed to create order';
+          logDBError(`Order insert failed: ${errMsg}`, phone, { action: 'create_order' });
+          throw new Error(errMsg);
+        }
+
+        const savedOrder = { id: rpcResult.id as string, request_id: rpcResult.request_id as string };
 
         const { data: existingUser } = await supabase
           .from('platform_users')
