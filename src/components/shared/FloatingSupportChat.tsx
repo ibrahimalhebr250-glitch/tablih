@@ -184,7 +184,7 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
     <>
       {hasNewMessage && !isOpen && (
         <div
-          className="fixed bottom-24 left-4 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300"
+          className="fixed bottom-44 left-4 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300 lg:bottom-24"
           style={{ direction: 'rtl' }}
         >
           <div
@@ -201,7 +201,7 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
 
       {isOpen && (
         <div
-          className="fixed bottom-24 left-4 z-50 w-80 sm:w-96 rounded-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300"
+          className="fixed bottom-44 left-4 z-50 w-80 sm:w-96 rounded-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 lg:bottom-24"
           style={{
             boxShadow: '0 16px 48px rgba(26,74,94,0.25), 0 4px 16px rgba(0,0,0,0.1)',
             border: '1px solid rgba(255,255,255,0.8)',
@@ -347,7 +347,7 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
 
       <button
         onClick={() => setIsOpen((o) => !o)}
-        className="fixed bottom-6 left-4 z-50 w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-300 active:scale-90 hover:scale-105"
+        className="fixed bottom-24 left-4 z-50 w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-300 active:scale-90 hover:scale-105 lg:bottom-6"
         style={{
           background: isOpen
             ? 'linear-gradient(135deg, #374151 0%, #1f2937 100%)'
