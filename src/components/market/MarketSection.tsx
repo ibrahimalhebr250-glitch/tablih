@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, SlidersHorizontal, X, Package, ShoppingBag, RefreshCw, ChevronDown } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Package, ShoppingBag, RefreshCw, ChevronDown, MapPin, Star, Layers, ArrowLeftRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import SupplyDetailSheet from './SupplyDetailSheet';
 import DemandDetailSheet from './DemandDetailSheet';
@@ -40,12 +40,26 @@ interface DemandCard {
 
 type MarketItem = SupplyCard | DemandCard;
 
-const QUALITY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  A: { bg: '#dcfce7', text: '#15803d', label: 'درجة A' },
-  B: { bg: '#dbeafe', text: '#1d4ed8', label: 'درجة B' },
-  C: { bg: '#fff7ed', text: '#c2410c', label: 'درجة C' },
-  Scrap: { bg: '#f3f4f6', text: '#6b7280', label: 'خردة' },
+const QUALITY_COLORS: Record<string, { bg: string; text: string; label: string; accent: string }> = {
+  A: { bg: '#dcfce7', text: '#15803d', label: 'درجة A', accent: '#16a34a' },
+  B: { bg: '#dbeafe', text: '#1d4ed8', label: 'درجة B', accent: '#2563eb' },
+  C: { bg: '#fff7ed', text: '#c2410c', label: 'درجة C', accent: '#ea580c' },
+  Scrap: { bg: '#f3f4f6', text: '#6b7280', label: 'خردة', accent: '#9ca3af' },
 };
+
+const PALLET_TYPE_ICONS: Record<string, string> = {
+  'بلاستيك': '🔵',
+  'خشب': '🟤',
+  'معدن': '⚙️',
+  'كارتون': '📦',
+};
+
+const DEMAND_GRADIENTS = [
+  { from: '#0f172a', to: '#1e3a5f', accent: '#3b82f6' },
+  { from: '#1a1a2e', to: '#16213e', accent: '#06b6d4' },
+  { from: '#0d1b2a', to: '#1b3a4b', accent: '#0ea5e9' },
+  { from: '#111827', to: '#1e2d3d', accent: '#38bdf8' },
+];
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -77,106 +91,179 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
         <div className="relative w-full" style={{ aspectRatio: '16/9', background: '#f3f4f6' }}>
           <img src={img} alt="" className="w-full h-full object-cover" />
           <div
-            className="absolute top-2 right-2 px-2.5 py-1 rounded-full text-[11px] font-black"
+            className="absolute inset-0"
+            style={{ background: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.35) 100%)' }}
+          />
+          <div
+            className="absolute top-2 right-2 px-2.5 py-1 rounded-full text-[10px] font-black"
+            style={{ background: 'rgba(255,255,255,0.92)', color: qc.text, backdropFilter: 'blur(4px)' }}
+          >
+            {qc.label}
+          </div>
+          {card.price_per_pallet > 0 && (
+            <div
+              className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
+              style={{ background: 'rgba(0,0,0,0.55)', color: 'white', backdropFilter: 'blur(4px)' }}
+            >
+              {card.price_per_pallet} ر.س
+            </div>
+          )}
+        </div>
+      ) : (
+        <div
+          className="w-full relative flex items-center justify-center overflow-hidden"
+          style={{ aspectRatio: '16/9', background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' }}
+        >
+          <div className="absolute inset-0 flex items-center justify-center opacity-[0.04]">
+            <Package className="w-24 h-24 text-gray-900" />
+          </div>
+          <div className="flex flex-col items-center justify-center gap-1 z-10">
+            <div
+              className="w-10 h-10 rounded-2xl flex items-center justify-center"
+              style={{ background: qc.bg, border: `2px solid ${qc.accent}33` }}
+            >
+              <Package className="w-5 h-5" style={{ color: qc.accent }} />
+            </div>
+            <span className="text-[11px] font-bold" style={{ color: qc.accent }}>عرض متاح</span>
+          </div>
+          <div
+            className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black"
             style={{ background: qc.bg, color: qc.text }}
           >
             {qc.label}
           </div>
         </div>
-      ) : (
-        <div
-          className="w-full flex items-center justify-center"
-          style={{ aspectRatio: '16/9', background: '#f8fafc' }}
-        >
-          <Package className="w-10 h-10 text-gray-300" />
-        </div>
       )}
       <div className="p-3">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex-1">
-            <p className="text-[14px] font-black text-gray-900 leading-tight">{card.pallet_type}</p>
-            <p className="text-[12px] text-gray-500 mt-0.5">{card.size} · {card.city}</p>
+        <p className="text-[13px] font-black text-gray-900 leading-tight truncate">{card.pallet_type}</p>
+        <div className="flex items-center justify-between mt-1.5">
+          <div className="flex items-center gap-1">
+            <MapPin className="w-2.5 h-2.5 flex-shrink-0 text-gray-400" />
+            <span className="text-[11px] text-gray-500 truncate">{card.city}</span>
           </div>
-          {!img && (
-            <span
-              className="px-2 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0"
-              style={{ background: qc.bg, color: qc.text }}
-            >
-              {qc.label}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] text-gray-400">{timeAgo(card.created_at)}</span>
-          <div className="flex items-center gap-1.5">
-            <span
-              className="px-2 py-0.5 rounded-lg text-[11px] font-black"
-              style={{ background: '#f0fdf4', color: '#15803d' }}
-            >
-              {card.available_quantity} طبليه
-            </span>
-            {card.price_per_pallet > 0 && (
-              <span
-                className="px-2 py-0.5 rounded-lg text-[11px] font-black"
-                style={{ background: '#eff6ff', color: '#1d4ed8' }}
-              >
-                {card.price_per_pallet} ر.س
-              </span>
-            )}
-          </div>
+          <span
+            className="px-2 py-0.5 rounded-lg text-[10px] font-black flex-shrink-0"
+            style={{ background: '#f0fdf4', color: '#15803d' }}
+          >
+            {card.available_quantity.toLocaleString()} طبليه
+          </span>
         </div>
       </div>
     </button>
   );
 }
 
-function DemandCardItem({ card, onClick }: { card: DemandCard; onClick: () => void }) {
+function DemandCardItem({ card, onClick, index = 0 }: { card: DemandCard; onClick: () => void; index?: number }) {
   const qc = QUALITY_COLORS[card.quality] || QUALITY_COLORS['C'];
+  const gradient = DEMAND_GRADIENTS[index % DEMAND_GRADIENTS.length];
+  const flexTags = [
+    card.accept_close_quality && { label: 'جودة مرنة', icon: <Star className="w-2.5 h-2.5" /> },
+    card.accept_close_city && { label: 'مدينة مجاورة', icon: <MapPin className="w-2.5 h-2.5" /> },
+    card.accept_partial_delivery && { label: 'جزئي', icon: <Layers className="w-2.5 h-2.5" /> },
+  ].filter(Boolean) as { label: string; icon: JSX.Element }[];
 
   return (
     <button
       onClick={onClick}
-      className="w-full text-right transition-all active:scale-[0.98] hover:shadow-md"
+      className="w-full text-right transition-all active:scale-[0.97] group"
       style={{
-        background: 'white',
         borderRadius: 20,
-        border: '1.5px solid rgba(0,0,0,0.07)',
         overflow: 'hidden',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+        border: '1px solid rgba(255,255,255,0.08)',
       }}
     >
       <div
-        className="w-full flex items-center justify-center relative"
-        style={{ height: 100, background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)' }}
+        className="relative w-full"
+        style={{
+          background: `linear-gradient(145deg, ${gradient.from} 0%, ${gradient.to} 100%)`,
+          aspectRatio: '16/9',
+          overflow: 'hidden',
+        }}
       >
-        <ShoppingBag className="w-10 h-10" style={{ color: '#0369a1' }} />
         <div
-          className="absolute top-2 right-2 px-2.5 py-1 rounded-full text-[11px] font-black"
-          style={{ background: '#dbeafe', color: '#1d4ed8' }}
-        >
-          طلب شراء
-        </div>
-      </div>
-      <div className="p-3">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex-1">
-            <p className="text-[14px] font-black text-gray-900 leading-tight">{card.pallet_type}</p>
-            <p className="text-[12px] text-gray-500 mt-0.5">{card.size} · {card.city}</p>
-          </div>
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(circle at 80% 20%, ${gradient.accent}22 0%, transparent 60%)`,
+          }}
+        />
+        <div
+          className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full opacity-10"
+          style={{ background: gradient.accent }}
+        />
+        <div
+          className="absolute -top-6 -right-6 w-24 h-24 rounded-full opacity-5"
+          style={{ background: gradient.accent }}
+        />
+
+        <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
           <span
-            className="px-2 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0"
-            style={{ background: qc.bg, color: qc.text }}
+            className="px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1"
+            style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}
           >
-            {qc.label}
+            <ShoppingBag className="w-2.5 h-2.5" />
+            طلب شراء
           </span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] text-gray-400">{timeAgo(card.created_at)}</span>
-          <span
-            className="px-2 py-0.5 rounded-lg text-[11px] font-black"
-            style={{ background: '#f0fdf4', color: '#15803d' }}
+
+        <div
+          className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[10px] font-black"
+          style={{ background: qc.bg, color: qc.text }}
+        >
+          {qc.label}
+        </div>
+
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 pb-2">
+          <div
+            className="w-11 h-11 rounded-2xl flex items-center justify-center"
+            style={{
+              background: `linear-gradient(135deg, ${gradient.accent}33, ${gradient.accent}11)`,
+              border: `1.5px solid ${gradient.accent}44`,
+              backdropFilter: 'blur(4px)',
+            }}
           >
-            {card.quantity} طبليه
+            <ArrowLeftRight className="w-5 h-5" style={{ color: gradient.accent }} />
+          </div>
+          <span className="text-[18px] font-black text-white leading-tight drop-shadow-sm">
+            {card.quantity.toLocaleString()}
+          </span>
+          <span className="text-[10px] font-semibold" style={{ color: `${gradient.accent}cc` }}>
+            طبليه مطلوبة
+          </span>
+        </div>
+
+        {flexTags.length > 0 && (
+          <div className="absolute bottom-2 right-2 left-2 flex gap-1 flex-wrap justify-end">
+            {flexTags.slice(0, 2).map((tag, i) => (
+              <span
+                key={i}
+                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.15)' }}
+              >
+                {tag.icon}
+                {tag.label}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div
+        className="p-3"
+        style={{
+          background: `linear-gradient(180deg, ${gradient.to}f0 0%, ${gradient.from} 100%)`,
+        }}
+      >
+        <p className="text-[13px] font-black text-white leading-tight truncate">{card.pallet_type}</p>
+        <div className="flex items-center justify-between mt-1.5">
+          <div className="flex items-center gap-1">
+            <MapPin className="w-2.5 h-2.5 flex-shrink-0" style={{ color: `${gradient.accent}bb` }} />
+            <span className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.55)' }}>
+              {card.city}
+            </span>
+          </div>
+          <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            {timeAgo(card.created_at)}
           </span>
         </div>
       </div>
@@ -523,11 +610,11 @@ export default function MarketSection({
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            {filtered.map((item) =>
+            {filtered.map((item, idx) =>
               item.kind === 'supply' ? (
                 <SupplyCardItem key={item.id} card={item as SupplyCard} onClick={() => handleSupplyClick(item as SupplyCard)} />
               ) : (
-                <DemandCardItem key={item.id} card={item as DemandCard} onClick={() => handleDemandClick(item as DemandCard)} />
+                <DemandCardItem key={item.id} card={item as DemandCard} onClick={() => handleDemandClick(item as DemandCard)} index={idx} />
               )
             )}
           </div>
