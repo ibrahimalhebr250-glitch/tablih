@@ -1,4 +1,5 @@
-import { Plus, ClipboardList, Warehouse, ShoppingBag, ChevronLeft } from 'lucide-react';
+import { Warehouse, ShoppingBag, ChevronLeft } from 'lucide-react';
+import { useTranslation } from '../lib/i18n';
 
 interface Props {
   onCreateOrder: () => void;
@@ -6,6 +7,8 @@ interface Props {
 }
 
 export default function QuickActions({ onCreateOrder, onAddInventory }: Props) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex gap-3 px-4 lg:px-5 mt-5">
       <button
@@ -20,8 +23,8 @@ export default function QuickActions({ onCreateOrder, onAddInventory }: Props) {
             <Warehouse className="w-5 h-5 text-white" />
           </div>
           <div className="text-right flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-[#1a3a4a]">إضافة مخزون</p>
-            <p className="text-[10px] text-[#7a9aab] mt-0.5">سجّل طبلياتك وتلقى عروض فورية</p>
+            <p className="text-[13px] font-bold text-[#1a3a4a]">{t('quickActions.addInventoryTitle')}</p>
+            <p className="text-[10px] text-[#7a9aab] mt-0.5">{t('quickActions.addInventoryDesc')}</p>
           </div>
           <ChevronLeft className="w-4 h-4 text-[#b0c8d8] group-hover:text-[#1E88E5] group-hover:-translate-x-0.5 transition-all flex-shrink-0" />
         </div>
@@ -39,8 +42,8 @@ export default function QuickActions({ onCreateOrder, onAddInventory }: Props) {
             <ShoppingBag className="w-5 h-5 text-white" />
           </div>
           <div className="text-right flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-[#1a3a4a]">إنشاء طلب</p>
-            <p className="text-[10px] text-[#7a9aab] mt-0.5">حدد احتياجك ونطابقك بالمورد</p>
+            <p className="text-[13px] font-bold text-[#1a3a4a]">{t('quickActions.createOrderTitle')}</p>
+            <p className="text-[10px] text-[#7a9aab] mt-0.5">{t('quickActions.createOrderDesc')}</p>
           </div>
           <ChevronLeft className="w-4 h-4 text-[#b0c8d8] group-hover:text-[#D97706] group-hover:-translate-x-0.5 transition-all flex-shrink-0" />
         </div>

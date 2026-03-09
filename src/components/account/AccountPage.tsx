@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { AppSession } from '../../types/session';
 import { supabase } from '../../lib/supabase';
+import { useTranslation } from '../../lib/i18n';
 import { getTrustConfig } from '../shared/TrustRatingBadge';
 import AccountSummaryCards from './AccountSummaryCards';
 import CloudWarehouseTab from './tabs/CloudWarehouseTab';
@@ -41,15 +42,16 @@ interface Props {
   initialTab?: AccountTab;
 }
 
-const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Cloud }[] = [
-  { key: 'warehouse', label: 'مستودعي', icon: Cloud },
-  { key: 'deals', label: 'الصفقات', icon: Handshake },
-  { key: 'orders', label: 'طلباتي', icon: ClipboardList },
-  { key: 'settings', label: 'الإعدادات', icon: Settings },
-];
-
 export default function AccountPage({ session, onClose, onAddInventory, onCreateOrder, onLogout, initialTab }: Props) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<AccountTab>(initialTab || 'warehouse');
+
+  const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Cloud }[] = [
+    { key: 'warehouse', label: t('account.myWarehouse'), icon: Cloud },
+    { key: 'deals', label: t('account.deals'), icon: Handshake },
+    { key: 'orders', label: t('account.myOrders'), icon: ClipboardList },
+    { key: 'settings', label: t('account.settings'), icon: Settings },
+  ];
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [showEditSheet, setShowEditSheet] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -62,8 +64,8 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
 
   const isCompany = localSession.profile.user_type === 'company';
   const displayName = isCompany
-    ? (localSession.profile.company_name || 'مستخدم')
-    : (localSession.profile.display_name || 'مستخدم');
+    ? (localSession.profile.company_name || t('account.defaultUser'))
+    : (localSession.profile.display_name || t('account.defaultUser'));
   const initials = displayName.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const trustConfig = getTrustConfig(3);
   const TrustIcon = trustConfig.icon;
@@ -130,12 +132,12 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: '#FEF2F2' }}>
                 <LogOut className="w-8 h-8 text-[#dc2626]" />
               </div>
-              <h3 className="text-[17px] font-black text-[#1a3a4a]">تسجيل الخروج</h3>
-              <p className="text-[13px] text-[#7a9aab] leading-relaxed">هل تريد تسجيل الخروج من حسابك؟</p>
+              <h3 className="text-[17px] font-black text-[#1a3a4a]">{t('account.logoutConfirm')}</h3>
+              <p className="text-[13px] text-[#7a9aab] leading-relaxed">{t('account.logoutConfirmDesc')}</p>
             </div>
             <div className="flex gap-2 pt-1">
-              <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>إلغاء</button>
-              <button onClick={onLogout} className="flex-1 py-3 rounded-2xl text-[13px] font-bold text-white" style={{ background: 'linear-gradient(135deg, #dc2626, #ef4444)', boxShadow: '0 4px 12px rgba(220,38,38,0.3)' }}>تسجيل الخروج</button>
+              <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>{t('common.cancel')}</button>
+              <button onClick={onLogout} className="flex-1 py-3 rounded-2xl text-[13px] font-bold text-white" style={{ background: 'linear-gradient(135deg, #dc2626, #ef4444)', boxShadow: '0 4px 12px rgba(220,38,38,0.3)' }}>{t('account.logout')}</button>
             </div>
           </div>
         </div>
@@ -181,12 +183,12 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
               <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
                 {localSession.roles.includes('supplier') && (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{ background: 'rgba(34,197,94,0.2)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)' }}>
-                    <Warehouse className="w-3 h-3 inline-block ml-1" />مورّد
+                    <Warehouse className="w-3 h-3 inline-block ml-1" />{t('account.supplier')}
                   </span>
                 )}
                 {localSession.roles.includes('buyer') && (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{ background: 'rgba(59,130,246,0.2)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.3)' }}>
-                    <ShoppingCart className="w-3 h-3 inline-block ml-1" />مشتري
+                    <ShoppingCart className="w-3 h-3 inline-block ml-1" />{t('account.buyer')}
                   </span>
                 )}
                 {localSession.profile.city && (
@@ -201,10 +203,10 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
         <div className="px-4 pb-4 flex-shrink-0">
           <div className="grid grid-cols-2 gap-2">
             {[
-              { label: 'مخزوني', value: stats.inventory, unit: 'طبلية', color: '#22c55e' },
-              { label: 'مشترياتي', value: stats.purchases, unit: 'طلب', color: '#60a5fa' },
-              { label: 'صفقات نشطة', value: stats.activeDeals, unit: '', color: '#34d399' },
-              { label: 'طلباتي', value: stats.orders, unit: '', color: '#fbbf24' },
+              { label: t('inventory.myInventory'), value: stats.inventory, unit: t('market.pallets'), color: '#22c55e' },
+              { label: t('inventory.myPurchases'), value: stats.purchases, unit: '', color: '#60a5fa' },
+              { label: t('deals.title'), value: stats.activeDeals, unit: '', color: '#34d399' },
+              { label: t('orders.myOrders'), value: stats.orders, unit: '', color: '#fbbf24' },
             ].map(s => (
               <div key={s.label} className="rounded-xl p-2.5" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <p className="text-[10px] text-white/40 mb-0.5">{s.label}</p>
@@ -243,7 +245,7 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
         <div className="px-3 pb-5 flex-shrink-0">
           <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-[13px] font-bold text-red-300/70 hover:text-red-300 hover:bg-red-500/10 transition-all" dir="rtl">
             <LogOut className="w-4 h-4" />
-            تسجيل الخروج
+            {t('account.logout')}
           </button>
         </div>
       </aside>
@@ -261,7 +263,7 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
               <button onClick={onClose} className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center active:scale-95 transition-transform backdrop-blur-sm border border-white/10">
                 <ArrowRight className="w-5 h-5 text-white" />
               </button>
-              <h1 className="text-[16px] font-bold text-white">حسابي</h1>
+              <h1 className="text-[16px] font-bold text-white">{t('navigation.myAccount')}</h1>
               <button onClick={() => setShowLogoutConfirm(true)} className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-95 transition-transform backdrop-blur-sm border border-red-400/30" style={{ background: 'rgba(220,38,38,0.15)' }}>
                 <LogOut className="w-4 h-4 text-red-300" />
               </button>
@@ -289,12 +291,12 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   {localSession.roles.includes('supplier') && (
                     <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg" style={{ background: 'rgba(34,197,94,0.2)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)' }}>
-                      <Warehouse className="w-3 h-3 inline-block ml-1" />مورّد
+                      <Warehouse className="w-3 h-3 inline-block ml-1" />{t('account.supplier')}
                     </span>
                   )}
                   {localSession.roles.includes('buyer') && (
                     <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg" style={{ background: 'rgba(59,130,246,0.2)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.3)' }}>
-                      <ShoppingCart className="w-3 h-3 inline-block ml-1" />مشتري
+                      <ShoppingCart className="w-3 h-3 inline-block ml-1" />{t('account.buyer')}
                     </span>
                   )}
                   {localSession.profile.city && <span className="text-[10px] text-white/40">{localSession.profile.city}</span>}

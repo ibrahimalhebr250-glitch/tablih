@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Wifi, ChevronLeft, ChevronRight, ArrowLeftRight, TrendingUp, Shield } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useTranslation } from '../lib/i18n';
 
 interface HeroSlide {
   id: string;
@@ -10,37 +11,14 @@ interface HeroSlide {
   sort_order: number;
 }
 
-const DEFAULT_SLIDES: HeroSlide[] = [
-  {
-    id: 'default-1',
-    title: 'شبكة تدفق الطلبات',
-    subtitle: 'ربط الموردين بالمشترين عبر شبكة وطنية ذكية',
-    image_url: 'https://images.pexels.com/photos/1267338/pexels-photo-1267338.jpeg?auto=compress&cs=tinysrgb&w=1200&h=400&fit=crop',
-    sort_order: 1,
-  },
-  {
-    id: 'default-2',
-    title: 'مطابقة فورية وذكية',
-    subtitle: 'نظام ذكي متقدم يربط العروض بالطلبات في ثوانٍ',
-    image_url: 'https://images.pexels.com/photos/4481259/pexels-photo-4481259.jpeg?auto=compress&cs=tinysrgb&w=1200&h=400&fit=crop',
-    sort_order: 2,
-  },
-  {
-    id: 'default-3',
-    title: 'سوق موثوق وآمن',
-    subtitle: 'معاملات مضمونة وتقييمات شفافة لجميع الأطراف',
-    image_url: 'https://images.pexels.com/photos/906494/pexels-photo-906494.jpeg?auto=compress&cs=tinysrgb&w=1200&h=400&fit=crop',
-    sort_order: 3,
-  },
-];
-
-const SLIDE_ICONS = [
-  { icon: ArrowLeftRight, label: 'مطابقة فورية', color: 'text-blue-300' },
-  { icon: TrendingUp, label: 'سوق نشط', color: 'text-emerald-300' },
-  { icon: Shield, label: 'معاملات آمنة', color: 'text-amber-300' },
+const SLIDE_ICON_CONFIGS = [
+  { icon: ArrowLeftRight, colorClass: 'text-blue-300', key: 'instantMatching' as const },
+  { icon: TrendingUp, colorClass: 'text-emerald-300', key: 'activeMarket' as const },
+  { icon: Shield, colorClass: 'text-amber-300', key: 'secureTransactions' as const },
 ];
 
 function useLiveTime() {
+  const { t } = useTranslation();
   const [time, setTime] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 60_000);
@@ -48,13 +26,40 @@ function useLiveTime() {
   }, []);
   const h = time.getHours();
   const m = time.getMinutes().toString().padStart(2, '0');
-  const period = h < 12 ? 'ص' : 'م';
+  const period = h < 12 ? t('time.am') : t('time.pm');
   const h12 = h % 12 || 12;
   return `${h12}:${m} ${period}`;
 }
 
 function useHeroSlides() {
-  const [slides, setSlides] = useState<HeroSlide[]>(DEFAULT_SLIDES);
+  const { t, language } = useTranslation();
+
+  const getDefaultSlides = (): HeroSlide[] => [
+    {
+      id: 'default-1',
+      title: t('hero.slide1Title'),
+      subtitle: t('hero.slide1Subtitle'),
+      image_url: 'https://images.pexels.com/photos/1267338/pexels-photo-1267338.jpeg?auto=compress&cs=tinysrgb&w=1200&h=400&fit=crop',
+      sort_order: 1,
+    },
+    {
+      id: 'default-2',
+      title: t('hero.slide2Title'),
+      subtitle: t('hero.slide2Subtitle'),
+      image_url: 'https://images.pexels.com/photos/4481259/pexels-photo-4481259.jpeg?auto=compress&cs=tinysrgb&w=1200&h=400&fit=crop',
+      sort_order: 2,
+    },
+    {
+      id: 'default-3',
+      title: t('hero.slide3Title'),
+      subtitle: t('hero.slide3Subtitle'),
+      image_url: 'https://images.pexels.com/photos/906494/pexels-photo-906494.jpeg?auto=compress&cs=tinysrgb&w=1200&h=400&fit=crop',
+      sort_order: 3,
+    },
+  ];
+
+  const [dbSlides, setDbSlides] = useState<HeroSlide[] | null>(null);
+  const slides = dbSlides ?? getDefaultSlides();
 
   useEffect(() => {
     supabase
@@ -63,11 +68,11 @@ function useHeroSlides() {
       .eq('is_active', true)
       .order('sort_order')
       .then(({ data }) => {
-        if (data && data.length > 0) setSlides(data);
+        if (data && data.length > 0) setDbSlides(data);
       });
   }, []);
 
-  return slides;
+  return { slides: dbSlides ? dbSlides : getDefaultSlides(), hasDbSlides: !!dbSlides, language };
 }
 
 interface Props {
@@ -75,8 +80,9 @@ interface Props {
 }
 
 export default function HeroSection({ desktop }: Props) {
+  const { t } = useTranslation();
   const time = useLiveTime();
-  const slides = useHeroSlides();
+  const { slides } = useHeroSlides();
   const [current, setCurrent] = useState(0);
   const [animDir, setAnimDir] = useState<'left' | 'right' | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -109,9 +115,8 @@ export default function HeroSection({ desktop }: Props) {
   }, [next, isPaused, slides.length]);
 
   const slide = slides[current];
-  const nextSlide = slides[(current + 1) % slides.length];
-  const icon = SLIDE_ICONS[current % SLIDE_ICONS.length];
-  const IconComp = icon.icon;
+  const iconConfig = SLIDE_ICON_CONFIGS[current % SLIDE_ICON_CONFIGS.length];
+  const IconComp = iconConfig.icon;
 
   if (desktop) {
     return (
@@ -155,16 +160,16 @@ export default function HeroSection({ desktop }: Props) {
                 style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.25)' }}
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-pulse" />
-                <span className="text-[11px] font-bold text-[#4ade80]">الشبكة متصلة</span>
+                <span className="text-[11px] font-bold text-[#4ade80]">{t('hero.networkConnected')}</span>
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                <IconComp className={`w-3.5 h-3.5 ${icon.color}`} />
-                <span className={`text-[10px] font-semibold ${icon.color}`}>{icon.label}</span>
+                <IconComp className={`w-3.5 h-3.5 ${iconConfig.colorClass}`} />
+                <span className={`text-[10px] font-semibold ${iconConfig.colorClass}`}>{t(`hero.${iconConfig.key}`)}</span>
               </div>
             </div>
 
             <div className="text-right">
-              <p className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.2em] mb-1.5">منصة تجارة الطبليات</p>
+              <p className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.2em] mb-1.5">{t('hero.palletPlatform')}</p>
               <h1 className="text-[28px] font-black text-white leading-tight" style={{ letterSpacing: '-0.5px' }}>
                 {slide.title}
               </h1>
@@ -270,7 +275,7 @@ export default function HeroSection({ desktop }: Props) {
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.2)' }}>
             <Wifi className="w-3 h-3 text-[#4ade80]" />
-            <span className="text-[10px] font-bold text-[#4ade80]">متصل</span>
+            <span className="text-[10px] font-bold text-[#4ade80]">{t('hero.connected')}</span>
           </div>
         </div>
 

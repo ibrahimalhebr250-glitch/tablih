@@ -137,6 +137,79 @@ export interface TranslationKeys {
     arabic: string;
     english: string;
   };
+  hero: {
+    networkConnected: string;
+    palletPlatform: string;
+    slide1Title: string;
+    slide1Subtitle: string;
+    slide2Title: string;
+    slide2Subtitle: string;
+    slide3Title: string;
+    slide3Subtitle: string;
+    instantMatching: string;
+    activeMarket: string;
+    secureTransactions: string;
+    connected: string;
+  };
+  quickActions: {
+    addInventoryTitle: string;
+    addInventoryDesc: string;
+    createOrderTitle: string;
+    createOrderDesc: string;
+  };
+  account: {
+    myWarehouse: string;
+    deals: string;
+    myOrders: string;
+    settings: string;
+    defaultUser: string;
+    logout: string;
+    logoutConfirm: string;
+    logoutConfirmDesc: string;
+    editProfile: string;
+    trustedSince: string;
+    supplier: string;
+    buyer: string;
+    company: string;
+    individual: string;
+  };
+  time: {
+    now: string;
+    minutesAgo: string;
+    hoursAgo: string;
+    daysAgo: string;
+    am: string;
+    pm: string;
+  };
+  market: {
+    purchaseRequest: string;
+    supplyOffer: string;
+    qualityA: string;
+    qualityB: string;
+    qualityC: string;
+    qualityScrap: string;
+    pallets: string;
+    flexible: string;
+    nearbyCity: string;
+    partial: string;
+  };
+  inventory: {
+    title: string;
+    addInventory: string;
+    myInventory: string;
+    available: string;
+    reserved: string;
+    sold: string;
+    description: string;
+    images: string;
+    pricePerPallet: string;
+    cloudWarehouse: string;
+    myPurchases: string;
+    step1: string;
+    step2: string;
+    step3: string;
+    step4: string;
+  };
 }
 
 const translations: Record<Language, TranslationKeys> = {
@@ -275,6 +348,79 @@ const translations: Record<Language, TranslationKeys> = {
       arabic: 'العربية',
       english: 'English',
     },
+    hero: {
+      networkConnected: 'الشبكة متصلة',
+      palletPlatform: 'منصة تجارة الطبليات',
+      slide1Title: 'شبكة تدفق الطلبات',
+      slide1Subtitle: 'ربط الموردين بالمشترين عبر شبكة وطنية ذكية',
+      slide2Title: 'مطابقة فورية وذكية',
+      slide2Subtitle: 'نظام ذكي متقدم يربط العروض بالطلبات في ثوانٍ',
+      slide3Title: 'سوق موثوق وآمن',
+      slide3Subtitle: 'معاملات مضمونة وتقييمات شفافة لجميع الأطراف',
+      instantMatching: 'مطابقة فورية',
+      activeMarket: 'سوق نشط',
+      secureTransactions: 'معاملات آمنة',
+      connected: 'متصل',
+    },
+    quickActions: {
+      addInventoryTitle: 'إضافة مخزون',
+      addInventoryDesc: 'سجّل طبلياتك وتلقى عروض فورية',
+      createOrderTitle: 'إنشاء طلب',
+      createOrderDesc: 'حدد احتياجك ونطابقك بالمورد',
+    },
+    account: {
+      myWarehouse: 'مستودعي',
+      deals: 'الصفقات',
+      myOrders: 'طلباتي',
+      settings: 'الإعدادات',
+      defaultUser: 'مستخدم',
+      logout: 'تسجيل الخروج',
+      logoutConfirm: 'تسجيل الخروج',
+      logoutConfirmDesc: 'هل تريد تسجيل الخروج من حسابك؟',
+      editProfile: 'تعديل الملف الشخصي',
+      trustedSince: 'عضو موثوق',
+      supplier: 'مورد',
+      buyer: 'مشتري',
+      company: 'شركة',
+      individual: 'فرد',
+    },
+    time: {
+      now: 'الآن',
+      minutesAgo: 'منذ {{count}} دقيقة',
+      hoursAgo: 'منذ {{count}} ساعة',
+      daysAgo: 'منذ {{count}} يوم',
+      am: 'ص',
+      pm: 'م',
+    },
+    market: {
+      purchaseRequest: 'طلب شراء',
+      supplyOffer: 'عرض توريد',
+      qualityA: 'درجة A',
+      qualityB: 'درجة B',
+      qualityC: 'درجة C',
+      qualityScrap: 'خردة',
+      pallets: 'طبلية',
+      flexible: 'جودة مرنة',
+      nearbyCity: 'مدينة مجاورة',
+      partial: 'جزئي',
+    },
+    inventory: {
+      title: 'المخزون',
+      addInventory: 'إضافة مخزون',
+      myInventory: 'مخزوني',
+      available: 'متاح',
+      reserved: 'محجوز',
+      sold: 'تم البيع',
+      description: 'الوصف',
+      images: 'الصور',
+      pricePerPallet: 'سعر الطبلية',
+      cloudWarehouse: 'المستودع السحابي',
+      myPurchases: 'مشترياتي',
+      step1: 'معلومات الطبلية',
+      step2: 'الكمية والمدينة',
+      step3: 'الصور والوصف',
+      step4: 'معاينة ونشر',
+    },
   },
   en: {
     common: {
@@ -410,6 +556,79 @@ const translations: Record<Language, TranslationKeys> = {
       switchLabel: 'Language',
       arabic: 'العربية',
       english: 'English',
+    },
+    hero: {
+      networkConnected: 'Network Connected',
+      palletPlatform: 'Pallet Trading Platform',
+      slide1Title: 'Order Flow Network',
+      slide1Subtitle: 'Connecting suppliers with buyers through a smart national network',
+      slide2Title: 'Instant Smart Matching',
+      slide2Subtitle: 'Advanced intelligent system connecting offers to orders in seconds',
+      slide3Title: 'Trusted & Secure Market',
+      slide3Subtitle: 'Guaranteed transactions and transparent ratings for all parties',
+      instantMatching: 'Instant Matching',
+      activeMarket: 'Active Market',
+      secureTransactions: 'Secure Transactions',
+      connected: 'Connected',
+    },
+    quickActions: {
+      addInventoryTitle: 'Add Inventory',
+      addInventoryDesc: 'Register your pallets and receive instant offers',
+      createOrderTitle: 'Create Order',
+      createOrderDesc: 'Specify your needs and match with a supplier',
+    },
+    account: {
+      myWarehouse: 'My Warehouse',
+      deals: 'Deals',
+      myOrders: 'My Orders',
+      settings: 'Settings',
+      defaultUser: 'User',
+      logout: 'Logout',
+      logoutConfirm: 'Logout',
+      logoutConfirmDesc: 'Are you sure you want to logout?',
+      editProfile: 'Edit Profile',
+      trustedSince: 'Trusted Member',
+      supplier: 'Supplier',
+      buyer: 'Buyer',
+      company: 'Company',
+      individual: 'Individual',
+    },
+    time: {
+      now: 'Now',
+      minutesAgo: '{{count}} min ago',
+      hoursAgo: '{{count}} hr ago',
+      daysAgo: '{{count}} days ago',
+      am: 'AM',
+      pm: 'PM',
+    },
+    market: {
+      purchaseRequest: 'Purchase Request',
+      supplyOffer: 'Supply Offer',
+      qualityA: 'Grade A',
+      qualityB: 'Grade B',
+      qualityC: 'Grade C',
+      qualityScrap: 'Scrap',
+      pallets: 'pallets',
+      flexible: 'Flexible Quality',
+      nearbyCity: 'Nearby City',
+      partial: 'Partial',
+    },
+    inventory: {
+      title: 'Inventory',
+      addInventory: 'Add Inventory',
+      myInventory: 'My Inventory',
+      available: 'Available',
+      reserved: 'Reserved',
+      sold: 'Sold',
+      description: 'Description',
+      images: 'Images',
+      pricePerPallet: 'Price Per Pallet',
+      cloudWarehouse: 'Cloud Warehouse',
+      myPurchases: 'My Purchases',
+      step1: 'Pallet Information',
+      step2: 'Quantity & City',
+      step3: 'Images & Description',
+      step4: 'Preview & Publish',
     },
   },
 };

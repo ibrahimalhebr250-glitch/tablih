@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, SlidersHorizontal, X, Package, ShoppingBag, RefreshCw, ChevronDown, MapPin, Star, Layers, ArrowLeftRight } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Package, ShoppingBag, RefreshCw, ChevronDown, MapPin, Star, Layers } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useTranslation } from '../../lib/i18n';
 import SupplyDetailSheet from './SupplyDetailSheet';
 import DemandDetailSheet from './DemandDetailSheet';
 import AuthPromptSheet from './AuthPromptSheet';
@@ -40,11 +41,11 @@ interface DemandCard {
 
 type MarketItem = SupplyCard | DemandCard;
 
-const QUALITY_COLORS: Record<string, { bg: string; text: string; label: string; accent: string }> = {
-  A: { bg: '#dcfce7', text: '#15803d', label: 'درجة A', accent: '#16a34a' },
-  B: { bg: '#dbeafe', text: '#1d4ed8', label: 'درجة B', accent: '#2563eb' },
-  C: { bg: '#fff7ed', text: '#c2410c', label: 'درجة C', accent: '#ea580c' },
-  Scrap: { bg: '#f3f4f6', text: '#6b7280', label: 'خردة', accent: '#9ca3af' },
+const QUALITY_BASE: Record<string, { bg: string; text: string; accent: string; key: string }> = {
+  A: { bg: '#dcfce7', text: '#15803d', accent: '#16a34a', key: 'qualityA' },
+  B: { bg: '#dbeafe', text: '#1d4ed8', accent: '#2563eb', key: 'qualityB' },
+  C: { bg: '#fff7ed', text: '#c2410c', accent: '#ea580c', key: 'qualityC' },
+  Scrap: { bg: '#f3f4f6', text: '#6b7280', accent: '#9ca3af', key: 'qualityScrap' },
 };
 
 const PALLET_TYPE_ICONS: Record<string, string> = {
@@ -61,18 +62,23 @@ const DEMAND_GRADIENTS = [
   { from: '#111827', to: '#1e2d3d', accent: '#38bdf8' },
 ];
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'الآن';
-  if (mins < 60) return `منذ ${mins} دقيقة`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `منذ ${hrs} ساعة`;
-  return `منذ ${Math.floor(hrs / 24)} يوم`;
+function useTimeAgo() {
+  const { t } = useTranslation();
+  return (dateStr: string): string => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return t('time.now');
+    if (mins < 60) return t('time.minutesAgo').replace('{{count}}', String(mins));
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return t('time.hoursAgo').replace('{{count}}', String(hrs));
+    return t('time.daysAgo').replace('{{count}}', String(Math.floor(hrs / 24)));
+  };
 }
 
 function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => void }) {
-  const qc = QUALITY_COLORS[card.quality] || QUALITY_COLORS['C'];
+  const { t } = useTranslation();
+  const qBase = QUALITY_BASE[card.quality] || QUALITY_BASE['C'];
+  const qc = { ...qBase, label: t(`market.${qBase.key}`) };
   const img = card.image_urls?.[0];
 
   return (
@@ -124,7 +130,7 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
             >
               <Package className="w-5 h-5" style={{ color: qc.accent }} />
             </div>
-            <span className="text-[11px] font-bold" style={{ color: qc.accent }}>عرض متاح</span>
+            <span className="text-[11px] font-bold" style={{ color: qc.accent }}>{t('marketplace.supply')}</span>
           </div>
           <div
             className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black"
@@ -145,7 +151,7 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
             className="px-2 py-0.5 rounded-lg text-[10px] font-black flex-shrink-0"
             style={{ background: '#f0fdf4', color: '#15803d' }}
           >
-            {card.available_quantity.toLocaleString()} طبليه
+            {card.available_quantity.toLocaleString()} {t('market.pallets')}
           </span>
         </div>
       </div>
@@ -154,12 +160,15 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
 }
 
 function DemandCardItem({ card, onClick, index = 0 }: { card: DemandCard; onClick: () => void; index?: number }) {
-  const qc = QUALITY_COLORS[card.quality] || QUALITY_COLORS['C'];
+  const { t } = useTranslation();
+  const timeAgo = useTimeAgo();
+  const qBase = QUALITY_BASE[card.quality] || QUALITY_BASE['C'];
+  const qc = { ...qBase, label: t(`market.${qBase.key}`) };
   const gradient = DEMAND_GRADIENTS[index % DEMAND_GRADIENTS.length];
   const flexTags = [
-    card.accept_close_quality && { label: 'جودة مرنة', icon: <Star className="w-2.5 h-2.5" /> },
-    card.accept_close_city && { label: 'مدينة مجاورة', icon: <MapPin className="w-2.5 h-2.5" /> },
-    card.accept_partial_delivery && { label: 'جزئي', icon: <Layers className="w-2.5 h-2.5" /> },
+    card.accept_close_quality && { label: t('market.flexible'), icon: <Star className="w-2.5 h-2.5" /> },
+    card.accept_close_city && { label: t('market.nearbyCity'), icon: <MapPin className="w-2.5 h-2.5" /> },
+    card.accept_partial_delivery && { label: t('market.partial'), icon: <Layers className="w-2.5 h-2.5" /> },
   ].filter(Boolean) as { label: string; icon: JSX.Element }[];
 
   return (
@@ -208,7 +217,7 @@ function DemandCardItem({ card, onClick, index = 0 }: { card: DemandCard; onClic
             }}
           >
             <ShoppingBag className="w-3 h-3 flex-shrink-0" />
-            <span>طلب شراء</span>
+            <span>{t('market.purchaseRequest')}</span>
           </span>
         </div>
 
@@ -242,7 +251,7 @@ function DemandCardItem({ card, onClick, index = 0 }: { card: DemandCard; onClic
               {card.quantity.toLocaleString()}
             </span>
             <span className="text-[10px] font-semibold tracking-wide" style={{ color: `${gradient.accent}dd` }}>
-              طبليه مطلوبة
+              {t('market.pallets')}
             </span>
           </div>
         </div>
@@ -286,6 +295,7 @@ function DemandCardItem({ card, onClick, index = 0 }: { card: DemandCard; onClic
           <span className="text-[10px] flex-shrink-0 mr-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
             {timeAgo(card.created_at)}
           </span>
+
         </div>
       </div>
     </button>
@@ -313,6 +323,7 @@ export default function MarketSection({
   onDetailSheetChange,
   onGoToDeals,
 }: MarketSectionProps) {
+  const { t } = useTranslation();
   const resolvedPhone = sessionPhone ?? (isAuthenticated && userPhone ? userPhone : null);
 
   const [items, setItems] = useState<MarketItem[]>([]);
@@ -473,7 +484,7 @@ export default function MarketSection({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ابحث عن نوع الطبلية أو المدينة..."
+              placeholder={t('marketplace.searchPlaceholder')}
               className="flex-1 text-[13px] bg-transparent outline-none text-gray-700 placeholder-gray-400"
             />
             {search && (
@@ -523,8 +534,8 @@ export default function MarketSection({
                   className="w-full text-[12px] py-2 pr-3 pl-7 rounded-xl appearance-none outline-none text-gray-700"
                   style={{ background: '#f8fafc', border: '1.5px solid rgba(0,0,0,0.08)' }}
                 >
-                  <option value="">كل الأنواع</option>
-                  {allPalletTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                  <option value="">{t('common.all')}</option>
+                  {allPalletTypes.map(pt => <option key={pt} value={pt}>{pt}</option>)}
                 </select>
                 <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
               </div>
@@ -535,7 +546,7 @@ export default function MarketSection({
                   className="w-full text-[12px] py-2 pr-3 pl-7 rounded-xl appearance-none outline-none text-gray-700"
                   style={{ background: '#f8fafc', border: '1.5px solid rgba(0,0,0,0.08)' }}
                 >
-                  <option value="">كل المدن</option>
+                  <option value="">{t('common.all')}</option>
                   {allCities.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
                 <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
@@ -547,8 +558,8 @@ export default function MarketSection({
                   className="w-full text-[12px] py-2 pr-3 pl-7 rounded-xl appearance-none outline-none text-gray-700"
                   style={{ background: '#f8fafc', border: '1.5px solid rgba(0,0,0,0.08)' }}
                 >
-                  <option value="">كل الجودات</option>
-                  {['A', 'B', 'C', 'Scrap'].map(q => <option key={q} value={q}>{QUALITY_COLORS[q]?.label || q}</option>)}
+                  <option value="">{t('common.all')}</option>
+                  {['A', 'B', 'C', 'Scrap'].map(q => <option key={q} value={q}>{t(`market.${QUALITY_BASE[q]?.key || 'qualityC'}`)}</option>)}
                 </select>
                 <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
               </div>
@@ -559,7 +570,7 @@ export default function MarketSection({
                 className="w-full py-1.5 rounded-xl text-[11px] font-bold text-red-500 transition-all"
                 style={{ background: '#fff1f2' }}
               >
-                مسح الفلاتر
+                {t('common.filter')} ✕
               </button>
             )}
           </div>
@@ -570,9 +581,9 @@ export default function MarketSection({
           style={{ background: 'rgba(0,0,0,0.06)' }}
         >
           {[
-            { key: 'all', label: 'الكل', count: items.length },
-            { key: 'supply', label: 'عروض', count: supplyCount },
-            { key: 'demand', label: 'طلبات', count: demandCount },
+            { key: 'all', label: t('common.all'), count: items.length },
+            { key: 'supply', label: t('marketplace.supply'), count: supplyCount },
+            { key: 'demand', label: t('marketplace.demand'), count: demandCount },
           ].map(({ key, label, count }) => (
             <button
               key={key}
@@ -626,8 +637,8 @@ export default function MarketSection({
             >
               <Package className="w-8 h-8 text-gray-300" />
             </div>
-            <p className="text-[15px] font-bold text-gray-500">لا توجد نتائج</p>
-            <p className="text-[12px] text-gray-400 mt-1">جرّب تغيير الفلاتر أو البحث</p>
+            <p className="text-[15px] font-bold text-gray-500">{t('marketplace.noResults')}</p>
+            <p className="text-[12px] text-gray-400 mt-1">{t('common.filter')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
