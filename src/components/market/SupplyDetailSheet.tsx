@@ -46,7 +46,6 @@ function timeAgo(dateStr: string): string {
 
 function GalleryImage({ url, onLoad, onError }: { url: string; onLoad: () => void; onError: () => void }) {
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
-
   return (
     <div className="relative w-full h-full">
       {status === 'loading' && (
@@ -80,18 +79,16 @@ function WelcomeMessageDialog({ card, onClose, onLogin }: {
 }) {
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-end justify-center"
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8"
       style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
       onClick={onClose}
     >
       <div
-        className="w-full rounded-t-3xl overflow-hidden"
+        className="w-full rounded-3xl overflow-hidden"
         style={{ maxWidth: 480, background: 'white' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="h-1 w-12 rounded-full mx-auto mt-3 mb-0" style={{ background: '#d1d5db' }} />
-
-        <div className="px-5 pt-4 pb-6 space-y-4" dir="rtl">
+        <div className="px-5 pt-5 pb-6 space-y-4" dir="rtl">
           <div className="flex items-start justify-between">
             <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
               <X className="w-3.5 h-3.5 text-gray-500" />
@@ -101,76 +98,39 @@ function WelcomeMessageDialog({ card, onClose, onLogin }: {
                 <p className="text-[15px] font-black text-[#1a3a4a]">رسالة من المورد</p>
                 <p className="text-[11px] text-[#7a9aab]">{card.pallet_type} — {card.city}</p>
               </div>
-              <div
-                className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #0f2535, #1a3d56)' }}
-              >
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #0f2535, #1a3d56)' }}>
                 <Handshake className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
-
-          <div
-            className="rounded-2xl p-4 space-y-2"
-            style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
-          >
+          <div className="rounded-2xl p-4 space-y-2" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}>
             <div className="flex items-start gap-2">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                style={{ background: 'linear-gradient(135deg, #0369A1, #0284C7)' }}
-              >
+              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'linear-gradient(135deg, #0369A1, #0284C7)' }}>
                 <span className="text-[10px] font-black text-white">م</span>
               </div>
-              <div
-                className="flex-1 rounded-2xl rounded-tr-none px-3.5 py-3"
-                style={{ background: 'white', border: '1px solid #e2edf5', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
-              >
-                <p className="text-[13px] text-[#1a3a4a] leading-relaxed">
-                  شكراً لتواصلك معي بخصوص هذا العرض.
-                </p>
-                <p className="text-[13px] text-[#1a3a4a] leading-relaxed mt-1">
-                  يسعدني إتمام الصفقة معك.
-                </p>
-                <p className="text-[13px] text-[#1a3a4a] leading-relaxed mt-1">
-                  يرجى تسجيل الدخول للمنصة لبدء طلب التفاوض.
-                </p>
+              <div className="flex-1 rounded-2xl rounded-tr-none px-3.5 py-3" style={{ background: 'white', border: '1px solid #e2edf5', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                <p className="text-[13px] text-[#1a3a4a] leading-relaxed">شكراً لتواصلك معي بخصوص هذا العرض.</p>
+                <p className="text-[13px] text-[#1a3a4a] leading-relaxed mt-1">يسعدني إتمام الصفقة معك.</p>
+                <p className="text-[13px] text-[#1a3a4a] leading-relaxed mt-1">يرجى تسجيل الدخول للمنصة لبدء طلب التفاوض.</p>
               </div>
             </div>
-
             <div className="flex items-center gap-2 px-1 pt-1">
               <div className="flex-1 h-px" style={{ background: '#e2edf5' }} />
               <span className="text-[10px] text-[#a0b5c0]">يتطلب تسجيل الدخول</span>
               <div className="flex-1 h-px" style={{ background: '#e2edf5' }} />
             </div>
           </div>
-
-          <div
-            className="rounded-2xl p-3.5 flex items-start gap-3"
-            style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}
-          >
+          <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
             <CheckCircle className="w-4 h-4 text-[#1d4ed8] flex-shrink-0 mt-0.5" />
             <p className="text-[11px] text-[#1e40af] leading-relaxed">
               بعد تسجيل الدخول يمكنك إرسال طلب تفاوض للمورد وستُنشأ الصفقة بعد موافقته في <span className="font-black">حسابي ← طلباتي</span>
             </p>
           </div>
-
-          <button
-            onClick={onLogin}
-            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97]"
-            style={{
-              background: 'linear-gradient(135deg, #0369A1, #0284C7)',
-              boxShadow: '0 6px 20px rgba(3,105,161,0.3)',
-            }}
-          >
+          <button onClick={onLogin} className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97]" style={{ background: 'linear-gradient(135deg, #0369A1, #0284C7)', boxShadow: '0 6px 20px rgba(3,105,161,0.3)' }}>
             <LogIn className="w-5 h-5" />
             تسجيل الدخول وإرسال طلب التفاوض
           </button>
-
-          <button
-            onClick={onClose}
-            className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]"
-            style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}
-          >
+          <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
             ليس الآن
           </button>
         </div>
@@ -206,10 +166,7 @@ function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisti
         p_buyer_message: message.trim() || null,
       });
       if (err) throw err;
-      if (data && !data.success) {
-        setError(data.error || 'حدث خطأ');
-        return;
-      }
+      if (data && !data.success) { setError(data.error || 'حدث خطأ'); return; }
       onSent();
     } catch {
       setError('حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.');
@@ -228,18 +185,16 @@ function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisti
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-end justify-center"
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8"
       style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
       onClick={onClose}
     >
       <div
-        className="w-full rounded-t-3xl overflow-hidden"
+        className="w-full rounded-3xl overflow-hidden"
         style={{ maxWidth: 480, background: 'white' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="h-1 w-12 rounded-full mx-auto mt-3" style={{ background: '#d1d5db' }} />
-
-        <div className="px-5 pt-4 pb-6 space-y-4" dir="rtl">
+        <div className="px-5 pt-5 pb-6 space-y-4" dir="rtl">
           <div className="flex items-start justify-between">
             <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
               <X className="w-3.5 h-3.5 text-gray-500" />
@@ -249,10 +204,7 @@ function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisti
                 <p className="text-[15px] font-black text-[#1a3a4a]">طلب التفاوض</p>
                 <p className="text-[11px] text-[#7a9aab]">{card.pallet_type} — {card.city}</p>
               </div>
-              <div
-                className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #059669, #10b981)' }}
-              >
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #059669, #10b981)' }}>
                 <Handshake className="w-5 h-5 text-white" />
               </div>
             </div>
@@ -260,10 +212,7 @@ function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisti
 
           {existingRequest ? (
             <div className="space-y-3">
-              <div
-                className="rounded-2xl p-4"
-                style={{ background: statusConfig[existingRequest.status as keyof typeof statusConfig]?.bg || '#f3f4f6', border: '1px solid rgba(0,0,0,0.06)' }}
-              >
+              <div className="rounded-2xl p-4" style={{ background: statusConfig[existingRequest.status as keyof typeof statusConfig]?.bg || '#f3f4f6', border: '1px solid rgba(0,0,0,0.06)' }}>
                 <div className="flex items-center gap-2 mb-2">
                   <span style={{ color: statusConfig[existingRequest.status as keyof typeof statusConfig]?.color || '#6b7280' }}>
                     {statusConfig[existingRequest.status as keyof typeof statusConfig]?.icon}
@@ -281,43 +230,18 @@ function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisti
                 )}
               </div>
               {existingRequest.status === 'pending' && (
-                <div
-                  className="rounded-2xl p-3.5 flex items-start gap-3"
-                  style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}
-                >
+                <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
                   <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-[#92400E] leading-relaxed">
-                    طلبك قيد الانتظار. ستصلك إشعار عند رد المورد. يمكنك متابعة الطلب في <span className="font-black">حسابي ← طلباتي</span>
-                  </p>
+                  <p className="text-[11px] text-[#92400E] leading-relaxed">طلبك قيد الانتظار. ستصلك إشعار عند رد المورد. يمكنك متابعة الطلب في <span className="font-black">حسابي ← طلباتي</span></p>
                 </div>
               )}
               {existingRequest.status === 'accepted' && (
-                <div
-                  className="rounded-2xl p-3.5 flex items-start gap-3"
-                  style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}
-                >
+                <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
                   <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-[#065F46] leading-relaxed">
-                    وافق المورد على طلبك! توجّه إلى <span className="font-black">حسابي ← صفقاتي</span> لمتابعة الصفقة.
-                  </p>
+                  <p className="text-[11px] text-[#065F46] leading-relaxed">وافق المورد على طلبك! توجّه إلى <span className="font-black">حسابي ← صفقاتي</span> لمتابعة الصفقة.</p>
                 </div>
               )}
-              {existingRequest.status === 'rejected' && (
-                <div
-                  className="rounded-2xl p-3.5 flex items-start gap-3"
-                  style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}
-                >
-                  <XCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-[#991B1B] leading-relaxed">
-                    رفض المورد طلبك. يمكنك البحث عن عروض أخرى في السوق.
-                  </p>
-                </div>
-              )}
-              <button
-                onClick={onClose}
-                className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]"
-                style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}
-              >
+              <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
                 إغلاق
               </button>
             </div>
@@ -341,93 +265,35 @@ function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisti
               </div>
 
               <div>
-                <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">
-                  الكمية المطلوبة
-                </label>
+                <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">الكمية المطلوبة</label>
                 <div className="flex items-center gap-2" dir="rtl">
-                  <button
-                    onClick={() => setQuantity(q => Math.max(1, q - 10))}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90"
-                    style={{ background: '#f0f6fa', border: '1.5px solid #e2edf5', color: '#1a3a4a' }}
-                  >-</button>
-                  <input
-                    type="number"
-                    value={quantity}
-                    onChange={(e) => {
-                      const v = parseInt(e.target.value) || 0;
-                      setQuantity(Math.min(card.available_quantity, Math.max(0, v)));
-                    }}
-                    className="flex-1 text-center text-[16px] font-black text-[#1a3a4a] rounded-xl py-2.5 outline-none"
-                    style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
-                    min={1}
-                    max={card.available_quantity}
-                  />
-                  <button
-                    onClick={() => setQuantity(q => Math.min(card.available_quantity, q + 10))}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90"
-                    style={{ background: '#f0f6fa', border: '1.5px solid #e2edf5', color: '#1a3a4a' }}
-                  >+</button>
+                  <button onClick={() => setQuantity(q => Math.max(1, q - 10))} className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90" style={{ background: '#f0f6fa', border: '1.5px solid #e2edf5', color: '#1a3a4a' }}>-</button>
+                  <input type="number" value={quantity} onChange={(e) => { const v = parseInt(e.target.value) || 0; setQuantity(Math.min(card.available_quantity, Math.max(0, v))); }} className="flex-1 text-center text-[16px] font-black text-[#1a3a4a] rounded-xl py-2.5 outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} min={1} max={card.available_quantity} />
+                  <button onClick={() => setQuantity(q => Math.min(card.available_quantity, q + 10))} className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90" style={{ background: '#f0f6fa', border: '1.5px solid #e2edf5', color: '#1a3a4a' }}>+</button>
                 </div>
                 <p className="text-[10px] text-[#a0b5c0] text-right mt-1">الحد الأقصى: {card.available_quantity} طبلية</p>
               </div>
 
               <div>
-                <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">
-                  رسالة للمورد (اختياري)
-                </label>
+                <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">رسالة للمورد (اختياري)</label>
                 <div className="relative">
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="أضف ملاحظاتك أو متطلباتك الخاصة..."
-                    rows={3}
-                    maxLength={300}
-                    dir="rtl"
-                    className="w-full rounded-2xl px-4 py-3 text-[13px] text-[#1a3a4a] resize-none outline-none"
-                    style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
-                  />
-                  <span className="absolute bottom-2 left-3 text-[10px] text-[#a0b5c0]">
-                    {message.length}/300
-                  </span>
+                  <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="أضف ملاحظاتك أو متطلباتك الخاصة..." rows={3} maxLength={300} dir="rtl" className="w-full rounded-2xl px-4 py-3 text-[13px] text-[#1a3a4a] resize-none outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} />
+                  <span className="absolute bottom-2 left-3 text-[10px] text-[#a0b5c0]">{message.length}/300</span>
                 </div>
               </div>
 
-              {error && (
-                <p className="text-[12px] text-red-600 text-center font-semibold">{error}</p>
-              )}
+              {error && <p className="text-[12px] text-red-600 text-center font-semibold">{error}</p>}
 
-              <div
-                className="rounded-2xl p-3.5 flex items-start gap-3"
-                style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}
-              >
+              <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
                 <CheckCircle className="w-4 h-4 text-[#1d4ed8] flex-shrink-0 mt-0.5" />
-                <p className="text-[11px] text-[#1e40af] leading-relaxed">
-                  سيتم إنشاء طلب وإرسال إشعار للمورد. يظهر في <span className="font-black">حسابي ← طلباتي</span>. بعد موافقة المورد تُنشأ الصفقة تلقائياً.
-                </p>
+                <p className="text-[11px] text-[#1e40af] leading-relaxed">سيتم إنشاء طلب وإرسال إشعار للمورد. يظهر في <span className="font-black">حسابي ← طلباتي</span>. بعد موافقة المورد تُنشأ الصفقة تلقائياً.</p>
               </div>
 
-              <button
-                onClick={handleSend}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-70"
-                style={{
-                  background: 'linear-gradient(135deg, #059669, #10b981)',
-                  boxShadow: '0 6px 20px rgba(5,150,105,0.3)',
-                }}
-              >
-                {loading ? (
-                  <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                ) : (
-                  <Send className="w-5 h-5" />
-                )}
+              <button onClick={handleSend} disabled={loading} className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-70" style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 6px 20px rgba(5,150,105,0.3)' }}>
+                {loading ? <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Send className="w-5 h-5" />}
                 {loading ? 'جاري إنشاء الطلب...' : 'إرسال طلب التفاوض'}
               </button>
-
-              <button
-                onClick={onClose}
-                className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]"
-                style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}
-              >
+              <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
                 إلغاء
               </button>
             </div>
@@ -459,15 +325,8 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, buye
 
   const isSelf = isAuthenticated && buyerPhone === card.phone;
 
-  useEffect(() => {
-    loadRatingSummary();
-  }, [card.phone]);
-
-  useEffect(() => {
-    if (isAuthenticated && buyerPhone && !isSelf) {
-      loadExistingRequest();
-    }
-  }, [isAuthenticated, buyerPhone, card.id]);
+  useEffect(() => { loadRatingSummary(); }, [card.phone]);
+  useEffect(() => { if (isAuthenticated && buyerPhone && !isSelf) loadExistingRequest(); }, [isAuthenticated, buyerPhone, card.id]);
 
   const loadRatingSummary = async () => {
     try {
@@ -498,21 +357,14 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, buye
   const goPrev = () => setImgIndex((i) => (i - 1 + card.image_urls.length) % card.image_urls.length);
 
   const handleFavorite = () => {
-    if (!isAuthenticated) {
-      onShowAuthPrompt();
-    } else {
-      setIsFavorited(!isFavorited);
-    }
+    if (!isAuthenticated) onShowAuthPrompt();
+    else setIsFavorited(!isFavorited);
   };
 
   const handleStartDeal = () => {
-    if (!isAuthenticated) {
-      setShowWelcomeMessage(true);
-    } else if (isSelf) {
-      return;
-    } else {
-      setShowNegotiationDialog(true);
-    }
+    if (!isAuthenticated) setShowWelcomeMessage(true);
+    else if (isSelf) return;
+    else setShowNegotiationDialog(true);
   };
 
   const handleLoginFromWelcome = () => {
@@ -551,358 +403,259 @@ export default function SupplyDetailSheet({ card, onClose, isAuthenticated, buye
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
       style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
       onClick={onClose}
     >
+      {/* Desktop: centered card, Mobile: bottom sheet */}
       <div
-        className="mt-auto rounded-t-3xl overflow-hidden flex flex-col"
-        style={{ background: 'white', maxHeight: '94vh' }}
+        className="w-full md:rounded-3xl rounded-t-3xl overflow-hidden flex flex-col md:shadow-2xl"
+        style={{ background: 'white', maxHeight: '94vh', maxWidth: 780 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex-shrink-0 h-1 w-12 rounded-full mx-auto mt-3 mb-1" style={{ background: '#d1d5db' }} />
+        <div className="flex-shrink-0 h-1 w-12 rounded-full mx-auto mt-3 mb-1 md:hidden" style={{ background: '#d1d5db' }} />
 
-        <div className="overflow-y-auto flex-1 pb-4">
-          {hasImages ? (
-            <div className="relative w-full" style={{ aspectRatio: '4/3', background: '#0a1a24' }}>
-              <GalleryImage
-                key={card.image_urls[imgIndex]}
-                url={card.image_urls[imgIndex]}
-                onLoad={() => {}}
-                onError={() => {}}
-              />
+        {/* Desktop: close button in top-right */}
+        <div className="hidden md:flex items-center justify-between px-5 py-3 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center gap-2" dir="rtl">
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(21,128,61,0.1)', color: '#15803d' }}>عرض مورّد</span>
+            <h2 className="text-[16px] font-black text-[#1a3a4a]">{card.pallet_type}</h2>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
 
-              <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
-                <span
-                  className="text-[11px] font-bold px-2.5 py-1 rounded-full"
-                  style={{ background: 'rgba(21,128,61,0.85)', color: 'white', backdropFilter: 'blur(8px)' }}
-                >
-                  عرض مورّد
-                </span>
+        <div className="overflow-y-auto flex-1 pb-4 md:grid md:grid-cols-2 md:gap-0">
+          {/* Left col on desktop: image gallery */}
+          <div className="md:border-l md:border-gray-100 md:overflow-y-auto">
+            {hasImages ? (
+              <div className="relative w-full" style={{ aspectRatio: '4/3', background: '#0a1a24' }}>
+                <GalleryImage key={card.image_urls[imgIndex]} url={card.image_urls[imgIndex]} onLoad={() => {}} onError={() => {}} />
+                <div className="absolute top-3 right-3 flex items-center gap-2 z-10 md:hidden">
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(21,128,61,0.85)', color: 'white', backdropFilter: 'blur(8px)' }}>عرض مورّد</span>
+                </div>
+                {card.image_urls.length > 1 && (
+                  <>
+                    <button onClick={goPrev} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90 z-10" style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                      <ChevronLeft className="w-5 h-5 text-white" />
+                    </button>
+                    <button onClick={goNext} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90 z-10" style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                      <ChevronRight className="w-5 h-5 text-white" />
+                    </button>
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                      {card.image_urls.map((_, i) => (
+                        <button key={i} onClick={() => setImgIndex(i)} className="rounded-full transition-all duration-300" style={{ width: i === imgIndex ? 20 : 6, height: 6, background: i === imgIndex ? '#22c55e' : 'rgba(255,255,255,0.45)', boxShadow: i === imgIndex ? '0 0 8px rgba(34,197,94,0.5)' : 'none' }} />
+                      ))}
+                    </div>
+                    <div className="absolute bottom-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full z-10" style={{ background: 'rgba(0,0,0,0.5)', color: 'white', backdropFilter: 'blur(4px)' }}>
+                      {imgIndex + 1} / {card.image_urls.length}
+                    </div>
+                  </>
+                )}
               </div>
-
-              {card.image_urls.length > 1 && (
-                <>
-                  <button
-                    onClick={goPrev}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90 z-10"
-                    style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}
-                  >
-                    <ChevronLeft className="w-5 h-5 text-white" />
-                  </button>
-                  <button
-                    onClick={goNext}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90 z-10"
-                    style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}
-                  >
-                    <ChevronRight className="w-5 h-5 text-white" />
-                  </button>
-
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-                    {card.image_urls.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setImgIndex(i)}
-                        className="rounded-full transition-all duration-300"
-                        style={{
-                          width: i === imgIndex ? 20 : 6,
-                          height: 6,
-                          background: i === imgIndex ? '#22c55e' : 'rgba(255,255,255,0.45)',
-                          boxShadow: i === imgIndex ? '0 0 8px rgba(34,197,94,0.5)' : 'none',
-                        }}
-                      />
-                    ))}
-                  </div>
-
-                  <div
-                    className="absolute bottom-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full z-10"
-                    style={{ background: 'rgba(0,0,0,0.5)', color: 'white', backdropFilter: 'blur(4px)' }}
-                  >
-                    {imgIndex + 1} / {card.image_urls.length}
-                  </div>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="relative">
-              <div
-                className="w-full flex flex-col items-center justify-center gap-3"
-                style={{ aspectRatio: '4/3', background: 'linear-gradient(145deg, #E8F5E9 0%, #C8E6C9 100%)' }}
-              >
-                <Warehouse className="w-14 h-14 text-green-300/70" />
-                <span className="text-[13px] font-semibold text-green-400/80">لا توجد صور</span>
+            ) : (
+              <div className="relative">
+                <div className="w-full flex flex-col items-center justify-center gap-3" style={{ aspectRatio: '4/3', background: 'linear-gradient(145deg, #E8F5E9 0%, #C8E6C9 100%)' }}>
+                  <Warehouse className="w-14 h-14 text-green-300/70" />
+                  <span className="text-[13px] font-semibold text-green-400/80">لا توجد صور</span>
+                </div>
+                <span className="absolute top-3 right-3 text-[11px] font-bold px-2.5 py-1 rounded-full md:hidden" style={{ background: 'rgba(21,128,61,0.85)', color: 'white' }}>عرض مورّد</span>
               </div>
-              <span
-                className="absolute top-3 right-3 text-[11px] font-bold px-2.5 py-1 rounded-full"
-                style={{ background: 'rgba(21,128,61,0.85)', color: 'white' }}
-              >
-                عرض مورّد
-              </span>
-            </div>
-          )}
+            )}
 
-          {hasImages && card.image_urls.length > 1 && (
-            <div className="flex gap-2 px-4 mt-3 overflow-x-auto pb-1">
-              {card.image_urls.map((url, i) => (
-                <button
-                  key={i}
-                  onClick={() => setImgIndex(i)}
-                  className="flex-shrink-0 rounded-xl overflow-hidden transition-all duration-200"
-                  style={{
-                    width: 56,
-                    height: 56,
-                    border: i === imgIndex ? '2px solid #22c55e' : '2px solid transparent',
-                    opacity: i === imgIndex ? 1 : 0.5,
-                    boxShadow: i === imgIndex ? '0 0 0 2px rgba(34,197,94,0.2)' : 'none',
-                  }}
-                >
-                  <img src={url} alt="" loading="lazy" className="w-full h-full object-cover" />
+            {hasImages && card.image_urls.length > 1 && (
+              <div className="flex gap-2 px-4 mt-3 overflow-x-auto pb-1">
+                {card.image_urls.map((url, i) => (
+                  <button key={i} onClick={() => setImgIndex(i)} className="flex-shrink-0 rounded-xl overflow-hidden transition-all duration-200" style={{ width: 56, height: 56, border: i === imgIndex ? '2px solid #22c55e' : '2px solid transparent', opacity: i === imgIndex ? 1 : 0.5, boxShadow: i === imgIndex ? '0 0 0 2px rgba(34,197,94,0.2)' : 'none' }}>
+                    <img src={url} alt="" loading="lazy" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Desktop action buttons in left col */}
+            <div className="hidden md:block px-4 mt-4 pb-4 space-y-3">
+              <button
+                onClick={btnState.disabled ? undefined : handleStartDeal}
+                disabled={btnState.disabled}
+                className="w-full relative overflow-hidden group rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <div className="absolute inset-0 rounded-2xl" style={{ background: btnState.bg, boxShadow: '0 6px 20px rgba(5,150,105,0.3)' }} />
+                <div className="relative flex items-center justify-center gap-2.5 py-3.5">
+                  <Handshake className="w-5 h-5" style={{ color: btnState.color }} strokeWidth={2.5} />
+                  <span className="text-[14px] font-black" style={{ color: btnState.color }}>{btnState.label}</span>
+                </div>
+              </button>
+              <div className="grid grid-cols-3 gap-2">
+                <button onClick={onClose} className="flex flex-col items-center justify-center py-3 rounded-2xl transition-all hover:opacity-90 active:scale-95" style={{ background: 'linear-gradient(135deg, #1a4a5e, #2c5f73)', boxShadow: '0 4px 12px rgba(26,74,94,0.25)' }}>
+                  <Home className="w-5 h-5 text-white mb-1" />
+                  <span className="text-[11px] font-bold text-white">الرئيسية</span>
                 </button>
-              ))}
-            </div>
-          )}
-
-          <div className="px-5 mt-4">
-            <div className="flex items-center justify-between mb-1" dir="rtl">
-              <h2 className="text-[20px] font-black text-[#1a3a4a]">{card.pallet_type}</h2>
-              <span className="text-[11px] text-[#a0b5c0]">{timeAgo(card.created_at)}</span>
-            </div>
-
-            <div className="flex items-center gap-2 justify-end mb-4">
-              <span
-                className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg"
-                style={{ background: q.bg, color: q.text, border: `1px solid ${q.dot}25` }}
-              >
-                <span className="w-2 h-2 rounded-full" style={{ background: q.dot }} />
-                {q.label}
-              </span>
-              <span
-                className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg"
-                style={{ background: cond.bg, color: cond.color }}
-              >
-                <Wrench className="w-3 h-3" />
-                {cond.label}
-              </span>
-              {card.size && (
-                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg" style={{ background: '#f0f4f8', color: '#4a7a8a' }}>
-                  {card.size}
-                </span>
-              )}
+                <button onClick={() => setShowRatingDialog(true)} className="flex flex-col items-center justify-center py-3 rounded-2xl transition-all hover:opacity-90 active:scale-95" style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)', boxShadow: '0 4px 12px rgba(245,158,11,0.25)' }}>
+                  <Star className="w-5 h-5 text-white mb-1" />
+                  <span className="text-[11px] font-bold text-white">تقييم</span>
+                </button>
+                <button onClick={handleFavorite} className="flex flex-col items-center justify-center py-3 rounded-2xl transition-all hover:opacity-90 active:scale-95" style={{ background: isFavorited ? 'linear-gradient(135deg, #DC2626, #EF4444)' : 'linear-gradient(135deg, #ffffff, #f5f9fc)', color: isFavorited ? 'white' : '#1a4a5e', border: isFavorited ? 'none' : '1.5px solid rgba(0,0,0,0.08)', boxShadow: isFavorited ? '0 4px 12px rgba(220,38,38,0.3)' : '0 2px 8px rgba(0,0,0,0.08)' }}>
+                  <Heart className={`w-5 h-5 mb-1 ${isFavorited ? 'fill-white text-white' : ''}`} />
+                  <span className={`text-[11px] font-bold ${isFavorited ? 'text-white' : ''}`}>{isFavorited ? 'مفضل' : 'حفظ'}</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="px-5 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl p-3.5 text-right" style={{ background: '#f0f9f4', border: '1px solid rgba(21,128,61,0.08)' }}>
-                <p className="text-[10px] text-green-600/60 mb-1">الكمية المتاحة</p>
-                <div className="flex items-center justify-end gap-1.5">
-                  <span className="text-[22px] font-black text-[#15803d]">{card.available_quantity.toLocaleString()}</span>
-                  <Package className="w-4 h-4 text-green-500/50" />
-                </div>
-                <p className="text-[10px] text-green-600/50">طبلية</p>
+          {/* Right col on desktop / below on mobile: details */}
+          <div className="md:overflow-y-auto">
+            <div className="px-5 mt-4 md:mt-5">
+              <div className="flex items-center justify-between mb-1" dir="rtl">
+                <h2 className="text-[20px] font-black text-[#1a3a4a] md:hidden">{card.pallet_type}</h2>
+                <span className="text-[11px] text-[#a0b5c0]">{timeAgo(card.created_at)}</span>
               </div>
-
-              <div className="rounded-2xl p-3.5 text-right" style={{ background: '#f0f9f4', border: '1px solid rgba(21,128,61,0.08)' }}>
-                <p className="text-[10px] text-green-600/60 mb-1">السعر</p>
-                {card.price_per_pallet > 0 ? (
-                  <>
-                    <span className="text-[22px] font-black text-[#15803d]">{card.price_per_pallet.toLocaleString()}</span>
-                    <p className="text-[10px] text-green-600/50">ريال / طبلية</p>
-                  </>
-                ) : (
-                  <p className="text-[14px] font-semibold text-[#a0b5c0] mt-1">غير محدد</p>
+              <div className="flex items-center gap-2 justify-end mb-4" dir="rtl">
+                <span className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg" style={{ background: q.bg, color: q.text, border: `1px solid ${q.dot}25` }}>
+                  <span className="w-2 h-2 rounded-full" style={{ background: q.dot }} />
+                  {q.label}
+                </span>
+                <span className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg" style={{ background: cond.bg, color: cond.color }}>
+                  <Wrench className="w-3 h-3" />
+                  {cond.label}
+                </span>
+                {card.size && (
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg" style={{ background: '#f0f4f8', color: '#4a7a8a' }}>{card.size}</span>
                 )}
               </div>
             </div>
 
-            <div className="rounded-2xl overflow-hidden" style={{ background: '#f5f9fc', border: '1px solid rgba(0,0,0,0.04)' }}>
-              <div className="grid grid-cols-2 divide-x divide-gray-100" dir="rtl">
-                <div className="p-3 text-right">
-                  <p className="text-[10px] text-[#7a9aab] mb-0.5">المدينة</p>
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-green-500/60" />
-                    <span className="text-[13px] font-bold text-[#1a3a4a]">{card.city}</span>
+            <div className="px-5 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl p-3.5 text-right" style={{ background: '#f0f9f4', border: '1px solid rgba(21,128,61,0.08)' }}>
+                  <p className="text-[10px] text-green-600/60 mb-1">الكمية المتاحة</p>
+                  <div className="flex items-center justify-end gap-1.5">
+                    <span className="text-[22px] font-black text-[#15803d]">{card.available_quantity.toLocaleString()}</span>
+                    <Package className="w-4 h-4 text-green-500/50" />
                   </div>
+                  <p className="text-[10px] text-green-600/50">طبلية</p>
                 </div>
-                <div className="p-3 text-right">
-                  <p className="text-[10px] text-[#7a9aab] mb-0.5">المقاس</p>
-                  <span className="text-[13px] font-bold text-[#1a3a4a]">{card.size || '-'}</span>
+                <div className="rounded-2xl p-3.5 text-right" style={{ background: '#f0f9f4', border: '1px solid rgba(21,128,61,0.08)' }}>
+                  <p className="text-[10px] text-green-600/60 mb-1">السعر</p>
+                  {card.price_per_pallet > 0 ? (
+                    <>
+                      <span className="text-[22px] font-black text-[#15803d]">{card.price_per_pallet.toLocaleString()}</span>
+                      <p className="text-[10px] text-green-600/50">ريال / طبلية</p>
+                    </>
+                  ) : (
+                    <p className="text-[14px] font-semibold text-[#a0b5c0] mt-1">غير محدد</p>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <TrustRatingBadge rating={card.trust_rating ?? 3} size="md" showLabel={true} variant="detailed" />
-
-            {card.description && (
-              <div className="rounded-2xl p-3.5 text-right" style={{ background: '#f5f9fc', border: '1px solid rgba(0,0,0,0.04)' }}>
-                <p className="text-[11px] font-bold text-[#4a7a8a] mb-1.5">وصف العرض</p>
-                <p className="text-[13px] text-[#3a5a6a] leading-relaxed">{card.description}</p>
-              </div>
-            )}
-
-            {ratingSummary && ratingSummary.total_ratings > 0 && (
-              <div className="rounded-2xl p-3.5 text-right" style={{ background: '#fffbeb', border: '1px solid rgba(245,158,11,0.2)' }}>
-                <div className="flex items-center justify-end gap-2 mb-1">
-                  <div className="flex items-center gap-1">
-                    <span className="text-[16px] font-black text-amber-600">{ratingSummary.average_rating.toFixed(1)}</span>
-                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+              <div className="rounded-2xl overflow-hidden" style={{ background: '#f5f9fc', border: '1px solid rgba(0,0,0,0.04)' }}>
+                <div className="grid grid-cols-2 divide-x divide-gray-100" dir="rtl">
+                  <div className="p-3 text-right">
+                    <p className="text-[10px] text-[#7a9aab] mb-0.5">المدينة</p>
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-green-500/60" />
+                      <span className="text-[13px] font-bold text-[#1a3a4a]">{card.city}</span>
+                    </div>
+                  </div>
+                  <div className="p-3 text-right">
+                    <p className="text-[10px] text-[#7a9aab] mb-0.5">المقاس</p>
+                    <span className="text-[13px] font-bold text-[#1a3a4a]">{card.size || '-'}</span>
                   </div>
                 </div>
-                <p className="text-[11px] text-amber-600/70">
-                  {ratingSummary.total_ratings} تقييم من زوّار المنصة
+              </div>
+
+              <TrustRatingBadge rating={card.trust_rating ?? 3} size="md" showLabel={true} variant="detailed" />
+
+              {card.description && (
+                <div className="rounded-2xl p-3.5 text-right" style={{ background: '#f5f9fc', border: '1px solid rgba(0,0,0,0.04)' }}>
+                  <p className="text-[11px] font-bold text-[#4a7a8a] mb-1.5">وصف العرض</p>
+                  <p className="text-[13px] text-[#3a5a6a] leading-relaxed">{card.description}</p>
+                </div>
+              )}
+
+              {ratingSummary && ratingSummary.total_ratings > 0 && (
+                <div className="rounded-2xl p-3.5 text-right" style={{ background: '#fffbeb', border: '1px solid rgba(245,158,11,0.2)' }}>
+                  <div className="flex items-center justify-end gap-2 mb-1">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[16px] font-black text-amber-600">{ratingSummary.average_rating.toFixed(1)}</span>
+                      <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-amber-600/70">{ratingSummary.total_ratings} تقييم من زوّار المنصة</p>
+                </div>
+              )}
+
+              {isAuthenticated && !isSelf && (existingRequest || requestSent) && (
+                <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#ECFDF5' : '#FFFBEB', border: `1px solid ${existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#A7F3D0' : '#FDE68A'}` }} dir="rtl">
+                  <MessageSquare className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#059669' : '#b45309' }} />
+                  <div>
+                    <p className="text-[12px] font-black" style={{ color: existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#059669' : '#b45309' }}>
+                      {existingRequest?.status === 'pending' && 'طلب تفاوض مرسل — بانتظار رد المورد'}
+                      {(existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created') && 'وافق المورد! الصفقة جارية'}
+                      {existingRequest?.status === 'rejected' && 'رفض المورد طلبك'}
+                      {requestSent && !existingRequest && 'تم إرسال طلب التفاوض'}
+                    </p>
+                    <p className="text-[10px] mt-0.5" style={{ color: existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#065F46' : '#92400E' }}>تابع التفاصيل في حسابي ← طلباتي</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }} dir="rtl">
+                <CheckCircle className="w-4 h-4 text-[#b45309] flex-shrink-0 mt-0.5" />
+                <p className="text-[11px] text-[#92400E] leading-relaxed">
+                  التواصل مع المورد والاتفاق يتمان <span className="font-black">داخل المنصة فقط</span> لضمان حقوق الطرفين وحفظ سجل الصفقة.
                 </p>
               </div>
-            )}
-
-            {isAuthenticated && !isSelf && (existingRequest || requestSent) && (
-              <div
-                className="rounded-2xl p-3.5 flex items-start gap-3"
-                style={{
-                  background: existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#ECFDF5' : '#FFFBEB',
-                  border: `1px solid ${existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#A7F3D0' : '#FDE68A'}`,
-                }}
-                dir="rtl"
-              >
-                <MessageSquare className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#059669' : '#b45309' }} />
-                <div>
-                  <p className="text-[12px] font-black" style={{ color: existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#059669' : '#b45309' }}>
-                    {existingRequest?.status === 'pending' && 'طلب تفاوض مرسل — بانتظار رد المورد'}
-                    {(existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created') && 'وافق المورد! الصفقة جارية'}
-                    {existingRequest?.status === 'rejected' && 'رفض المورد طلبك'}
-                    {requestSent && !existingRequest && 'تم إرسال طلب التفاوض'}
-                  </p>
-                  <p className="text-[10px] mt-0.5" style={{ color: existingRequest?.status === 'accepted' || existingRequest?.status === 'deal_created' ? '#065F46' : '#92400E' }}>
-                    تابع التفاصيل في حسابي ← طلباتي
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <div
-              className="rounded-2xl p-3.5 flex items-start gap-3"
-              style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}
-              dir="rtl"
-            >
-              <CheckCircle className="w-4 h-4 text-[#b45309] flex-shrink-0 mt-0.5" />
-              <p className="text-[11px] text-[#92400E] leading-relaxed">
-                التواصل مع المورد والاتفاق يتمان <span className="font-black">داخل المنصة فقط</span> لضمان حقوق الطرفين وحفظ سجل الصفقة.
-              </p>
             </div>
-          </div>
 
-          <div className="px-5 mt-4">
-            <CommentsSection userPhone={card.phone} maxComments={5} refreshTrigger={refreshKey} />
+            <div className="px-5 mt-4">
+              <CommentsSection userPhone={card.phone} maxComments={5} refreshTrigger={refreshKey} />
+            </div>
           </div>
         </div>
 
-        <div
-          className="flex-shrink-0 px-4 pb-5 pt-3"
-          style={{
-            background: 'linear-gradient(to top, #ffffff 0%, #f8fafb 100%)',
-            borderTop: '1px solid rgba(0,0,0,0.06)',
-          }}
-        >
+        {/* Mobile bottom actions */}
+        <div className="md:hidden flex-shrink-0 px-4 pb-5 pt-3" style={{ background: 'linear-gradient(to top, #ffffff 0%, #f8fafb 100%)', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <button
             onClick={btnState.disabled ? undefined : handleStartDeal}
             disabled={btnState.disabled}
             className="w-full relative overflow-hidden group mb-3 rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <div
-              className="absolute inset-0 rounded-2xl transition-transform duration-300 group-active:scale-95"
-              style={{ background: btnState.bg, boxShadow: '0 6px 20px rgba(5,150,105,0.3)' }}
-            />
+            <div className="absolute inset-0 rounded-2xl transition-transform duration-300 group-active:scale-95" style={{ background: btnState.bg, boxShadow: '0 6px 20px rgba(5,150,105,0.3)' }} />
             <div className="relative flex items-center justify-center gap-2.5 py-4">
               <Handshake className="w-5 h-5" style={{ color: btnState.color }} strokeWidth={2.5} />
               <span className="text-[15px] font-black" style={{ color: btnState.color }}>{btnState.label}</span>
               {!btnState.disabled && !existingRequest && !requestSent && (
-                <div
-                  className="absolute left-3 w-2 h-2 rounded-full animate-pulse"
-                  style={{ background: '#bfdbfe', boxShadow: '0 0 8px #60b4e0' }}
-                />
+                <div className="absolute left-3 w-2 h-2 rounded-full animate-pulse" style={{ background: '#bfdbfe', boxShadow: '0 0 8px #60b4e0' }} />
               )}
             </div>
           </button>
-
           <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={onClose}
-              className="flex flex-col items-center justify-center py-3 rounded-2xl transition-all active:scale-95"
-              style={{
-                background: 'linear-gradient(135deg, #1a4a5e, #2c5f73)',
-                boxShadow: '0 4px 12px rgba(26,74,94,0.25)',
-              }}
-            >
+            <button onClick={onClose} className="flex flex-col items-center justify-center py-3 rounded-2xl transition-all active:scale-95" style={{ background: 'linear-gradient(135deg, #1a4a5e, #2c5f73)', boxShadow: '0 4px 12px rgba(26,74,94,0.25)' }}>
               <Home className="w-5 h-5 text-white mb-1" />
               <span className="text-[11px] font-bold text-white">الرئيسية</span>
             </button>
-
-            <button
-              onClick={() => setShowRatingDialog(true)}
-              className="flex flex-col items-center justify-center py-3 rounded-2xl transition-all active:scale-95"
-              style={{
-                background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-                boxShadow: '0 4px 12px rgba(245,158,11,0.25)',
-              }}
-            >
+            <button onClick={() => setShowRatingDialog(true)} className="flex flex-col items-center justify-center py-3 rounded-2xl transition-all active:scale-95" style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)', boxShadow: '0 4px 12px rgba(245,158,11,0.25)' }}>
               <Star className="w-5 h-5 text-white mb-1" />
               <span className="text-[11px] font-bold text-white">تقييم</span>
             </button>
-
-            <button
-              onClick={handleFavorite}
-              className="flex flex-col items-center justify-center py-3 rounded-2xl transition-all active:scale-95"
-              style={{
-                background: isFavorited
-                  ? 'linear-gradient(135deg, #DC2626, #EF4444)'
-                  : 'linear-gradient(135deg, #ffffff, #f5f9fc)',
-                color: isFavorited ? 'white' : '#1a4a5e',
-                border: isFavorited ? 'none' : '1.5px solid rgba(0,0,0,0.08)',
-                boxShadow: isFavorited
-                  ? '0 4px 12px rgba(220,38,38,0.3)'
-                  : '0 2px 8px rgba(0,0,0,0.08)',
-              }}
-            >
+            <button onClick={handleFavorite} className="flex flex-col items-center justify-center py-3 rounded-2xl transition-all active:scale-95" style={{ background: isFavorited ? 'linear-gradient(135deg, #DC2626, #EF4444)' : 'linear-gradient(135deg, #ffffff, #f5f9fc)', color: isFavorited ? 'white' : '#1a4a5e', border: isFavorited ? 'none' : '1.5px solid rgba(0,0,0,0.08)', boxShadow: isFavorited ? '0 4px 12px rgba(220,38,38,0.3)' : '0 2px 8px rgba(0,0,0,0.08)' }}>
               <Heart className={`w-5 h-5 mb-1 ${isFavorited ? 'fill-white text-white' : ''}`} />
-              <span className={`text-[11px] font-bold ${isFavorited ? 'text-white' : ''}`}>
-                {isFavorited ? 'مفضل' : 'حفظ'}
-              </span>
+              <span className={`text-[11px] font-bold ${isFavorited ? 'text-white' : ''}`}>{isFavorited ? 'مفضل' : 'حفظ'}</span>
             </button>
           </div>
         </div>
       </div>
 
       {showRatingDialog && (
-        <VisitorRatingDialog
-          isOpen={showRatingDialog}
-          onClose={() => setShowRatingDialog(false)}
-          ratedUserPhone={card.phone}
-          ratedUserName="المورد"
-          itemType="supply"
-          itemId={card.id}
-          onRatingSubmitted={() => {
-            setShowRatingDialog(false);
-            loadRatingSummary();
-            setRefreshKey(prev => prev + 1);
-          }}
-        />
+        <VisitorRatingDialog isOpen={showRatingDialog} onClose={() => setShowRatingDialog(false)} ratedUserPhone={card.phone} ratedUserName="المورد" itemType="supply" itemId={card.id} onRatingSubmitted={() => { setShowRatingDialog(false); loadRatingSummary(); setRefreshKey(prev => prev + 1); }} />
       )}
-
       {showWelcomeMessage && (
-        <WelcomeMessageDialog
-          card={card}
-          onClose={() => setShowWelcomeMessage(false)}
-          onLogin={handleLoginFromWelcome}
-        />
+        <WelcomeMessageDialog card={card} onClose={() => setShowWelcomeMessage(false)} onLogin={handleLoginFromWelcome} />
       )}
-
       {showNegotiationDialog && (
-        <NegotiationRequestDialog
-          card={card}
-          buyerPhone={buyerPhone!}
-          existingRequest={existingRequest}
-          onClose={() => setShowNegotiationDialog(false)}
-          onSent={handleRequestSent}
-        />
+        <NegotiationRequestDialog card={card} buyerPhone={buyerPhone!} existingRequest={existingRequest} onClose={() => setShowNegotiationDialog(false)} onSent={handleRequestSent} />
       )}
     </div>
   );
