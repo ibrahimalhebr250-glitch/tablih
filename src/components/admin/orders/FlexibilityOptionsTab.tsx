@@ -46,6 +46,28 @@ const EMPTY_FORM = {
   matching_rule: {} as Record<string, unknown>,
 };
 
+function generateCodeFromArabic(text: string): string {
+  const map: Record<string, string> = {
+    'أ': 'a', 'ا': 'a', 'إ': 'i', 'آ': 'aa',
+    'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j',
+    'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'dh',
+    'ر': 'r', 'ز': 'z', 'س': 's', 'ش': 'sh',
+    'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'z',
+    'ع': 'a', 'غ': 'gh', 'ف': 'f', 'ق': 'q',
+    'ك': 'k', 'ل': 'l', 'م': 'm', 'ن': 'n',
+    'ه': 'h', 'و': 'w', 'ي': 'y', 'ى': 'a',
+    'ة': 'a', 'ء': '', 'ئ': 'y', 'ؤ': 'w',
+  };
+  return text
+    .split('')
+    .map((c) => map[c] ?? (c === ' ' ? '_' : ''))
+    .join('')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+    .toLowerCase()
+    .slice(0, 32);
+}
+
 interface RuleEditorProps {
   rule: Record<string, unknown>;
   onChange: (rule: Record<string, unknown>) => void;
@@ -375,101 +397,181 @@ export default function FlexibilityOptionsTab() {
         </button>
       </div>
 
-      {/* Add Panel (inline, expanded) */}
+      {/* Add Panel */}
       {showAddPanel && (
-        <div className="bg-gradient-to-br from-[#1a4a5e]/5 to-white border-2 border-[#1a4a5e]/20 rounded-2xl p-6 space-y-5">
-          <div className="flex items-center gap-3 pb-3 border-b border-[#1a4a5e]/10">
-            <div className="w-8 h-8 bg-[#1a4a5e] rounded-xl flex items-center justify-center">
-              <Plus className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900">إضافة خيار مرونة جديد</h3>
-              <p className="text-xs text-gray-500 mt-0.5">يُضاف الخيار في حالة مفعّل بشكل افتراضي</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">الكود <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={newForm.code}
-                onChange={(e) => setNewForm({ ...newForm, code: e.target.value.replace(/\s+/g, '_').toLowerCase() })}
-                placeholder="مثال: accept_partial"
-                className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-[#1a4a5e] font-mono"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">الاسم بالعربية <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={newForm.name_ar}
-                onChange={(e) => setNewForm({ ...newForm, name_ar: e.target.value })}
-                placeholder="مثال: قبول تسليم جزئي"
-                className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-[#1a4a5e]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">الاسم بالإنجليزية <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={newForm.name_en}
-                onChange={(e) => setNewForm({ ...newForm, name_en: e.target.value })}
-                placeholder="Accept Partial Delivery"
-                className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-[#1a4a5e]"
-                dir="ltr"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">الوصف</label>
-            <textarea
-              value={newForm.description}
-              onChange={(e) => setNewForm({ ...newForm, description: e.target.value })}
-              placeholder="وصف مختصر يوضح كيف يُستخدم هذا الخيار في المطابقة"
-              rows={2}
-              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-[#1a4a5e] resize-none"
-            />
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-            <div className="flex items-center gap-2 mb-2">
-              <GitBranch className="w-4 h-4 text-[#1a4a5e]" />
-              <span className="text-sm font-semibold text-gray-700">قواعد المطابقة</span>
-              <span className="text-xs text-gray-400">(اختياري)</span>
-            </div>
-            <RuleEditor
-              rule={newForm.matching_rule}
-              onChange={(r) => setNewForm({ ...newForm, matching_rule: r })}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <div
-                onClick={() => setNewForm({ ...newForm, affects_matching: !newForm.affects_matching })}
-                className={`relative w-11 h-6 rounded-full transition-colors ${newForm.affects_matching ? 'bg-[#1a4a5e]' : 'bg-gray-200'}`}
-              >
-                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${newForm.affects_matching ? 'left-5' : 'left-0.5'}`} />
+        <div className="rounded-2xl overflow-hidden border-2 border-[#1a4a5e]/25 shadow-lg shadow-[#1a4a5e]/8">
+          {/* Panel header */}
+          <div className="bg-[#1a4a5e] px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-white/15 rounded-xl flex items-center justify-center">
+                <Plus className="w-4 h-4 text-white" />
               </div>
-              <span className="text-sm font-medium text-gray-700">يؤثر على نظام المطابقة</span>
-            </label>
+              <div>
+                <h3 className="font-bold text-white text-sm">إضافة خيار مرونة جديد</h3>
+                <p className="text-white/60 text-xs mt-0.5">يُضاف الخيار في حالة مفعّل تلقائياً</p>
+              </div>
+            </div>
+            <button
+              onClick={() => { setShowAddPanel(false); setNewForm({ ...EMPTY_FORM }); }}
+              className="p-1.5 hover:bg-white/15 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4 text-white/70" />
+            </button>
+          </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setShowAddPanel(false); setNewForm({ ...EMPTY_FORM }); }}
-                className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-colors"
-              >
-                إلغاء
-              </button>
-              <button
-                onClick={handleCreate}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#1a4a5e] text-white rounded-xl text-sm font-semibold hover:bg-[#152f3d] transition-colors shadow-md shadow-[#1a4a5e]/20"
-              >
-                <Plus className="w-4 h-4" />
-                إضافة الخيار
-              </button>
+          <div className="bg-white p-6 space-y-6">
+            {/* Step 1 - Names */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 bg-[#1a4a5e] text-white rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0">١</span>
+                <span className="text-sm font-bold text-gray-800">تسمية الخيار</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pr-8">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-2">
+                    الاسم بالعربية <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newForm.name_ar}
+                    onChange={(e) => {
+                      const ar = e.target.value;
+                      const autoCode = generateCodeFromArabic(ar);
+                      setNewForm({ ...newForm, name_ar: ar, code: autoCode });
+                    }}
+                    placeholder="مثال: قبول تسليم جزئي"
+                    className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl bg-gray-50 focus:outline-none focus:border-[#1a4a5e] focus:bg-white transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-2">
+                    الاسم بالإنجليزية <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newForm.name_en}
+                    onChange={(e) => setNewForm({ ...newForm, name_en: e.target.value })}
+                    placeholder="Accept Partial Delivery"
+                    className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl bg-gray-50 focus:outline-none focus:border-[#1a4a5e] focus:bg-white transition-all"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              {/* Auto-generated code preview */}
+              <div className="pr-8">
+                <div className="flex items-center gap-3 px-4 py-2.5 bg-[#1a4a5e]/5 border border-[#1a4a5e]/15 rounded-xl">
+                  <div className="flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-[#1a4a5e]" />
+                    <span className="text-xs text-[#1a4a5e] font-semibold">الكود (يُولَّد تلقائياً)</span>
+                  </div>
+                  <div className="flex-1 flex items-center gap-2">
+                    {newForm.code ? (
+                      <span className="font-mono text-sm text-[#1a4a5e] font-bold bg-white px-3 py-1 rounded-lg border border-[#1a4a5e]/20">
+                        {newForm.code}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">اكتب الاسم بالعربية لتوليد الكود</span>
+                    )}
+                  </div>
+                  {newForm.code && (
+                    <button
+                      onClick={() => setNewForm({ ...newForm, code: '' })}
+                      className="text-xs text-gray-400 hover:text-gray-600 underline"
+                    >
+                      تعديل يدوي
+                    </button>
+                  )}
+                </div>
+                {!newForm.code && newForm.name_ar === '' && (
+                  <></>
+                )}
+                {newForm.code === '' && newForm.name_ar !== '' && (
+                  <div className="mt-2 pr-1">
+                    <input
+                      type="text"
+                      value={newForm.code}
+                      onChange={(e) => setNewForm({ ...newForm, code: e.target.value.replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').toLowerCase() })}
+                      placeholder="أدخل الكود يدوياً"
+                      className="w-full px-4 py-2.5 text-sm border-2 border-dashed border-gray-300 rounded-xl font-mono focus:outline-none focus:border-[#1a4a5e] focus:border-solid"
+                      dir="ltr"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100" />
+
+            {/* Step 2 - Description */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 bg-[#1a4a5e] text-white rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0">٢</span>
+                <span className="text-sm font-bold text-gray-800">الوصف</span>
+                <span className="text-xs text-gray-400">(اختياري)</span>
+              </div>
+              <div className="pr-8">
+                <textarea
+                  value={newForm.description}
+                  onChange={(e) => setNewForm({ ...newForm, description: e.target.value })}
+                  placeholder="وصف مختصر يوضح للمشتري متى يستخدم هذا الخيار وكيف يؤثر على نتائج البحث..."
+                  rows={2}
+                  className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl bg-gray-50 focus:outline-none focus:border-[#1a4a5e] focus:bg-white transition-all resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100" />
+
+            {/* Step 3 - Matching Rules */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 bg-[#1a4a5e] text-white rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0">٣</span>
+                <span className="text-sm font-bold text-gray-800">قواعد المطابقة</span>
+                <span className="text-xs text-gray-400">(اختياري)</span>
+              </div>
+              <div className="pr-8">
+                <RuleEditor
+                  rule={newForm.matching_rule}
+                  onChange={(r) => setNewForm({ ...newForm, matching_rule: r })}
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100" />
+
+            {/* Step 4 - Settings + Actions */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <div
+                  onClick={() => setNewForm({ ...newForm, affects_matching: !newForm.affects_matching })}
+                  className={`relative w-12 h-6 rounded-full transition-colors cursor-pointer ${newForm.affects_matching ? 'bg-[#1a4a5e]' : 'bg-gray-200'}`}
+                >
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-200 ${newForm.affects_matching ? 'left-6' : 'left-0.5'}`} />
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-gray-700 block">يؤثر على نظام المطابقة</span>
+                  <span className="text-xs text-gray-400">يُفعّل هذا الخيار في خوارزمية المطابقة التلقائية</span>
+                </div>
+              </label>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowAddPanel(false); setNewForm({ ...EMPTY_FORM }); }}
+                  className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={handleCreate}
+                  disabled={!newForm.name_ar || !newForm.name_en}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-[#1a4a5e] text-white rounded-xl text-sm font-semibold hover:bg-[#152f3d] disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md shadow-[#1a4a5e]/20"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  إضافة الخيار
+                </button>
+              </div>
             </div>
           </div>
         </div>
