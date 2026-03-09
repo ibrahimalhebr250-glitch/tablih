@@ -192,11 +192,11 @@ function DemandCardItem({ card, onClick, index = 0 }: { card: DemandCard; onClic
           style={{ background: gradient.accent }}
         />
         <div
-          className="absolute -top-6 -right-6 w-24 h-24 rounded-full opacity-5"
+          className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full opacity-5"
           style={{ background: gradient.accent }}
         />
 
-        <div className="absolute top-2.5 right-2.5">
+        <div className="absolute top-2.5 right-2.5" style={{ zIndex: 10 }}>
           <span
             className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black whitespace-nowrap"
             style={{
