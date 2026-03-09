@@ -102,6 +102,18 @@ export function useSettings(phone: string) {
     setSendingMessage(false);
     if (error) return { success: false, error: error.message };
     await fetchSupportMessages();
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    fetch(`${supabaseUrl}/functions/v1/ai-support-reply`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({ user_phone: phone, message: message.trim() }),
+    }).catch(() => {});
+
     return { success: true };
   }, [phone, fetchSupportMessages]);
 

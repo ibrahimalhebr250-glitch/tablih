@@ -3,7 +3,8 @@ import {
   Headphones, Search, MessageCircle, Send, Image as ImageIcon,
   Loader2, RefreshCw, Users, CheckCheck,
   AlertCircle, ChevronLeft, Phone, Lightbulb,
-  CheckCircle2, Eye, Circle, MessageSquare
+  CheckCircle2, Eye, Circle, MessageSquare, Bot, ToggleLeft, ToggleRight,
+  Clock, Tag, BarChart2, TrendingUp
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useAdminSupport } from '../../../hooks/useAdminSupport';
@@ -482,13 +483,259 @@ function SuggestionsPanel({ adminEmail }: { adminEmail: string }) {
   );
 }
 
+// ─── AI Auto-Reply Panel ──────────────────────────────────────────────────────
+interface AISettings {
+  is_enabled: boolean;
+  delay_seconds: number;
+  auto_reply_label: string;
+}
+
+interface AILog {
+  id: string;
+  user_phone: string;
+  user_message: string;
+  ai_response: string;
+  matched: boolean;
+  created_at: string;
+}
+
+function AIAutoReplyPanel() {
+  const [settings, setSettings] = useState<AISettings>({ is_enabled: false, delay_seconds: 3, auto_reply_label: 'مساعد ذكي' });
+  const [logs, setLogs] = useState<AILog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeView, setActiveView] = useState<'settings' | 'logs'>('settings');
+
+  const matchedCount = logs.filter(l => l.matched).length;
+  const fallbackCount = logs.length - matchedCount;
+  const matchRate = logs.length > 0 ? Math.round((matchedCount / logs.length) * 100) : 0;
+
+  useEffect(() => {
+    const load = async () => {
+      const [{ data: s }, { data: l }] = await Promise.all([
+        supabase.from('ai_auto_reply_settings').select('*').eq('id', 1).maybeSingle(),
+        supabase.from('ai_auto_reply_logs').select('*').order('created_at', { ascending: false }).limit(50),
+      ]);
+      if (s) setSettings(s as AISettings);
+      setLogs((l ?? []) as AILog[]);
+      setLoading(false);
+    };
+    load();
+
+    const ch = supabase.channel('ai-logs-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ai_auto_reply_logs' }, (payload) => {
+        setLogs(prev => [payload.new as AILog, ...prev].slice(0, 50));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    await supabase.from('ai_auto_reply_settings').update({
+      is_enabled: settings.is_enabled,
+      delay_seconds: settings.delay_seconds,
+      auto_reply_label: settings.auto_reply_label,
+      updated_at: new Date().toISOString(),
+    }).eq('id', 1);
+    setSaving(false);
+  };
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-48"><Loader2 className="w-6 h-6 animate-spin text-[#7a9aab]" /></div>;
+  }
+
+  return (
+    <div className="p-4 lg:p-6 space-y-5" dir="rtl">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: settings.is_enabled ? '#DCFCE7' : '#F1F5F9' }}>
+              <Bot className="w-4 h-4" style={{ color: settings.is_enabled ? '#16A34A' : '#94A3B8' }} />
+            </div>
+            <p className="text-xl font-black" style={{ color: settings.is_enabled ? '#16A34A' : '#94A3B8' }}>
+              {settings.is_enabled ? 'مفعّل' : 'موقوف'}
+            </p>
+          </div>
+          <p className="text-xs font-bold text-[#1a2f3e]">حالة المساعد الذكي</p>
+        </div>
+        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+              <BarChart2 className="w-4 h-4 text-[#0369A1]" />
+            </div>
+            <p className="text-xl font-black text-[#0369A1]">{logs.length}</p>
+          </div>
+          <p className="text-xs font-bold text-[#1a2f3e]">إجمالي الردود</p>
+        </div>
+        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-green-600" />
+            </div>
+            <p className="text-xl font-black text-green-600">{matchRate}%</p>
+          </div>
+          <p className="text-xs font-bold text-[#1a2f3e]">نسبة التطابق</p>
+          <p className="text-[10px] text-[#9ab0bf]">{matchedCount} من {logs.length}</p>
+        </div>
+        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center">
+              <MessageCircle className="w-4 h-4 text-orange-500" />
+            </div>
+            <p className="text-xl font-black text-orange-500">{fallbackCount}</p>
+          </div>
+          <p className="text-xs font-bold text-[#1a2f3e]">ردود افتراضية</p>
+        </div>
+      </div>
+
+      <div className="flex gap-2 bg-gray-100 p-1 rounded-xl w-fit">
+        <button
+          onClick={() => setActiveView('settings')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeView === 'settings' ? 'bg-white text-[#0f2535] shadow-sm' : 'text-[#7a9aab]'}`}
+        >
+          الإعدادات
+        </button>
+        <button
+          onClick={() => setActiveView('logs')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeView === 'logs' ? 'bg-white text-[#0f2535] shadow-sm' : 'text-[#7a9aab]'}`}
+        >
+          سجل الردود
+          {logs.length > 0 && <span className="mr-1.5 px-1.5 py-0.5 rounded-full bg-[#0369A1] text-white text-[10px]">{logs.length}</span>}
+        </button>
+      </div>
+
+      {activeView === 'settings' ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#0f2535] to-[#1a3d56] flex items-center justify-center">
+                <Bot className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-[#0f2535] text-sm">تفعيل الرد التلقائي</p>
+                <p className="text-[11px] text-[#7a9aab]">يرد المساعد الذكي تلقائياً على رسائل العملاء</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setSettings(s => ({ ...s, is_enabled: !s.is_enabled }))}
+              className="flex-shrink-0 transition-transform active:scale-95"
+            >
+              {settings.is_enabled
+                ? <ToggleRight className="w-10 h-10 text-[#16A34A]" />
+                : <ToggleLeft className="w-10 h-10 text-gray-300" />}
+            </button>
+          </div>
+
+          <div className="h-px bg-gray-100" />
+
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-4 h-4 text-[#0369A1]" />
+              <p className="text-sm font-bold text-[#0f2535]">تأخير الرد (ثواني)</p>
+            </div>
+            <p className="text-[11px] text-[#7a9aab] mb-3">وقت الانتظار قبل إرسال الرد لمحاكاة إنسان حقيقي</p>
+            <div className="flex items-center gap-3">
+              <input
+                type="range" min={1} max={15} value={settings.delay_seconds}
+                onChange={e => setSettings(s => ({ ...s, delay_seconds: Number(e.target.value) }))}
+                className="flex-1 accent-[#0369A1]"
+              />
+              <div className="w-16 text-center bg-[#EFF6FF] rounded-xl py-1.5 px-2 font-black text-[#0369A1] text-sm">
+                {settings.delay_seconds}ث
+              </div>
+            </div>
+            <div className="flex justify-between text-[10px] text-[#9ab0bf] px-1">
+              <span>1 ث (فوري)</span>
+              <span>15 ث (بطيء)</span>
+            </div>
+          </div>
+
+          <div className="h-px bg-gray-100" />
+
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 mb-2">
+              <Tag className="w-4 h-4 text-[#0369A1]" />
+              <p className="text-sm font-bold text-[#0f2535]">اسم المساعد</p>
+            </div>
+            <p className="text-[11px] text-[#7a9aab] mb-3">يظهر هذا الاسم في بداية كل رد تلقائي</p>
+            <input
+              type="text"
+              value={settings.auto_reply_label}
+              onChange={e => setSettings(s => ({ ...s, auto_reply_label: e.target.value }))}
+              placeholder="مساعد ذكي"
+              className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm text-right focus:outline-none focus:border-[#0369A1] transition-colors"
+            />
+            <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 mt-2">
+              <p className="text-[11px] text-[#7a9aab] mb-1">مثال على الرد:</p>
+              <p className="text-[12px] text-[#3a5568] font-bold">[{settings.auto_reply_label || 'مساعد ذكي'}]</p>
+              <p className="text-[12px] text-[#3a5568]">شكراً لتواصلك، يمكنني مساعدتك في...</p>
+            </div>
+          </div>
+
+          <button
+            onClick={save}
+            disabled={saving}
+            className="w-full py-3 rounded-2xl text-sm font-black text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #0369A1, #0284C7)' }}
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {saving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {logs.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
+              <Bot className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+              <p className="text-sm font-bold text-[#7a9aab]">لا توجد ردود تلقائية بعد</p>
+              <p className="text-xs text-[#9ab0bf] mt-1">فعّل المساعد الذكي وسيظهر السجل هنا</p>
+            </div>
+          ) : (
+            logs.map(log => (
+              <div key={log.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${log.matched ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-500'}`}>
+                      {log.matched ? 'تطابق دقيق' : 'رد افتراضي'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] text-[#9ab0bf]">
+                    <span dir="ltr">{log.user_phone}</span>
+                    <span>·</span>
+                    <span>{new Date(log.created_at).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2 bg-gray-50 rounded-xl p-2.5">
+                    <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Users className="w-2.5 h-2.5 text-gray-500" />
+                    </div>
+                    <p className="text-[12px] text-[#3a5568] flex-1">{log.user_message}</p>
+                  </div>
+                  <div className="flex items-start gap-2 bg-blue-50 rounded-xl p-2.5">
+                    <div className="w-5 h-5 rounded-full bg-[#0369A1]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Bot className="w-2.5 h-2.5 text-[#0369A1]" />
+                    </div>
+                    <p className="text-[12px] text-[#0369A1] flex-1 whitespace-pre-wrap leading-relaxed line-clamp-3">{log.ai_response}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main SupportSection ──────────────────────────────────────────────────────
 interface Props {
   adminEmail: string;
 }
 
 export default function SupportSection({ adminEmail }: Props) {
-  const [activeTab, setActiveTab] = useState<'chat' | 'suggestions'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'suggestions' | 'ai'>('chat');
   const [pendingSuggestions, setPendingSuggestions] = useState(0);
 
   const {
@@ -524,7 +771,7 @@ export default function SupportSection({ adminEmail }: Props) {
     return () => { supabase.removeChannel(ch); };
   }, [activeTab]);
 
-  if (loading && activeTab === 'chat') {
+  if (loading && activeTab === 'chat' && activeTab !== 'ai') {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center">
@@ -579,23 +826,38 @@ export default function SupportSection({ adminEmail }: Props) {
             onClick={() => { setActiveTab('suggestions'); setPendingSuggestions(0); }}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-bold border-b-2 transition-all ${
               activeTab === 'suggestions'
-                ? 'text-[#7C3AED] border-[#7C3AED] bg-[#F5F3FF]/50'
+                ? 'text-[#D97706] border-[#D97706] bg-amber-50/50'
                 : 'text-[#7a9aab] border-transparent hover:text-[#0f2535]'
             }`}
           >
             <Lightbulb className="w-4 h-4" />
-            الاقتراحات والتحسينات
+            الاقتراحات
             {pendingSuggestions > 0 && (
               <span className="w-5 h-5 rounded-full bg-[#D97706] text-white text-[10px] font-black flex items-center justify-center">
                 {pendingSuggestions > 9 ? '9+' : pendingSuggestions}
               </span>
             )}
           </button>
+          <button
+            onClick={() => setActiveTab('ai')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-bold border-b-2 transition-all ${
+              activeTab === 'ai'
+                ? 'text-[#16A34A] border-[#16A34A] bg-green-50/50'
+                : 'text-[#7a9aab] border-transparent hover:text-[#0f2535]'
+            }`}
+          >
+            <Bot className="w-4 h-4" />
+            مساعد ذكي
+          </button>
         </div>
       </div>
 
       {/* Content */}
-      {activeTab === 'suggestions' ? (
+      {activeTab === 'ai' ? (
+        <div className="flex-1 overflow-y-auto bg-gray-50">
+          <AIAutoReplyPanel />
+        </div>
+      ) : activeTab === 'suggestions' ? (
         <div className="flex-1 overflow-y-auto bg-gray-50">
           <SuggestionsPanel adminEmail={adminEmail} />
         </div>
