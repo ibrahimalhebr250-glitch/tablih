@@ -196,49 +196,69 @@ function DemandCardItem({ card, onClick, index = 0 }: { card: DemandCard; onClic
           style={{ background: gradient.accent }}
         />
 
-        <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
+        <div className="absolute top-2.5 right-2.5">
           <span
-            className="px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1"
-            style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}
-          >
-            <ShoppingBag className="w-2.5 h-2.5" />
-            طلب شراء
-          </span>
-        </div>
-
-        <div
-          className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[10px] font-black"
-          style={{ background: qc.bg, color: qc.text }}
-        >
-          {qc.label}
-        </div>
-
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 pb-2">
-          <div
-            className="w-11 h-11 rounded-2xl flex items-center justify-center"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black whitespace-nowrap"
             style={{
-              background: `linear-gradient(135deg, ${gradient.accent}33, ${gradient.accent}11)`,
-              border: `1.5px solid ${gradient.accent}44`,
-              backdropFilter: 'blur(4px)',
+              background: 'rgba(0,0,0,0.45)',
+              backdropFilter: 'blur(10px)',
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.18)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
             }}
           >
-            <ArrowLeftRight className="w-5 h-5" style={{ color: gradient.accent }} />
+            <ShoppingBag className="w-3 h-3 flex-shrink-0" />
+            <span>طلب شراء</span>
+          </span>
+        </div>
+
+        <div className="absolute top-2.5 left-2.5">
+          <span
+            className="px-2.5 py-1 rounded-xl text-[10px] font-black whitespace-nowrap"
+            style={{
+              background: qc.bg,
+              color: qc.text,
+              boxShadow: '0 1px 6px rgba(0,0,0,0.2)',
+            }}
+          >
+            {qc.label}
+          </span>
+        </div>
+
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center"
+            style={{
+              background: `linear-gradient(135deg, ${gradient.accent}40, ${gradient.accent}15)`,
+              border: `1.5px solid ${gradient.accent}55`,
+              backdropFilter: 'blur(6px)',
+              boxShadow: `0 4px 16px ${gradient.accent}30`,
+            }}
+          >
+            <ShoppingBag className="w-6 h-6" style={{ color: gradient.accent }} />
           </div>
-          <span className="text-[18px] font-black text-white leading-tight drop-shadow-sm">
-            {card.quantity.toLocaleString()}
-          </span>
-          <span className="text-[10px] font-semibold" style={{ color: `${gradient.accent}cc` }}>
-            طبليه مطلوبة
-          </span>
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="text-[22px] font-black text-white leading-none" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+              {card.quantity.toLocaleString()}
+            </span>
+            <span className="text-[10px] font-semibold tracking-wide" style={{ color: `${gradient.accent}dd` }}>
+              طبليه مطلوبة
+            </span>
+          </div>
         </div>
 
         {flexTags.length > 0 && (
-          <div className="absolute bottom-2 right-2 left-2 flex gap-1 flex-wrap justify-end">
+          <div className="absolute bottom-2.5 right-2.5 left-2.5 flex gap-1 justify-end">
             {flexTags.slice(0, 2).map((tag, i) => (
               <span
                 key={i}
-                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
-                style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.15)' }}
+                className="flex items-center gap-0.5 px-2 py-0.5 rounded-lg text-[9px] font-bold whitespace-nowrap"
+                style={{
+                  background: 'rgba(0,0,0,0.35)',
+                  color: 'rgba(255,255,255,0.9)',
+                  backdropFilter: 'blur(6px)',
+                  border: `1px solid ${gradient.accent}40`,
+                }}
               >
                 {tag.icon}
                 {tag.label}
@@ -249,20 +269,21 @@ function DemandCardItem({ card, onClick, index = 0 }: { card: DemandCard; onClic
       </div>
 
       <div
-        className="p-3"
+        className="px-3 py-2.5"
         style={{
-          background: `linear-gradient(180deg, ${gradient.to}f0 0%, ${gradient.from} 100%)`,
+          background: `linear-gradient(180deg, ${gradient.to} 0%, ${gradient.from} 100%)`,
+          borderTop: `1px solid ${gradient.accent}20`,
         }}
       >
         <p className="text-[13px] font-black text-white leading-tight truncate">{card.pallet_type}</p>
-        <div className="flex items-center justify-between mt-1.5">
-          <div className="flex items-center gap-1">
-            <MapPin className="w-2.5 h-2.5 flex-shrink-0" style={{ color: `${gradient.accent}bb` }} />
-            <span className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.55)' }}>
+        <div className="flex items-center justify-between mt-1">
+          <div className="flex items-center gap-1 min-w-0">
+            <MapPin className="w-3 h-3 flex-shrink-0" style={{ color: `${gradient.accent}cc` }} />
+            <span className="text-[11px] truncate font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>
               {card.city}
             </span>
           </div>
-          <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+          <span className="text-[10px] flex-shrink-0 mr-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
             {timeAgo(card.created_at)}
           </span>
         </div>
