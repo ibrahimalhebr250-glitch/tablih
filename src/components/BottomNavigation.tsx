@@ -8,8 +8,8 @@ interface Props {
 
 export default function BottomNavigation({ onAddInventory, onCreateOrder, onOpenAccount }: Props) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-      <div className="max-w-md mx-auto">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden" style={{ maxWidth: '100vw', overflow: 'hidden' }}>
+      <div className="w-full">
         <div
           className="px-5 pt-1.5 pb-6"
           style={{ background: 'linear-gradient(to top, white 70%, rgba(255,255,255,0.95) 85%, rgba(255,255,255,0) 100%)' }}

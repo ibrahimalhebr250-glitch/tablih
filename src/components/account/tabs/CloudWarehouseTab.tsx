@@ -234,8 +234,8 @@ function MyInventorySection({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+    <div className="space-y-3 overflow-x-hidden">
+      <div className="flex gap-2 pb-1" style={{ overflowX: 'auto', overflowY: 'hidden', msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
         {FILTER_CONFIG.map(f => {
           const count = getCount(f.key);
           const isActive = filter === f.key;

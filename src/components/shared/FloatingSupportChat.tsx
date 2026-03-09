@@ -201,8 +201,9 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
 
       {isOpen && (
         <div
-          className="fixed bottom-44 left-4 z-50 w-80 sm:w-96 rounded-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 lg:bottom-24"
+          className="fixed bottom-44 left-4 z-50 rounded-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 lg:bottom-24"
           style={{
+            width: 'min(320px, calc(100vw - 32px))',
             boxShadow: '0 16px 48px rgba(26,74,94,0.25), 0 4px 16px rgba(0,0,0,0.1)',
             border: '1px solid rgba(255,255,255,0.8)',
           }}

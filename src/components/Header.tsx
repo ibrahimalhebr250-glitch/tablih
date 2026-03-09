@@ -83,11 +83,12 @@ export default function Header({
 
   return (
     <header
-      className="flex items-center justify-between px-4 py-3 sticky top-0 z-50 border-b-2"
+      className="flex items-center justify-between px-4 py-3 sticky top-0 z-50 border-b-2 overflow-hidden"
       style={{
         background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
         borderColor: '#e2e8f0',
         boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+        maxWidth: '100vw',
       }}
       dir="rtl"
     >

@@ -376,7 +376,7 @@ function ScrollableRow({
   };
 
   return (
-    <div className="relative group/slider">
+    <div className="relative group/slider" style={{ overflow: 'hidden', width: '100%' }}>
       {canScrollRight && (
         <button
           onClick={() => scroll('right')}
@@ -397,13 +397,15 @@ function ScrollableRow({
       )}
       <div
         ref={scrollRef}
-        className="flex overflow-x-auto overflow-y-hidden scrollbar-hide"
+        className="flex overflow-x-auto overflow-y-hidden"
         style={{
           gap: `${gap}px`,
           WebkitOverflowScrolling: 'touch',
           scrollBehavior: 'smooth',
           scrollSnapType: 'x proximity',
           paddingBottom: 2,
+          msOverflowStyle: 'none',
+          scrollbarWidth: 'none',
         }}
       >
         {items.map((item) => (
@@ -744,7 +746,7 @@ export default function MarketSection({
 
   return (
     <>
-    <section className="px-4 lg:px-5 mt-5 pb-32 lg:pb-10">
+    <section className="px-4 lg:px-5 mt-5 pb-32 lg:pb-10 overflow-x-hidden w-full">
 
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">

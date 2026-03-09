@@ -225,8 +225,8 @@ export default function HeroSection({ desktop }: Props) {
 
   return (
     <section
-      className="relative mx-4 mt-3 rounded-2xl overflow-hidden select-none"
-      style={{ height: '150px' }}
+      className="relative mt-3 rounded-2xl overflow-hidden select-none"
+      style={{ height: '150px', margin: '12px 16px 0', maxWidth: 'calc(100vw - 32px)' }}
       onTouchStart={(e) => {
         const x = e.touches[0].clientX;
         const onEnd = (ev: TouchEvent) => {

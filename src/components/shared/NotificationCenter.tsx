@@ -70,7 +70,7 @@ export default function NotificationCenter({ phone }: NotificationCenterProps) {
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 w-[90vw] sm:w-96 max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-4 duration-200">
+          <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-4 duration-200" style={{ width: 'min(90vw, 384px)', maxWidth: 'calc(100vw - 16px)' }}>
             <div className="sticky top-0 bg-white border-b border-gray-100 p-4 z-10">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
