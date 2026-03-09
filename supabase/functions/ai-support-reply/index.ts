@@ -7,99 +7,112 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const PLATFORM_NAME = "شبكة الطبليات الوطنية";
+interface KnowledgeEntry {
+  id: string;
+  category: string;
+  keywords: string[];
+  answer: string;
+  priority: number;
+  usage_count: number;
+}
 
-const KNOWLEDGE_BASE = [
-  {
-    keywords: ["طلب", "اطلب", "ارسل طلب", "انشاء طلب", "طلبية", "اضافة طلب"],
-    answer: `لإنشاء طلب شراء في ${PLATFORM_NAME}:\n1. اضغط على زر "طلب" في الشاشة الرئيسية\n2. حدد نوع الطبلية والحجم والجودة\n3. أدخل الكمية والمدينة\n4. اضغط "إرسال الطلب"\nسيقوم النظام تلقائياً بمطابقة طلبك مع أقرب المخزون المتاح.`,
-  },
-  {
-    keywords: ["مخزون", "اضافة مخزون", "ارفع مخزون", "تسجيل طبليات", "بيع طبليات"],
-    answer: `لإضافة مخزونك إلى المنصة:\n1. اضغط على "مخزون" في القائمة السفلية\n2. اضغط "إضافة دفعة جديدة"\n3. أدخل نوع الطبلية والحجم والجودة والكمية\n4. أضف صوراً ووصفاً مناسباً\n5. اضغط "نشر في السوق"\nسيظهر مخزونك للمشترين فوراً.`,
-  },
-  {
-    keywords: ["صفقة", "صفقات", "عروض", "متابعة صفقة", "حالة الصفقة"],
-    answer: `لمتابعة صفقاتك:\n1. اذهب إلى "حسابي" ثم تبويب "الصفقات"\n2. ستجد جميع صفقاتك مع حالتها:\n• قيد الانتظار: تم المطابقة وتنتظر التأكيد\n• جاري التسليم: تم تأكيد الصفقة وجاري التنفيذ\n• مكتملة: تمت الصفقة بنجاح\nيمكنك تأكيد أو رفض الصفقة من نفس الصفحة.`,
-  },
-  {
-    keywords: ["تسليم", "استلام", "التسليم", "وصل", "تأكيد استلام"],
-    answer: `لتأكيد استلام طلبك:\n1. اذهب إلى "حسابي" > "الصفقات"\n2. ابحث عن الصفقة في حالة "جاري التسليم"\n3. اضغط "تأكيد الاستلام"\nملاحظة: بعد تأكيدك ستكتمل الصفقة وتُحتسب العمولة.`,
-  },
-  {
-    keywords: ["عمولة", "رسوم", "نسبة", "سعر", "تكلفة", "كم العمولة"],
-    answer: `نظام العمولة في ${PLATFORM_NAME}:\n• تُحتسب العمولة عند اكتمال الصفقة فقط\n• النسبة تعتمد على حجم الصفقة وإعدادات المنصة\n• يمكنك الاطلاع على تفاصيل العمولة في صفحة "حسابي" > "إعدادات"`,
-  },
-  {
-    keywords: ["تسجيل", "حساب جديد", "انشاء حساب", "دخول", "تسجيل دخول", "رقم الهاتف"],
-    answer: `للتسجيل في ${PLATFORM_NAME}:\n1. أدخل رقم هاتفك\n2. أنشئ رمز PIN من 4 أرقام\n3. اختر نوع حسابك (مورد أو مشتري)\nللدخول لاحقاً: أدخل رقم هاتفك ورمز PIN.`,
-  },
-  {
-    keywords: ["المخزون السحابي", "مخزون سحابي", "مستودع", "طبليات اشتريتها"],
-    answer: `المخزون السحابي هو مخزونك الذي اشتريته عبر المنصة.\nيمكنك:\n• عرض كميات طبلياتك المشتراة\n• سحب الكميات عند الحاجة\n• متابعة تاريخ الشراء والتكلفة\nللوصول: اذهب إلى "حسابي" > "المخزون السحابي"`,
-  },
-  {
-    keywords: ["مشكلة", "خلل", "لا يعمل", "عطل", "خطأ", "error", "لا اقدر"],
-    answer: `نأسف لمواجهتك هذه المشكلة!\nللمساعدة السريعة يرجى توضيح:\n1. ما الصفحة أو الخطوة التي تواجه فيها المشكلة؟\n2. ما الرسالة التي تظهر لك (إن وجدت)؟\nسيتواصل معك أحد أفراد فريق الدعم قريباً.`,
-  },
-  {
-    keywords: ["السوق", "سوق", "عرض في السوق", "نشر", "الطبليات المعروضة"],
-    answer: `السوق في ${PLATFORM_NAME} يعرض جميع طبليات الموردين المتاحة.\nيمكنك:\n• البحث والتصفية حسب النوع والحجم والجودة والمدينة\n• الاطلاع على تفاصيل كل دفعة\n• طلب التفاوض مباشرة مع المورد\n• الطلب مباشرة من الدفعة المعروضة`,
-  },
-  {
-    keywords: ["تقييم", "تقييمات", "تقيم", "تقييم المورد", "موثوقية"],
-    answer: `نظام التقييم في ${PLATFORM_NAME}:\n• يمكنك تقييم الموردين بعد اكتمال الصفقة\n• التقييم من 1 إلى 5 نجوم\n• يظهر متوسط التقييم في صفحة المورد\n• نظام الثقة يساعدك على اختيار أفضل الموردين`,
-  },
-  {
-    keywords: ["اقتراح", "اقتراحات", "تحسين", "ارسل اقتراح"],
-    answer: `نقدر اقتراحاتك لتطوير ${PLATFORM_NAME}!\nلإرسال اقتراحك:\nاذهب إلى "حسابي" > "الإعدادات" > "اقتراحات وتحسينات"\nاكتب اقتراحك وسيصل مباشرة لفريق التطوير.`,
-  },
-  {
-    keywords: ["واتساب", "تواصل", "رقم التواصل", "كيف اتواصل"],
-    answer: `يمكنك التواصل معنا عبر:\n• هذه الدردشة مباشرة (سيرد فريق الدعم قريباً)\n• واتساب: يمكن للمشرف إرسال رابط واتساب من صفحة المحادثة\nنحن هنا للمساعدة!`,
-  },
-  {
-    keywords: ["مدينة", "مدن", "الرياض", "جدة", "الدمام", "مكة"],
-    answer: `${PLATFORM_NAME} تغطي المدن الرئيسية في المملكة العربية السعودية.\nيمكنك تحديد مدينتك عند إنشاء الطلب أو رفع المخزون.\nللاطلاع على المدن المتاحة: ابحث في سوق الطبليات وستجد قائمة بجميع المدن.`,
-  },
-];
+interface LearnedResponse {
+  id: string;
+  trigger_message: string;
+  normalized_trigger: string;
+  learned_answer: string;
+  times_seen: number;
+  confidence: number;
+  is_approved: boolean;
+}
 
-function findBestAnswer(message: string): string | null {
-  const normalizedMsg = message
+function normalizeArabic(text: string): string {
+  return text
     .toLowerCase()
     .replace(/[أإآا]/g, "ا")
     .replace(/[ىي]/g, "ي")
     .replace(/ة/g, "ه")
-    .replace(/[^\u0600-\u06FF\s\w]/g, " ");
+    .replace(/[^\u0600-\u06FF\s\w]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-  let bestMatch: { score: number; answer: string } | null = null;
+function computeMatchScore(normalizedMsg: string, keywords: string[]): number {
+  let score = 0;
+  const words = normalizedMsg.split(/\s+/);
 
-  for (const entry of KNOWLEDGE_BASE) {
-    let score = 0;
-    for (const keyword of entry.keywords) {
-      const normalizedKeyword = keyword
-        .toLowerCase()
-        .replace(/[أإآا]/g, "ا")
-        .replace(/[ىي]/g, "ي")
-        .replace(/ة/g, "ه");
-
-      if (normalizedMsg.includes(normalizedKeyword)) {
-        score += normalizedKeyword.length;
+  for (const keyword of keywords) {
+    const normalizedKw = normalizeArabic(keyword);
+    if (normalizedMsg.includes(normalizedKw)) {
+      score += normalizedKw.length * 2;
+    }
+    for (const word of words) {
+      if (word.length >= 3 && normalizedKw.includes(word)) {
+        score += word.length;
       }
     }
-    if (score > 0 && (!bestMatch || score > bestMatch.score)) {
-      bestMatch = { score, answer: entry.answer };
+  }
+  return score;
+}
+
+function findBestKnowledgeMatch(
+  message: string,
+  knowledgeBase: KnowledgeEntry[]
+): { entry: KnowledgeEntry; score: number } | null {
+  const normalizedMsg = normalizeArabic(message);
+  let best: { entry: KnowledgeEntry; score: number } | null = null;
+
+  for (const entry of knowledgeBase) {
+    if (!entry.keywords || entry.keywords.length === 0) continue;
+    const score = computeMatchScore(normalizedMsg, entry.keywords);
+    const weightedScore = score + entry.priority;
+
+    if (score > 0 && (!best || weightedScore > best.score)) {
+      best = { entry, score: weightedScore };
+    }
+  }
+  return best;
+}
+
+function findLearnedMatch(
+  message: string,
+  learned: LearnedResponse[]
+): LearnedResponse | null {
+  const normalizedMsg = normalizeArabic(message);
+  const approved = learned.filter((l) => l.is_approved && l.confidence >= 0.7);
+
+  let bestMatch: { item: LearnedResponse; score: number } | null = null;
+
+  for (const item of approved) {
+    const normalizedTrigger = item.normalized_trigger || normalizeArabic(item.trigger_message);
+
+    const triggerWords = normalizedTrigger.split(/\s+/).filter((w) => w.length >= 3);
+    const msgWords = normalizedMsg.split(/\s+/).filter((w) => w.length >= 3);
+
+    let commonWords = 0;
+    for (const tw of triggerWords) {
+      if (msgWords.some((mw) => mw.includes(tw) || tw.includes(mw))) {
+        commonWords++;
+      }
+    }
+
+    const totalWords = Math.max(triggerWords.length, msgWords.length, 1);
+    const similarity = commonWords / totalWords;
+    const score = similarity * item.confidence * item.times_seen;
+
+    if (similarity >= 0.5 && (!bestMatch || score > bestMatch.score)) {
+      bestMatch = { item, score };
     }
   }
 
-  return bestMatch ? bestMatch.answer : null;
+  return bestMatch ? bestMatch.item : null;
 }
 
-function getFallbackResponse(): string {
+function getFallbackResponse(platformName: string): string {
   const responses = [
-    `شكراً لتواصلك مع ${PLATFORM_NAME}.\nسيتواصل معك أحد أفراد فريق الدعم في أقرب وقت ممكن.\n\nللمساعدة الفورية، يمكنك توضيح استفسارك أكثر أو تصفح الأسئلة الشائعة في الإعدادات.`,
-    `وصلت رسالتك! فريق الدعم سيرد عليك قريباً.\n\nهل يمكنك توضيح استفسارك أكثر لنتمكن من مساعدتك بشكل أفضل؟`,
-    `تم استلام رسالتك.\nفريق دعم ${PLATFORM_NAME} سيراجع استفسارك ويرد عليك في أقرب وقت.`,
+    `شكراً لتواصلك مع ${platformName}.\nسيتواصل معك أحد أفراد فريق الدعم في أقرب وقت ممكن.\n\nللمساعدة الفورية، يمكنك توضيح استفسارك أكثر لنتمكن من مساعدتك بشكل أفضل.`,
+    `وصلت رسالتك! فريق الدعم سيرد عليك قريباً.\n\nهل يمكنك توضيح استفسارك أكثر؟ سيساعدنا ذلك في تقديم إجابة أدق.`,
+    `تم استلام رسالتك بنجاح.\nفريق دعم ${platformName} سيراجع استفسارك ويرد عليك في أقرب وقت.\n\nيمكنك أيضاً تصفح قسم المساعدة في إعدادات التطبيق.`,
   ];
   return responses[Math.floor(Math.random() * responses.length)];
 }
@@ -124,19 +137,21 @@ Deno.serve(async (req: Request) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { data: settings } = await supabase
-      .from("ai_auto_reply_settings")
-      .select("*")
-      .eq("id", 1)
-      .maybeSingle();
+    const [settingsResult, knowledgeResult, learnedResult] = await Promise.all([
+      supabase.from("ai_auto_reply_settings").select("*").eq("id", 1).maybeSingle(),
+      supabase.from("ai_knowledge_base").select("*").eq("is_active", true).order("priority", { ascending: false }),
+      supabase.from("ai_learned_responses").select("*").eq("is_approved", true).gte("confidence", 0.7).order("confidence", { ascending: false }).limit(200),
+    ]);
 
+    const settings = settingsResult.data;
     const isEnabled = settings?.is_enabled ?? false;
     const delaySeconds = settings?.delay_seconds ?? 3;
     const autoReplyLabel = settings?.auto_reply_label ?? "مساعد ذكي";
+    const platformName = settings?.platform_name ?? "شبكة الطبليات الوطنية";
 
     if (!isEnabled) {
       return new Response(
-        JSON.stringify({ success: true, replied: false, reason: "AI auto-reply is disabled" }),
+        JSON.stringify({ success: true, replied: false, reason: "disabled" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -152,7 +167,7 @@ Deno.serve(async (req: Request) => {
 
     if (recentAdminMsg) {
       return new Response(
-        JSON.stringify({ success: true, replied: false, reason: "Recent admin reply exists" }),
+        JSON.stringify({ success: true, replied: false, reason: "admin_recently_replied" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -170,39 +185,67 @@ Deno.serve(async (req: Request) => {
 
     if (laterMsg) {
       return new Response(
-        JSON.stringify({ success: true, replied: false, reason: "Admin replied in the meantime" }),
+        JSON.stringify({ success: true, replied: false, reason: "admin_replied_during_delay" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const aiAnswer = findBestAnswer(message) ?? getFallbackResponse();
+    const knowledgeBase: KnowledgeEntry[] = (knowledgeResult.data ?? []) as KnowledgeEntry[];
+    const learnedResponses: LearnedResponse[] = (learnedResult.data ?? []) as LearnedResponse[];
+
+    let aiAnswer: string | null = null;
+    let matchSource: "learned" | "knowledge" | "fallback" = "fallback";
+    let matchedKnowledgeId: string | null = null;
+
+    const learnedMatch = findLearnedMatch(message, learnedResponses);
+    if (learnedMatch) {
+      aiAnswer = learnedMatch.learned_answer;
+      matchSource = "learned";
+    }
+
+    if (!aiAnswer) {
+      const knowledgeMatch = findBestKnowledgeMatch(message, knowledgeBase);
+      if (knowledgeMatch) {
+        aiAnswer = knowledgeMatch.entry.answer;
+        matchSource = "knowledge";
+        matchedKnowledgeId = knowledgeMatch.entry.id;
+      }
+    }
+
+    if (!aiAnswer) {
+      aiAnswer = getFallbackResponse(platformName);
+      matchSource = "fallback";
+    }
+
     const finalAnswer = `[${autoReplyLabel}]\n${aiAnswer}`;
 
-    const { error: insertError } = await supabase
-      .from("support_messages")
-      .insert({
+    const [insertResult] = await Promise.all([
+      supabase.from("support_messages").insert({
         user_phone,
         sender: "admin",
         message: finalAnswer,
         image_url: null,
         is_read: false,
-      });
+      }),
+      matchedKnowledgeId
+        ? supabase.rpc("increment_knowledge_usage", { entry_id: matchedKnowledgeId }).catch(() => {})
+        : Promise.resolve(),
+    ]);
 
-    if (insertError) {
-      throw new Error(insertError.message);
+    if (insertResult.error) {
+      throw new Error(insertResult.error.message);
     }
 
-    await supabase
-      .from("ai_auto_reply_logs")
-      .insert({
-        user_phone,
-        user_message: message,
-        ai_response: finalAnswer,
-        matched: findBestAnswer(message) !== null,
-      });
+    await supabase.from("ai_auto_reply_logs").insert({
+      user_phone,
+      user_message: message,
+      ai_response: finalAnswer,
+      matched: matchSource !== "fallback",
+      match_source: matchSource,
+    });
 
     return new Response(
-      JSON.stringify({ success: true, replied: true, answer: finalAnswer }),
+      JSON.stringify({ success: true, replied: true, source: matchSource }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

@@ -4,11 +4,13 @@ import {
   Loader2, RefreshCw, Users, CheckCheck,
   AlertCircle, ChevronLeft, Phone, Lightbulb,
   CheckCircle2, Eye, Circle, MessageSquare, Bot, ToggleLeft, ToggleRight,
-  Clock, Tag, BarChart2, TrendingUp
+  Clock, Tag, BarChart2, TrendingUp, BookOpen, Brain
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useAdminSupport } from '../../../hooks/useAdminSupport';
 import type { AdminSupportConversation, AdminSupportMessage } from '../../../hooks/useAdminSupport';
+import AIKnowledgePanel from '../ai/AIKnowledgePanel';
+import AILearnedPanel from '../ai/AILearnedPanel';
 
 // ─── Suggestion types ────────────────────────────────────────────────────────
 interface Suggestion {
@@ -504,7 +506,8 @@ function AIAutoReplyPanel() {
   const [logs, setLogs] = useState<AILog[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeView, setActiveView] = useState<'settings' | 'logs'>('settings');
+  const [activeView, setActiveView] = useState<'settings' | 'logs' | 'knowledge' | 'learned'>('settings');
+  const [pendingLearnedCount, setPendingLearnedCount] = useState(0);
 
   const matchedCount = logs.filter(l => l.matched).length;
   const fallbackCount = logs.length - matchedCount;
@@ -512,19 +515,34 @@ function AIAutoReplyPanel() {
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: s }, { data: l }] = await Promise.all([
+      const [{ data: s }, { data: l }, { data: p }] = await Promise.all([
         supabase.from('ai_auto_reply_settings').select('*').eq('id', 1).maybeSingle(),
         supabase.from('ai_auto_reply_logs').select('*').order('created_at', { ascending: false }).limit(50),
+        supabase.from('ai_learned_responses').select('id').eq('is_approved', false),
       ]);
       if (s) setSettings(s as AISettings);
       setLogs((l ?? []) as AILog[]);
+      setPendingLearnedCount((p ?? []).length);
       setLoading(false);
     };
     load();
 
-    const ch = supabase.channel('ai-logs-realtime')
+    const ch = supabase.channel('ai-panel-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ai_auto_reply_logs' }, (payload) => {
         setLogs(prev => [payload.new as AILog, ...prev].slice(0, 50));
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ai_learned_responses' }, () => {
+        setPendingLearnedCount(n => n + 1);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ai_learned_responses' }, () => {
+        supabase.from('ai_learned_responses').select('id').eq('is_approved', false).then(({ data }) => {
+          setPendingLearnedCount((data ?? []).length);
+        });
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'ai_learned_responses' }, () => {
+        supabase.from('ai_learned_responses').select('id').eq('is_approved', false).then(({ data }) => {
+          setPendingLearnedCount((data ?? []).length);
+        });
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -589,23 +607,32 @@ function AIAutoReplyPanel() {
         </div>
       </div>
 
-      <div className="flex gap-2 bg-gray-100 p-1 rounded-xl w-fit">
-        <button
-          onClick={() => setActiveView('settings')}
-          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeView === 'settings' ? 'bg-white text-[#0f2535] shadow-sm' : 'text-[#7a9aab]'}`}
-        >
-          الإعدادات
-        </button>
-        <button
-          onClick={() => setActiveView('logs')}
-          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeView === 'logs' ? 'bg-white text-[#0f2535] shadow-sm' : 'text-[#7a9aab]'}`}
-        >
-          سجل الردود
-          {logs.length > 0 && <span className="mr-1.5 px-1.5 py-0.5 rounded-full bg-[#0369A1] text-white text-[10px]">{logs.length}</span>}
-        </button>
+      <div className="flex gap-1.5 bg-gray-100 p-1 rounded-xl flex-wrap">
+        {([
+          ['settings', 'الإعدادات', null, null],
+          ['knowledge', 'قاعدة المعرفة', BookOpen, null],
+          ['learned', 'تعلّم الذكاء', Brain, pendingLearnedCount > 0 ? pendingLearnedCount : null],
+          ['logs', 'سجل الردود', null, logs.length > 0 ? logs.length : null],
+        ] as const).map(([view, label, Icon, badge]) => (
+          <button
+            key={view}
+            onClick={() => setActiveView(view)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${activeView === view ? 'bg-white text-[#0f2535] shadow-sm' : 'text-[#7a9aab]'}`}
+          >
+            {Icon && <Icon className="w-3.5 h-3.5" />}
+            {label}
+            {badge !== null && (
+              <span className="px-1.5 py-0.5 rounded-full bg-[#0369A1] text-white text-[10px] font-black">{badge}</span>
+            )}
+          </button>
+        ))}
       </div>
 
-      {activeView === 'settings' ? (
+      {activeView === 'knowledge' ? (
+        <AIKnowledgePanel />
+      ) : activeView === 'learned' ? (
+        <AILearnedPanel />
+      ) : activeView === 'settings' ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
