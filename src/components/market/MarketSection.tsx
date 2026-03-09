@@ -235,14 +235,14 @@ export default function MarketSection({
       const [supplyRes, demandRes] = await Promise.all([
         supabase
           .from('inventory_batches')
-          .select('id, phone, pallet_type, size, quality, pallet_condition, quantity_available, price_per_pallet, city, description, image_urls, created_at, publish_to_market, user_profiles(trust_rating)')
+          .select('id, phone, pallet_type, size, quality, pallet_condition, quantity_available, price_per_pallet, city, description, image_urls, created_at, publish_to_market')
           .eq('publish_to_market', true)
           .gt('quantity_available', 0)
           .order('created_at', { ascending: false })
           .limit(60),
         supabase
           .from('orders')
-          .select('id, buyer_phone, pallet_type, size, quality, quantity, city, accept_close_quality, accept_close_city, accept_partial_delivery, created_at, status, user_profiles(trust_rating)')
+          .select('id, buyer_phone, pallet_type, size, quality, quantity, city, accept_close_quality, accept_close_city, accept_partial_delivery, created_at, status')
           .in('status', ['pending', 'partially_matched'])
           .order('created_at', { ascending: false })
           .limit(60),
@@ -261,7 +261,7 @@ export default function MarketSection({
         description: r.description || '',
         image_urls: r.image_urls || [],
         created_at: r.created_at,
-        trust_rating: r.user_profiles?.trust_rating,
+        trust_rating: undefined,
         kind: 'supply',
       }));
 
@@ -277,7 +277,7 @@ export default function MarketSection({
         accept_close_city: r.accept_close_city,
         accept_partial_delivery: r.accept_partial_delivery,
         created_at: r.created_at,
-        trust_rating: r.user_profiles?.trust_rating,
+        trust_rating: undefined,
         kind: 'demand',
       }));
 
