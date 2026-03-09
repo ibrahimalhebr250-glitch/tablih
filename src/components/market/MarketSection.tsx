@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, SlidersHorizontal, X, Package, ShoppingBag, RefreshCw, ChevronDown, MapPin, Star, Layers } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Package, ShoppingBag, RefreshCw, ChevronDown, MapPin, Star, Layers, ArrowDownToLine } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from '../../lib/i18n';
 import SupplyDetailSheet from './SupplyDetailSheet';
@@ -55,11 +55,13 @@ const PALLET_TYPE_ICONS: Record<string, string> = {
   'كارتون': '📦',
 };
 
-const DEMAND_GRADIENTS = [
-  { from: '#0f172a', to: '#1e3a5f', accent: '#3b82f6' },
-  { from: '#1a1a2e', to: '#16213e', accent: '#06b6d4' },
-  { from: '#0d1b2a', to: '#1b3a4b', accent: '#0ea5e9' },
-  { from: '#111827', to: '#1e2d3d', accent: '#38bdf8' },
+const DEMAND_PALLET_IMAGES = [
+  'https://images.pexels.com/photos/6169668/pexels-photo-6169668.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop',
+  'https://images.pexels.com/photos/4481259/pexels-photo-4481259.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop',
+  'https://images.pexels.com/photos/1797428/pexels-photo-1797428.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop',
+  'https://images.pexels.com/photos/906494/pexels-photo-906494.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop',
+  'https://images.pexels.com/photos/1267338/pexels-photo-1267338.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop',
+  'https://images.pexels.com/photos/5025660/pexels-photo-5025660.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop',
 ];
 
 function useTimeAgo() {
@@ -164,7 +166,7 @@ function DemandCardItem({ card, onClick, index = 0 }: { card: DemandCard; onClic
   const timeAgo = useTimeAgo();
   const qBase = QUALITY_BASE[card.quality] || QUALITY_BASE['C'];
   const qc = { ...qBase, label: t(`market.${qBase.key}`) };
-  const gradient = DEMAND_GRADIENTS[index % DEMAND_GRADIENTS.length];
+  const palletImg = DEMAND_PALLET_IMAGES[index % DEMAND_PALLET_IMAGES.length];
   const flexTags = [
     card.accept_close_quality && { label: t('market.flexible'), icon: <Star className="w-2.5 h-2.5" /> },
     card.accept_close_city && { label: t('market.nearbyCity'), icon: <MapPin className="w-2.5 h-2.5" /> },
@@ -174,99 +176,68 @@ function DemandCardItem({ card, onClick, index = 0 }: { card: DemandCard; onClic
   return (
     <button
       onClick={onClick}
-      className="w-full text-right transition-all active:scale-[0.97] group"
+      className="w-full text-right transition-all active:scale-[0.98] hover:shadow-md"
       style={{
+        background: 'white',
         borderRadius: 20,
+        border: '1.5px solid rgba(234,88,12,0.15)',
         overflow: 'hidden',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 2px 12px rgba(234,88,12,0.08)',
       }}
     >
-      <div
-        className="relative w-full"
-        style={{
-          background: `linear-gradient(145deg, ${gradient.from} 0%, ${gradient.to} 100%)`,
-          aspectRatio: '16/9',
-          overflow: 'hidden',
-        }}
-      >
+      <div className="relative w-full" style={{ aspectRatio: '16/9', background: '#fff7ed' }}>
+        <img src={palletImg} alt="" className="w-full h-full object-cover" />
         <div
           className="absolute inset-0"
-          style={{
-            background: `radial-gradient(circle at 80% 20%, ${gradient.accent}22 0%, transparent 60%)`,
-          }}
-        />
-        <div
-          className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full opacity-10"
-          style={{ background: gradient.accent }}
-        />
-        <div
-          className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full opacity-5"
-          style={{ background: gradient.accent }}
+          style={{ background: 'linear-gradient(to bottom, rgba(154,52,18,0.45) 0%, rgba(154,52,18,0.25) 50%, rgba(154,52,18,0.55) 100%)' }}
         />
 
-        <div className="absolute top-2.5 right-2.5" style={{ zIndex: 10 }}>
-          <span
-            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black whitespace-nowrap"
-            style={{
-              background: 'rgba(0,0,0,0.45)',
-              backdropFilter: 'blur(10px)',
-              color: 'white',
-              border: '1px solid rgba(255,255,255,0.18)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-            }}
-          >
-            <ShoppingBag className="w-3 h-3 flex-shrink-0" />
-            <span>{t('market.purchaseRequest')}</span>
-          </span>
+        <div
+          className="absolute top-2 right-2 px-2.5 py-1 rounded-full text-[10px] font-black flex items-center gap-1"
+          style={{ background: 'rgba(255,255,255,0.92)', color: '#c2410c', backdropFilter: 'blur(4px)' }}
+        >
+          <ShoppingBag className="w-2.5 h-2.5" />
+          {t('market.purchaseRequest')}
         </div>
 
-        <div className="absolute top-2.5 left-2.5">
-          <span
-            className="px-2.5 py-1 rounded-xl text-[10px] font-black whitespace-nowrap"
-            style={{
-              background: qc.bg,
-              color: qc.text,
-              boxShadow: '0 1px 6px rgba(0,0,0,0.2)',
-            }}
-          >
-            {qc.label}
-          </span>
+        <div
+          className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
+          style={{ background: qc.bg, color: qc.text }}
+        >
+          {qc.label}
         </div>
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
           <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center"
+            className="w-11 h-11 rounded-2xl flex items-center justify-center"
             style={{
-              background: `linear-gradient(135deg, ${gradient.accent}40, ${gradient.accent}15)`,
-              border: `1.5px solid ${gradient.accent}55`,
-              backdropFilter: 'blur(6px)',
-              boxShadow: `0 4px 16px ${gradient.accent}30`,
+              background: 'rgba(255,255,255,0.18)',
+              border: '1.5px solid rgba(255,255,255,0.35)',
+              backdropFilter: 'blur(8px)',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
             }}
           >
-            <ShoppingBag className="w-6 h-6" style={{ color: gradient.accent }} />
+            <ArrowDownToLine className="w-5 h-5 text-white" />
           </div>
-          <div className="flex flex-col items-center gap-0.5">
-            <span className="text-[22px] font-black text-white leading-none" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
-              {card.quantity.toLocaleString()}
-            </span>
-            <span className="text-[10px] font-semibold tracking-wide" style={{ color: `${gradient.accent}dd` }}>
-              {t('market.pallets')}
-            </span>
-          </div>
+          <span className="text-[22px] font-black text-white leading-none mt-1" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+            {card.quantity.toLocaleString()}
+          </span>
+          <span className="text-[10px] font-semibold text-white/80">
+            {t('market.pallets')}
+          </span>
         </div>
 
         {flexTags.length > 0 && (
-          <div className="absolute bottom-2.5 right-2.5 left-2.5 flex gap-1 justify-end">
+          <div className="absolute bottom-2 right-2 left-2 flex gap-1 justify-end">
             {flexTags.slice(0, 2).map((tag, i) => (
               <span
                 key={i}
                 className="flex items-center gap-0.5 px-2 py-0.5 rounded-lg text-[9px] font-bold whitespace-nowrap"
                 style={{
-                  background: 'rgba(0,0,0,0.35)',
-                  color: 'rgba(255,255,255,0.9)',
+                  background: 'rgba(0,0,0,0.4)',
+                  color: 'rgba(255,255,255,0.95)',
                   backdropFilter: 'blur(6px)',
-                  border: `1px solid ${gradient.accent}40`,
+                  border: '1px solid rgba(255,255,255,0.2)',
                 }}
               >
                 {tag.icon}
@@ -277,25 +248,19 @@ function DemandCardItem({ card, onClick, index = 0 }: { card: DemandCard; onClic
         )}
       </div>
 
-      <div
-        className="px-3 py-2.5"
-        style={{
-          background: `linear-gradient(180deg, ${gradient.to} 0%, ${gradient.from} 100%)`,
-          borderTop: `1px solid ${gradient.accent}20`,
-        }}
-      >
-        <p className="text-[13px] font-black text-white leading-tight truncate">{card.pallet_type}</p>
-        <div className="flex items-center justify-between mt-1">
-          <div className="flex items-center gap-1 min-w-0">
-            <MapPin className="w-3 h-3 flex-shrink-0" style={{ color: `${gradient.accent}cc` }} />
-            <span className="text-[11px] truncate font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>
-              {card.city}
-            </span>
+      <div className="p-3">
+        <p className="text-[13px] font-black text-gray-900 leading-tight truncate">{card.pallet_type}</p>
+        <div className="flex items-center justify-between mt-1.5">
+          <div className="flex items-center gap-1">
+            <MapPin className="w-2.5 h-2.5 flex-shrink-0 text-gray-400" />
+            <span className="text-[11px] text-gray-500 truncate">{card.city}</span>
           </div>
-          <span className="text-[10px] flex-shrink-0 mr-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
+          <span
+            className="px-2 py-0.5 rounded-lg text-[10px] font-black flex-shrink-0"
+            style={{ background: '#fff7ed', color: '#c2410c' }}
+          >
             {timeAgo(card.created_at)}
           </span>
-
         </div>
       </div>
     </button>
