@@ -262,6 +262,20 @@ export function useOrderSettings() {
     return { success: true };
   };
 
+  const deleteFlexibilityOption = async (id: string) => {
+    const { error } = await supabase
+      .from('flexibility_options_settings')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting flexibility option:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  };
+
   const updateSummarySettings = async (updates: Partial<SummarySettings>) => {
     if (!summarySettings) return { success: false, error: 'No settings found' };
 
@@ -294,6 +308,7 @@ export function useOrderSettings() {
     updateQuantitySettings,
     createFlexibilityOption,
     updateFlexibilityOption,
+    deleteFlexibilityOption,
     updateSummarySettings,
     refresh: loadSettings
   };
