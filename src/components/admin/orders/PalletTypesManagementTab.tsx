@@ -1,12 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import {
-  Plus, Pencil, Trash2, Eye, EyeOff, GripVertical,
-  Package, Box, Container, Archive, Layers, Grid3X3,
-  Truck, ShoppingCart, Warehouse, CreditCard,
-  Recycle, Shield, Zap, Star, Tag, Bookmark,
-  LayoutGrid, Boxes, PackageOpen, PackageCheck,
-  Upload, X, Search, Check, ImageIcon, Smile
-} from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, GripVertical, Package, Box, Container, Archive, Layers, Grid3x3 as Grid3X3, Truck, ShoppingCart, Warehouse, CreditCard, Recycle, Shield, Zap, Star, Tag, Bookmark, LayoutGrid, Boxes, PackageOpen, PackageCheck, Upload, X, Search, Check, Image as ImageIcon, Smile } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 interface PalletType {
