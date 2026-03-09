@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, X, Send, Headphones, User, Phone, ChevronDown, Loader2, Bot } from 'lucide-react';
+import { MessageCircle, X, Send, Headphones, ChevronDown, Loader2, Bot } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface SupportMessage {
@@ -19,6 +19,8 @@ interface FloatingSupportChatProps {
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+const GUEST_PHONE = 'guest-visitor';
 
 async function fetchMessagesForPhone(phone: string): Promise<SupportMessage[]> {
   const { data } = await supabase.rpc('user_get_support_messages', { p_user_phone: phone });
@@ -56,32 +58,24 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
   const [unreadCount, setUnreadCount] = useState(0);
   const [hasNewMessage, setHasNewMessage] = useState(false);
 
-  const [guestName, setGuestName] = useState('');
-  const [guestPhone, setGuestPhone] = useState('');
-  const [guestSubmitted, setGuestSubmitted] = useState(false);
-  const [guestError, setGuestError] = useState('');
-  const [submittingGuest, setSubmittingGuest] = useState(false);
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
 
-  const effectivePhone = userPhone || (guestSubmitted ? guestPhone : null);
-  const effectiveName = userName || guestName;
+  const effectivePhone = userPhone || GUEST_PHONE;
+  const effectiveName = userName || 'زائر';
 
   const refreshMessages = useCallback(async (phone: string) => {
     const msgs = await fetchMessagesForPhone(phone);
     setMessages(msgs);
   }, []);
 
-  const isOpenRef = useRef(isOpen);
-  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
-
   useEffect(() => {
-    if (!effectivePhone) return;
-    refreshMessages(effectivePhone);
-
     if (channelRef.current) supabase.removeChannel(channelRef.current);
+
+    refreshMessages(effectivePhone);
 
     const channel = supabase
       .channel(`support-chat-${effectivePhone}`)
@@ -112,7 +106,7 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
   }, [effectivePhone, refreshMessages]);
 
   useEffect(() => {
-    if (isOpen && effectivePhone) {
+    if (isOpen) {
       markReadForPhone(effectivePhone);
       setUnreadCount(0);
     }
@@ -123,7 +117,7 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
   }, [messages, isOpen]);
 
   const sendMessage = useCallback(async () => {
-    if (!effectivePhone || !inputText.trim() || sending) return;
+    if (!inputText.trim() || sending) return;
     const msg = inputText.trim();
     setInputText('');
     setSending(true);
@@ -138,26 +132,6 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
       e.preventDefault();
       sendMessage();
     }
-  };
-
-  const handleGuestSubmit = async () => {
-    if (!guestName.trim() || !guestPhone.trim()) {
-      setGuestError('يرجى إدخال الاسم ورقم الجوال');
-      return;
-    }
-    if (!/^05\d{8}$/.test(guestPhone.trim())) {
-      setGuestError('رقم الجوال غير صحيح (مثال: 0512345678)');
-      return;
-    }
-    setGuestError('');
-    setSubmittingGuest(true);
-    const phone = guestPhone.trim();
-    const name = guestName.trim();
-    await sendSupportMessage(phone, `مرحباً، أنا ${name}`);
-    triggerAIReply(phone, `مرحباً، أنا ${name}، أريد الاستفسار`);
-    setGuestSubmitted(true);
-    setSubmittingGuest(false);
-    await refreshMessages(phone);
   };
 
   const formatTime = (iso: string) =>
@@ -215,150 +189,98 @@ export default function FloatingSupportChat({ userPhone, userName }: FloatingSup
           </div>
 
           <div className="bg-white flex flex-col" style={{ height: '420px' }}>
-            {!effectivePhone ? (
-              <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 gap-5" dir="rtl">
-                <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, #1a4a5e 0%, #0e2233 100%)' }}
-                >
-                  <MessageCircle size={28} className="text-white" />
-                </div>
-                <div className="text-center">
-                  <h3 className="font-bold text-slate-800 text-base mb-1">مرحباً بك!</h3>
-                  <p className="text-slate-500 text-xs leading-relaxed">
-                    أدخل بياناتك للتواصل مع فريق الدعم الفوري
-                  </p>
-                </div>
-                <div className="w-full flex flex-col gap-3">
-                  <div className="relative">
-                    <User size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="الاسم"
-                      value={guestName}
-                      onChange={(e) => setGuestName(e.target.value)}
-                      className="w-full pr-9 pl-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] text-right bg-slate-50"
-                    />
+            <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-2" dir="rtl">
+              {messages.length === 0 && (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 py-8">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
+                    <Bot size={22} className="text-slate-400" />
                   </div>
-                  <div className="relative">
-                    <Phone size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="tel"
-                      placeholder="رقم الجوال (05xxxxxxxx)"
-                      value={guestPhone}
-                      onChange={(e) => setGuestPhone(e.target.value)}
-                      className="w-full pr-9 pl-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] text-right bg-slate-50"
-                      dir="ltr"
-                    />
+                  <div className="text-center">
+                    <p className="text-slate-600 text-sm font-medium">مرحباً {effectiveName}!</p>
+                    <p className="text-slate-400 text-xs mt-1">كيف يمكننا مساعدتك؟</p>
                   </div>
-                  {guestError && <p className="text-red-500 text-xs text-right">{guestError}</p>}
-                  <button
-                    onClick={handleGuestSubmit}
-                    disabled={submittingGuest}
-                    className="w-full py-2.5 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60"
-                    style={{ background: 'linear-gradient(135deg, #1a4a5e 0%, #0e2233 100%)' }}
-                  >
-                    {submittingGuest && <Loader2 size={16} className="animate-spin" />}
-                    ابدأ المحادثة
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-2" dir="rtl">
-                  {messages.length === 0 && (
-                    <div className="flex-1 flex flex-col items-center justify-center gap-3 py-8">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
-                        <Bot size={22} className="text-slate-400" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-slate-600 text-sm font-medium">مرحباً {effectiveName}!</p>
-                        <p className="text-slate-400 text-xs mt-1">كيف يمكننا مساعدتك؟</p>
-                      </div>
-                      <div className="flex flex-wrap gap-2 justify-center mt-2">
-                        {['ما هي المنصة؟', 'كيف أبيع؟', 'كيف أشتري؟'].map((q) => (
-                          <button
-                            key={q}
-                            onClick={() => { setInputText(q); textareaRef.current?.focus(); }}
-                            className="px-3 py-1.5 rounded-full border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 hover:border-[#1a4a5e]/30 transition-colors bg-white"
-                          >
-                            {q}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex gap-2 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
-                    >
-                      {msg.sender === 'admin' && (
-                        <div
-                          className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5"
-                          style={{ background: 'linear-gradient(135deg, #1a4a5e, #0e2233)' }}
-                        >
-                          <Bot size={13} className="text-white" />
-                        </div>
-                      )}
-                      <div
-                        className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                          msg.sender === 'user'
-                            ? 'rounded-tr-sm text-white'
-                            : 'rounded-tl-sm text-slate-800 bg-slate-100'
-                        }`}
-                        style={
-                          msg.sender === 'user'
-                            ? { background: 'linear-gradient(135deg, #1a4a5e, #0e2233)' }
-                            : {}
-                        }
+                  <div className="flex flex-wrap gap-2 justify-center mt-2">
+                    {['ما هي المنصة؟', 'كيف أبيع؟', 'كيف أشتري؟'].map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => { setInputText(q); textareaRef.current?.focus(); }}
+                        className="px-3 py-1.5 rounded-full border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 hover:border-[#1a4a5e]/30 transition-colors bg-white"
                       >
-                        {msg.image_url && (
-                          <img src={msg.image_url} alt="" className="rounded-lg mb-1 max-w-full" />
-                        )}
-                        <p className="whitespace-pre-wrap break-words">{msg.message}</p>
-                        <p
-                          className={`text-xs mt-1 ${
-                            msg.sender === 'user' ? 'text-white/60' : 'text-slate-400'
-                          }`}
-                        >
-                          {formatTime(msg.created_at)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  <div ref={messagesEndRef} />
+                        {q}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              )}
 
-                <div className="border-t border-slate-100 px-3 py-2.5" dir="rtl">
-                  <div className="flex items-end gap-2">
-                    <button
-                      onClick={sendMessage}
-                      disabled={!inputText.trim() || sending}
-                      className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-95 disabled:opacity-40"
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex gap-2 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                >
+                  {msg.sender === 'admin' && (
+                    <div
+                      className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5"
                       style={{ background: 'linear-gradient(135deg, #1a4a5e, #0e2233)' }}
                     >
-                      {sending ? (
-                        <Loader2 size={15} className="text-white animate-spin" />
-                      ) : (
-                        <Send size={15} className="text-white" />
-                      )}
-                    </button>
-                    <textarea
-                      ref={textareaRef}
-                      value={inputText}
-                      onChange={(e) => setInputText(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="اكتب رسالتك..."
-                      rows={1}
-                      className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] placeholder:text-slate-400"
-                      style={{ maxHeight: '80px', minHeight: '36px' }}
-                    />
+                      <Bot size={13} className="text-white" />
+                    </div>
+                  )}
+                  <div
+                    className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                      msg.sender === 'user'
+                        ? 'rounded-tr-sm text-white'
+                        : 'rounded-tl-sm text-slate-800 bg-slate-100'
+                    }`}
+                    style={
+                      msg.sender === 'user'
+                        ? { background: 'linear-gradient(135deg, #1a4a5e, #0e2233)' }
+                        : {}
+                    }
+                  >
+                    {msg.image_url && (
+                      <img src={msg.image_url} alt="" className="rounded-lg mb-1 max-w-full" />
+                    )}
+                    <p className="whitespace-pre-wrap break-words">{msg.message}</p>
+                    <p
+                      className={`text-xs mt-1 ${
+                        msg.sender === 'user' ? 'text-white/60' : 'text-slate-400'
+                      }`}
+                    >
+                      {formatTime(msg.created_at)}
+                    </p>
                   </div>
                 </div>
-              </>
-            )}
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+
+            <div className="border-t border-slate-100 px-3 py-2.5" dir="rtl">
+              <div className="flex items-end gap-2">
+                <button
+                  onClick={sendMessage}
+                  disabled={!inputText.trim() || sending}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-95 disabled:opacity-40"
+                  style={{ background: 'linear-gradient(135deg, #1a4a5e, #0e2233)' }}
+                >
+                  {sending ? (
+                    <Loader2 size={15} className="text-white animate-spin" />
+                  ) : (
+                    <Send size={15} className="text-white" />
+                  )}
+                </button>
+                <textarea
+                  ref={textareaRef}
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="اكتب رسالتك..."
+                  rows={1}
+                  className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] placeholder:text-slate-400"
+                  style={{ maxHeight: '80px', minHeight: '36px' }}
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}
