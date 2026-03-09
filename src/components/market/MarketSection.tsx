@@ -156,6 +156,22 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
             {card.available_quantity.toLocaleString()} {t('market.pallets')}
           </span>
         </div>
+        {card.trust_rating != null && (
+          <div className="flex items-center gap-0.5 mt-1.5">
+            {[1,2,3,4,5].map((s) => (
+              <Star
+                key={s}
+                className="w-2.5 h-2.5"
+                style={{
+                  fill: s <= Math.round(card.trust_rating!) ? '#f59e0b' : 'none',
+                  color: s <= Math.round(card.trust_rating!) ? '#f59e0b' : '#d1d5db',
+                  strokeWidth: 1.5,
+                }}
+              />
+            ))}
+            <span className="text-[10px] font-bold text-amber-600 mr-0.5">{card.trust_rating.toFixed(1)}</span>
+          </div>
+        )}
       </div>
     </button>
   );
@@ -251,6 +267,22 @@ function DemandCardItem({ card, onClick, index = 0 }: { card: DemandCard; onClic
             {timeAgo(card.created_at)}
           </span>
         </div>
+        {card.trust_rating != null && (
+          <div className="flex items-center gap-0.5 mt-1.5">
+            {[1,2,3,4,5].map((s) => (
+              <Star
+                key={s}
+                className="w-2.5 h-2.5"
+                style={{
+                  fill: s <= Math.round(card.trust_rating!) ? '#f59e0b' : 'none',
+                  color: s <= Math.round(card.trust_rating!) ? '#f59e0b' : '#d1d5db',
+                  strokeWidth: 1.5,
+                }}
+              />
+            ))}
+            <span className="text-[10px] font-bold text-amber-600 mr-0.5">{card.trust_rating.toFixed(1)}</span>
+          </div>
+        )}
       </div>
     </button>
   );
@@ -341,6 +373,25 @@ export default function MarketSection({
         }
       }
 
+      const allPhones = [
+        ...(supplyRes.data || []).map((r: any) => r.phone),
+        ...(demandRes.data || []).map((r: any) => r.phone),
+      ].filter(Boolean);
+      const uniquePhones = [...new Set(allPhones)];
+
+      let trustByPhone: Record<string, number> = {};
+      if (uniquePhones.length > 0) {
+        const { data: usersData } = await supabase
+          .from('platform_users')
+          .select('phone, trust_rating')
+          .in('phone', uniquePhones);
+        if (usersData) {
+          for (const u of usersData) {
+            if (u.trust_rating != null) trustByPhone[u.phone] = u.trust_rating;
+          }
+        }
+      }
+
       const supplyItems: SupplyCard[] = (supplyRes.data || []).map((r: any) => {
         const imgs = imagesByBatch[r.id] || (r.image_url ? [r.image_url] : []);
         return {
@@ -356,7 +407,7 @@ export default function MarketSection({
           description: r.description || '',
           image_urls: imgs,
           created_at: r.created_at,
-          trust_rating: undefined,
+          trust_rating: trustByPhone[r.phone],
           kind: 'supply',
         };
       });
@@ -373,7 +424,7 @@ export default function MarketSection({
         accept_close_city: r.accept_close_city,
         accept_partial_delivery: r.accept_partial_delivery,
         created_at: r.created_at,
-        trust_rating: undefined,
+        trust_rating: trustByPhone[r.phone],
         kind: 'demand',
       }));
 
