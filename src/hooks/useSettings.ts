@@ -58,18 +58,32 @@ export function useSettings(phone: string) {
   }, [phone]);
 
   useEffect(() => {
+    if (!phone) return;
     fetchSupportMessages();
     fetchNotifPrefs();
 
     const channel = supabase
-      .channel(`support-${phone}`)
+      .channel(`support-user-${phone}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'support_messages',
         filter: `user_phone=eq.${phone}`,
-      }, () => {
-        fetchSupportMessages();
+      }, (payload) => {
+        const msg = payload.new as SupportMessage;
+        setSupportMessages(prev => {
+          if (prev.find(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'support_messages',
+        filter: `user_phone=eq.${phone}`,
+      }, (payload) => {
+        const updated = payload.new as SupportMessage;
+        setSupportMessages(prev => prev.map(m => m.id === updated.id ? updated : m));
       })
       .subscribe();
 
@@ -139,12 +153,12 @@ export function useSettings(phone: string) {
 
   const uploadSupportImage = useCallback(async (file: File): Promise<string | null> => {
     const ext = file.name.split('.').pop();
-    const path = `support/${phone}/${Date.now()}.${ext}`;
+    const path = `support-user/${phone}/${Date.now()}.${ext}`;
     const { error } = await supabase.storage
-      .from('inventory-images')
+      .from('support-images')
       .upload(path, file, { cacheControl: '3600', upsert: true });
     if (error) return null;
-    const { data } = supabase.storage.from('inventory-images').getPublicUrl(path);
+    const { data } = supabase.storage.from('support-images').getPublicUrl(path);
     return data.publicUrl;
   }, [phone]);
 

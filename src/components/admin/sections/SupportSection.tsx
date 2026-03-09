@@ -320,19 +320,24 @@ function SuggestionsPanel({ adminEmail }: { adminEmail: string }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'reviewed' | 'resolved'>('all');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [newCount, setNewCount] = useState(0);
+  const searchRef = useRef(search);
+  const filterRef = useRef(statusFilter);
+  searchRef.current = search;
+  filterRef.current = statusFilter;
 
   const fetchSuggestions = useCallback(async (s?: string, f?: string) => {
     try {
       const { data } = await supabase.rpc('admin_get_suggestions', {
         p_admin_email: adminEmail,
-        p_status: f ?? statusFilter,
-        p_search: s ?? null,
+        p_status: f ?? filterRef.current,
+        p_search: s !== undefined ? (s || null) : (searchRef.current || null),
         p_limit: 100,
         p_offset: 0,
       });
       setSuggestions((data || []) as Suggestion[]);
     } catch { /* noop */ }
-  }, [adminEmail, statusFilter]);
+  }, [adminEmail]);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -343,6 +348,27 @@ function SuggestionsPanel({ adminEmail }: { adminEmail: string }) {
 
   useEffect(() => {
     Promise.all([fetchSuggestions(), fetchStats()]).finally(() => setLoading(false));
+
+    const channel = supabase
+      .channel('admin-suggestions-realtime')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'user_suggestions',
+      }, (payload) => {
+        const newSugg = payload.new as Suggestion;
+        setNewCount(n => n + 1);
+        if (filterRef.current === 'all' || filterRef.current === 'pending') {
+          setSuggestions(prev => {
+            if (prev.find(s => s.id === newSugg.id)) return prev;
+            return [newSugg, ...prev];
+          });
+        }
+        fetchStats();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [fetchSuggestions, fetchStats]);
 
   const handleStatusChange = async (id: string, status: string) => {
@@ -379,6 +405,23 @@ function SuggestionsPanel({ adminEmail }: { adminEmail: string }) {
 
   return (
     <div className="p-4 lg:p-6 space-y-5" dir="rtl">
+      {newCount > 0 && (
+        <button
+          onClick={() => { setNewCount(0); fetchSuggestions('', 'all'); setStatusFilter('all'); setSearch(''); }}
+          className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border animate-pulse"
+          style={{ background: '#FEF3C7', borderColor: '#FCD34D' }}
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-[#D97706] flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-[10px] font-black">{newCount}</span>
+            </div>
+            <p className="text-sm font-bold text-[#92400E]">
+              {newCount === 1 ? 'اقتراح جديد وصل للتو' : `${newCount} اقتراحات جديدة وصلت للتو`}
+            </p>
+          </div>
+          <span className="text-[11px] text-[#D97706] font-bold">عرض</span>
+        </button>
+      )}
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard icon={Lightbulb} label="إجمالي الاقتراحات" value={stats.total} color="#7C3AED" />
@@ -446,6 +489,7 @@ interface Props {
 
 export default function SupportSection({ adminEmail }: Props) {
   const [activeTab, setActiveTab] = useState<'chat' | 'suggestions'>('chat');
+  const [pendingSuggestions, setPendingSuggestions] = useState(0);
 
   const {
     conversations, messages, stats,
@@ -463,6 +507,22 @@ export default function SupportSection({ adminEmail }: Props) {
     await selectConversation(phone);
     setShowChat(true);
   };
+
+  useEffect(() => {
+    const ch = supabase
+      .channel('support-section-suggestions-badge')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'user_suggestions',
+      }, () => {
+        if (activeTab !== 'suggestions') {
+          setPendingSuggestions(n => n + 1);
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [activeTab]);
 
   if (loading && activeTab === 'chat') {
     return (
@@ -516,7 +576,7 @@ export default function SupportSection({ adminEmail }: Props) {
             )}
           </button>
           <button
-            onClick={() => setActiveTab('suggestions')}
+            onClick={() => { setActiveTab('suggestions'); setPendingSuggestions(0); }}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-bold border-b-2 transition-all ${
               activeTab === 'suggestions'
                 ? 'text-[#7C3AED] border-[#7C3AED] bg-[#F5F3FF]/50'
@@ -525,6 +585,11 @@ export default function SupportSection({ adminEmail }: Props) {
           >
             <Lightbulb className="w-4 h-4" />
             الاقتراحات والتحسينات
+            {pendingSuggestions > 0 && (
+              <span className="w-5 h-5 rounded-full bg-[#D97706] text-white text-[10px] font-black flex items-center justify-center">
+                {pendingSuggestions > 9 ? '9+' : pendingSuggestions}
+              </span>
+            )}
           </button>
         </div>
       </div>
