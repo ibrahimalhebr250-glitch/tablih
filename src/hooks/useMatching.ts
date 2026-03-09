@@ -57,58 +57,16 @@ export function useMatching() {
             );
         }
 
-        await new Promise((r) => setTimeout(r, 2000));
-
-        const { data: updatedOrder } = await supabase
-          .from('orders')
-          .select('id, request_id, status, matched_quantity')
-          .eq('id', savedOrder.id)
-          .maybeSingle();
-
-        if (
-          updatedOrder &&
-          (updatedOrder.status === 'matched' || updatedOrder.status === 'partially_matched')
-        ) {
-          const { data: deals } = await supabase
-            .from('deals')
-            .select('id, deal_ref, quantity, supplier_phone, city, reservation_expires_at')
-            .eq('order_id', savedOrder.id)
-            .not('status', 'eq', 'cancelled')
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-          if (deals && deals.length > 0) {
-            const deal = deals[0];
-            const result: MatchResult = {
-              found: true,
-              matchedQuantity: deal.quantity,
-              supplierCity: deal.city,
-              supplierPhone: deal.supplier_phone,
-              dealId: deal.id,
-              dealRef: deal.deal_ref,
-              reservationExpiresAt: deal.reservation_expires_at,
-            };
-            setMatchResult(result);
-            onDone(savedOrder.id, savedOrder.request_id);
-            return;
-          }
-        }
-
-        let retries = 0;
-        const maxRetries = 3;
-        while (retries < maxRetries) {
-          await new Promise((r) => setTimeout(r, 1500));
-          retries++;
-
-          const { data: recheckOrder } = await supabase
+        const checkForMatch = async (): Promise<boolean> => {
+          const { data: order } = await supabase
             .from('orders')
-            .select('id, status, matched_quantity')
+            .select('id, request_id, status, matched_quantity')
             .eq('id', savedOrder.id)
             .maybeSingle();
 
           if (
-            recheckOrder &&
-            (recheckOrder.status === 'matched' || recheckOrder.status === 'partially_matched')
+            order &&
+            (order.status === 'matched' || order.status === 'partially_matched')
           ) {
             const { data: deals } = await supabase
               .from('deals')
@@ -120,7 +78,7 @@ export function useMatching() {
 
             if (deals && deals.length > 0) {
               const deal = deals[0];
-              const result: MatchResult = {
+              setMatchResult({
                 found: true,
                 matchedQuantity: deal.quantity,
                 supplierCity: deal.city,
@@ -128,12 +86,21 @@ export function useMatching() {
                 dealId: deal.id,
                 dealRef: deal.deal_ref,
                 reservationExpiresAt: deal.reservation_expires_at,
-              };
-              setMatchResult(result);
+              });
               onDone(savedOrder.id, savedOrder.request_id);
-              return;
+              return true;
             }
           }
+          return false;
+        };
+
+        const maxAttempts = 6;
+        let delay = 1500;
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          await new Promise((r) => setTimeout(r, delay));
+          const found = await checkForMatch();
+          if (found) return;
+          delay = Math.min(delay * 1.4, 4000);
         }
 
         setMatchResult({ found: false });

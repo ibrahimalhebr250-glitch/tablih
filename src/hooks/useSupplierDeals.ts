@@ -25,7 +25,7 @@ export function useSupplierDeals(phone: string) {
     fetchDeals();
 
     const dealsChannel = supabase
-      .channel('supplier-deals')
+      .channel(`supplier-deals-${phone}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

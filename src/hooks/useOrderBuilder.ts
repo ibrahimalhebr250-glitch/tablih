@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { OrderFormData, PalletType, PalletSize, PalletQuality, BuilderStep } from '../types/order';
 import type { RequestFieldsConfig } from './usePlatformSettings';
 import { supabase } from '../lib/supabase';
@@ -40,6 +40,11 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
   const [savedOrderId, setSavedOrderId] = useState<string | null>(null);
   const [savedRequestId, setSavedRequestId] = useState<string | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
+
+  const phoneRef = useRef(phone);
+  const draftIdRef = useRef(draftId);
+  useEffect(() => { phoneRef.current = phone; }, [phone]);
+  useEffect(() => { draftIdRef.current = draftId; }, [draftId]);
 
   useEffect(() => {
     if (phone && form.palletType && step === 'form') {
@@ -83,15 +88,17 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
     }
   };
 
-  const logOperation = async (action: string, details?: any) => {
-    if (!phone) return;
+  const logOperation = useCallback(async (action: string, details?: any) => {
+    const currentPhone = phoneRef.current;
+    const currentDraftId = draftIdRef.current;
+    if (!currentPhone) return;
 
     try {
       await supabase
         .from('order_operations_log')
         .insert([{
-          phone,
-          order_id: draftId,
+          phone: currentPhone,
+          order_id: currentDraftId,
           action,
           details,
           timestamp: new Date().toISOString()
@@ -99,27 +106,27 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
     } catch (err) {
       console.error('Failed to log operation:', err);
     }
-  };
+  }, []);
 
   const setPalletType = useCallback((type: PalletType) => {
     setForm((prev) => ({ ...prev, palletType: type }));
     logOperation('change_pallet_type', { type });
-  }, []);
+  }, [logOperation]);
 
   const setSize = useCallback((size: PalletSize) => {
     setForm((prev) => ({ ...prev, size }));
     logOperation('change_size', { size });
-  }, []);
+  }, [logOperation]);
 
   const setQuality = useCallback((quality: PalletQuality) => {
     setForm((prev) => ({ ...prev, quality }));
     logOperation('change_quality', { quality });
-  }, []);
+  }, [logOperation]);
 
   const setQuantity = useCallback((quantity: number) => {
     setForm((prev) => ({ ...prev, quantity: Math.max(1, quantity) }));
     logOperation('change_quantity', { quantity });
-  }, []);
+  }, [logOperation]);
 
   const setCity = useCallback((city: string) => {
     setForm((prev) => ({ ...prev, city }));
@@ -128,7 +135,7 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
   const setCondition = useCallback((condition: string) => {
     setForm((prev) => ({ ...prev, condition }));
     logOperation('change_condition', { condition });
-  }, []);
+  }, [logOperation]);
 
   const setFlexibility = useCallback(
     (key: 'acceptCloseQuality' | 'acceptCloseCity' | 'acceptPartialDelivery', value: boolean) => {
@@ -157,26 +164,26 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
   const handleCompleteOrder = useCallback(() => {
     if (!isAuthenticated) {
       setStep('auth');
-      logOperation('start_auth', { form });
+      logOperation('start_auth', {});
     } else {
       setStep('matching');
-      logOperation('start_matching', { form });
+      logOperation('start_matching', {});
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, logOperation]);
 
   const handleAuthComplete = useCallback((userPhone: string) => {
     setPhone(userPhone);
     setIsAuthenticated(true);
     setStep('matching');
     logOperation('auth_complete', { phone: userPhone });
-  }, []);
+  }, [logOperation]);
 
   const handleMatchingDone = useCallback((orderId: string, requestId: string) => {
     setSavedOrderId(orderId);
     setSavedRequestId(requestId);
     setStep('result');
     logOperation('matching_complete', { orderId, requestId });
-  }, []);
+  }, [logOperation]);
 
   const reset = useCallback(() => {
     setStep('form');

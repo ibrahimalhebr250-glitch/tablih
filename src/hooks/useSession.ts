@@ -40,30 +40,32 @@ export function useSession() {
 
   useEffect(() => {
     const initSession = async () => {
-      const validationResult = await sessionManager.validateSession();
+      try {
+        const validationResult = await sessionManager.validateSession();
 
-      if (validationResult.success && validationResult.data) {
-        const { data: user } = await supabase
-          .from('platform_users')
-          .select('*')
-          .eq('phone', validationResult.data.phone)
-          .maybeSingle();
+        if (validationResult.success && validationResult.data) {
+          const { data: user } = await supabase
+            .from('platform_users')
+            .select('*')
+            .eq('phone', validationResult.data.phone)
+            .maybeSingle();
 
-        if (user) {
-          const s = await buildSession(user);
-          setSession(s);
-          setLoading(false);
-          return;
+          if (user) {
+            const s = await buildSession(user);
+            setSession(s);
+            setLoading(false);
+            return;
+          }
         }
-      }
 
-      const stored = loadStoredSession();
-      if (stored) {
-        refreshIfNeeded(stored).then((s) => {
+        const stored = loadStoredSession();
+        if (stored) {
+          const s = await refreshIfNeeded(stored);
           setSession(s);
-          setLoading(false);
-        });
-      } else {
+        }
+      } catch (err) {
+        console.error('Session initialization failed:', err);
+      } finally {
         setLoading(false);
       }
     };

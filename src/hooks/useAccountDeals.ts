@@ -58,21 +58,30 @@ export function useAccountDeals(phone: string) {
   useEffect(() => {
     fetchDeals();
 
-    const channel = supabase
-      .channel('account-deals')
+    const buyerChannel = supabase
+      .channel(`account-deals-buyer-${phone}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'deals',
-      }, (payload: any) => {
-        const row = payload.new || payload.old;
-        if (row && (row.buyer_phone === phone || row.supplier_phone === phone)) {
-          fetchDeals();
-        }
-      })
+        filter: `buyer_phone=eq.${phone}`,
+      }, () => { fetchDeals(); })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    const supplierChannel = supabase
+      .channel(`account-deals-supplier-${phone}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'deals',
+        filter: `supplier_phone=eq.${phone}`,
+      }, () => { fetchDeals(); })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(buyerChannel);
+      supabase.removeChannel(supplierChannel);
+    };
   }, [fetchDeals, phone]);
 
   const activeDeals = deals.filter(d => ACTIVE_STATUSES.includes(d.status));

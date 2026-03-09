@@ -107,30 +107,29 @@ export function useAccountOrders(phone: string) {
     fetchOrders();
 
     const ordersChannel = supabase
-      .channel('account-orders-watch')
+      .channel(`account-orders-watch-${phone}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'orders',
-      }, (payload: any) => {
-        const row = payload.new || payload.old;
-        if (row?.phone === phone) {
-          fetchOrders();
-        }
-      })
+        filter: `phone=eq.${phone}`,
+      }, () => { fetchOrders(); })
+      .subscribe();
+
+    const dealsChannel = supabase
+      .channel(`account-orders-deals-${phone}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'deals',
-      }, (payload: any) => {
-        const row = payload.new || payload.old;
-        if (row?.buyer_phone === phone) {
-          fetchOrders();
-        }
-      })
+        filter: `buyer_phone=eq.${phone}`,
+      }, () => { fetchOrders(); })
       .subscribe();
 
-    return () => { supabase.removeChannel(ordersChannel); };
+    return () => {
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(dealsChannel);
+    };
   }, [fetchOrders, phone]);
 
   const activeOrders = orders.filter(o => ACTIVE_STATUSES.includes(o.status));

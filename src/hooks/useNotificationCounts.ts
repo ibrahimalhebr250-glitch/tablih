@@ -60,23 +60,29 @@ export function useNotificationCounts(phone?: string) {
     fetchCounts();
 
     const ordersSubscription = supabase
-      .channel('orders_count_changes')
+      .channel(`orders_count_changes_${phone}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `phone=eq.${phone}` }, fetchCounts)
       .subscribe();
 
-    const dealsSubscription = supabase
-      .channel('deals_count_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, fetchCounts)
+    const dealsBuyerSubscription = supabase
+      .channel(`deals_count_buyer_${phone}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals', filter: `buyer_phone=eq.${phone}` }, fetchCounts)
+      .subscribe();
+
+    const dealsSupplierSubscription = supabase
+      .channel(`deals_count_supplier_${phone}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals', filter: `supplier_phone=eq.${phone}` }, fetchCounts)
       .subscribe();
 
     const inventorySubscription = supabase
-      .channel('inventory_count_changes')
+      .channel(`inventory_count_changes_${phone}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_batches', filter: `supplier_phone=eq.${phone}` }, fetchCounts)
       .subscribe();
 
     return () => {
       ordersSubscription.unsubscribe();
-      dealsSubscription.unsubscribe();
+      dealsBuyerSubscription.unsubscribe();
+      dealsSupplierSubscription.unsubscribe();
       inventorySubscription.unsubscribe();
     };
   }, [phone]);

@@ -73,7 +73,7 @@ export function useSmartNotifications(phone?: string) {
     if (!phone) return;
 
     const channel = supabase
-      .channel('smart-notifications')
+      .channel(`smart-notifications-${phone}`)
       .on(
         'postgres_changes',
         {

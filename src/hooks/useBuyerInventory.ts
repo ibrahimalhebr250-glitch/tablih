@@ -119,7 +119,7 @@ export function useBuyerInventory(buyerPhone: string) {
   // Subscribe to realtime changes
   useEffect(() => {
     const channel = supabase
-      .channel('buyer_inventory_changes')
+      .channel(`buyer_inventory_changes_${buyerPhone}`)
       .on(
         'postgres_changes',
         {
