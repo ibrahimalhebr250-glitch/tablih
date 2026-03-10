@@ -334,6 +334,14 @@ export default function DemandDetailSheet({ card, onClose, sessionPhone }: Props
   };
 
   const handleLoginFromPrompt = () => {
+    sessionStorage.setItem('pending_demand_offer', JSON.stringify({
+      order_id: card.id,
+      pallet_type: card.pallet_type,
+      size: card.size,
+      quality: card.quality,
+      city: card.city,
+      quantity: card.quantity,
+    }));
     setShowLoginPrompt(false);
     onClose();
     window.location.hash = '#/account';

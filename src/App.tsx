@@ -84,6 +84,27 @@ function App() {
     }
   }, []);
 
+  const checkPendingDemandOffer = useCallback(async (phone: string) => {
+    const raw = sessionStorage.getItem('pending_demand_offer');
+    if (!raw) return;
+    try {
+      const pending = JSON.parse(raw);
+      if (!pending.order_id) return;
+      sessionStorage.removeItem('pending_demand_offer');
+      await supabase.rpc('create_supplier_offer_for_demand', {
+        p_supplier_phone: phone,
+        p_order_id: pending.order_id,
+        p_quantity: pending.quantity || 1,
+        p_price_per_pallet: 0,
+        p_supplier_message: null,
+      });
+      setAccountInitialTab('orders');
+      setModal('account');
+    } catch {
+      sessionStorage.removeItem('pending_demand_offer');
+    }
+  }, []);
+
   useEffect(() => {
     const storedAdminData = sessionStorage.getItem('adminStaffData');
     if (storedAdminData) {
@@ -129,6 +150,15 @@ function App() {
       return;
     }
 
+    const hasPendingDemandOffer = sessionStorage.getItem('pending_demand_offer');
+    if (hasPendingDemandOffer) {
+      const phone = result.session?.profile?.phone || data.phone;
+      await checkPendingDemandOffer(phone);
+      setFreshLogin(true);
+      setMainView('marketplace');
+      return;
+    }
+
     const next = pendingAfterAuth.current;
     pendingAfterAuth.current = null;
 
@@ -159,6 +189,15 @@ function App() {
     if (hasPending) {
       const userPhone = result.session?.profile?.phone || phone;
       await checkPendingMarketRequest(userPhone);
+      setFreshLogin(true);
+      setMainView('marketplace');
+      return;
+    }
+
+    const hasPendingDemandOffer = sessionStorage.getItem('pending_demand_offer');
+    if (hasPendingDemandOffer) {
+      const userPhone = result.session?.profile?.phone || phone;
+      await checkPendingDemandOffer(userPhone);
       setFreshLogin(true);
       setMainView('marketplace');
       return;
