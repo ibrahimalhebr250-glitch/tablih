@@ -64,6 +64,7 @@ function App() {
   const [inventorySource, setInventorySource] = useState<'supplier_added' | 'purchase_transfer'>('supplier_added');
   const [accountInitialTab, setAccountInitialTab] = useState<'warehouse' | 'deals' | 'orders' | 'settings' | undefined>();
   const [pendingDemandOrderId, setPendingDemandOrderId] = useState<string | null>(null);
+  const [pendingDemandOffer, setPendingDemandOffer] = useState<{ order_id: string; pallet_type: string; size: string; quality: string; city: string; quantity: number } | null>(null);
 
   const hasPendingAfterLogin = useCallback(() => {
     return !!(sessionStorage.getItem('pending_market_request') || sessionStorage.getItem('pending_demand_offer'));
@@ -100,6 +101,25 @@ function App() {
       throw new Error(msg);
     }
 
+    const rawDemandOffer = sessionStorage.getItem('pending_demand_offer');
+    if (rawDemandOffer) {
+      try {
+        const parsed = JSON.parse(rawDemandOffer);
+        sessionStorage.removeItem('pending_demand_offer');
+        const next = pendingAfterAuth.current;
+        pendingAfterAuth.current = null;
+        setModal('none');
+        setFreshLogin(true);
+        setMainView('marketplace');
+        setPendingDemandOffer(parsed);
+        setAccountInitialTab('deals');
+        setTimeout(() => setModal('account'), 50);
+        return;
+      } catch {
+        sessionStorage.removeItem('pending_demand_offer');
+      }
+    }
+
     if (hasPendingAfterLogin()) {
       setModal('none');
       setFreshLogin(true);
@@ -128,6 +148,25 @@ function App() {
       const msg = result.error || 'حدث خطأ';
       setLoginError(msg);
       throw new Error(msg);
+    }
+
+    const rawDemandOffer = sessionStorage.getItem('pending_demand_offer');
+    if (rawDemandOffer) {
+      try {
+        const parsed = JSON.parse(rawDemandOffer);
+        sessionStorage.removeItem('pending_demand_offer');
+        const next = pendingAfterAuth.current;
+        pendingAfterAuth.current = null;
+        setModal('none');
+        setFreshLogin(true);
+        setMainView('marketplace');
+        setPendingDemandOffer(parsed);
+        setAccountInitialTab('deals');
+        setTimeout(() => setModal('account'), 50);
+        return;
+      } catch {
+        sessionStorage.removeItem('pending_demand_offer');
+      }
     }
 
     if (hasPendingAfterLogin()) {
@@ -519,11 +558,13 @@ function App() {
         {modal === 'account' && session && (
           <AccountPage
             session={session}
-            onClose={() => { setModal('none'); setAccountInitialTab(undefined); }}
+            onClose={() => { setModal('none'); setAccountInitialTab(undefined); setPendingDemandOffer(null); }}
             onAddInventory={openInventory}
             onCreateOrder={() => setModal('orderBuilder')}
             onLogout={handleLogout}
             initialTab={accountInitialTab}
+            pendingDemandOffer={pendingDemandOffer}
+            onPendingDemandOfferCleared={() => setPendingDemandOffer(null)}
           />
         )}
 

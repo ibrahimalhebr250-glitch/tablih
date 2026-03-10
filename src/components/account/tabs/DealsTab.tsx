@@ -9,6 +9,9 @@ import {
   Clock,
   Check,
   X,
+  Send,
+  ShoppingBag,
+  MapPin,
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
@@ -22,8 +25,19 @@ import type { Deal } from '../../../types/deal';
 
 type DealFilter = 'active' | 'completed' | 'cancelled';
 
+interface PendingDemandOffer {
+  order_id: string;
+  pallet_type: string;
+  size: string;
+  quality: string;
+  city: string;
+  quantity: number;
+}
+
 interface Props {
   phone: string;
+  pendingDemandOffer?: PendingDemandOffer | null;
+  onPendingDemandOfferCleared?: () => void;
 }
 
 const FILTERS: { key: DealFilter; label: string; icon: typeof Handshake; color: string; activeColor: string }[] = [
@@ -227,7 +241,151 @@ function SupplierNegotiationRequests({ phone }: { phone: string }) {
   );
 }
 
-export default function DealsTab({ phone }: Props) {
+function PendingOfferDialog({ offer, supplierPhone, onClose, onSent }: {
+  offer: PendingDemandOffer;
+  supplierPhone: string;
+  onClose: () => void;
+  onSent: () => void;
+}) {
+  const [quantity, setQuantity] = useState(offer.quantity);
+  const [price, setPrice] = useState(0);
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [sent, setSent] = useState(false);
+
+  const handleSend = async () => {
+    if (loading) return;
+    if (quantity < 1) { setError('الكمية يجب أن تكون 1 على الأقل'); return; }
+    setLoading(true);
+    setError('');
+    try {
+      const { data, error: err } = await supabase.rpc('create_supplier_offer_for_demand', {
+        p_supplier_phone: supplierPhone,
+        p_order_id: offer.order_id,
+        p_quantity: quantity,
+        p_price_per_pallet: price,
+        p_supplier_message: message.trim() || null,
+      });
+      if (err) throw err;
+      if (data && !data.success) { setError(data.error || 'حدث خطأ'); return; }
+      setSent(true);
+      setTimeout(() => { onSent(); }, 2000);
+    } catch {
+      setError('حدث خطأ أثناء إرسال العرض. حاول مرة أخرى.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)' }}
+    >
+      <div
+        className="w-full rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300"
+        style={{ maxWidth: 480, background: 'white', boxShadow: '0 24px 60px rgba(0,0,0,0.3)' }}
+        dir="rtl"
+      >
+        {sent ? (
+          <div className="px-6 py-10 flex flex-col items-center text-center gap-4">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: '#ECFDF5' }}>
+              <CheckCircle2 className="w-8 h-8 text-green-600" />
+            </div>
+            <div>
+              <p className="text-[17px] font-black text-[#1a3a4a]">تم إرسال عرضك بنجاح</p>
+              <p className="text-[12px] text-[#7a9aab] mt-1">ستُشعَر عند رد المشتري — تابع هنا في صفقاتك</p>
+            </div>
+          </div>
+        ) : (
+          <div className="px-5 pt-5 pb-6 space-y-4">
+            <div className="flex items-start justify-between">
+              <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
+                <X className="w-3.5 h-3.5 text-gray-500" />
+              </button>
+              <div className="flex items-center gap-2">
+                <div>
+                  <p className="text-[15px] font-black text-[#1a3a4a]">تقديم عرضك للمشتري</p>
+                  <p className="text-[11px] text-[#7a9aab]">{offer.pallet_type} — {offer.city}</p>
+                </div>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #059669, #10b981)' }}>
+                  <Handshake className="w-5 h-5 text-white" />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl p-4 space-y-2" style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)', border: '1.5px solid #A7F3D0' }}>
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                <p className="text-[13px] font-black text-green-700">تم تسجيلك — يمكنك الآن تقديم عرضك</p>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.6)' }}>
+                  <p className="text-[10px] text-green-600 mb-0.5">الطلب</p>
+                  <p className="text-[12px] font-black text-[#1a3a4a]">{offer.pallet_type}</p>
+                </div>
+                <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.6)' }}>
+                  <div className="flex items-center justify-center gap-1">
+                    <MapPin className="w-3 h-3 text-green-600" />
+                    <p className="text-[12px] font-black text-[#1a3a4a]">{offer.city}</p>
+                  </div>
+                </div>
+                <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.6)' }}>
+                  <div className="flex items-center justify-center gap-1">
+                    <ShoppingBag className="w-3 h-3 text-green-600" />
+                    <p className="text-[12px] font-black text-[#1a3a4a]">{offer.quantity}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2">الكمية التي يمكنك توريدها</label>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setQuantity(q => Math.max(1, q - 10))} className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90" style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', color: '#059669' }}>-</button>
+                <input type="number" value={quantity} onChange={(e) => { const v = parseInt(e.target.value) || 0; setQuantity(Math.max(1, v)); }} className="flex-1 text-center text-[16px] font-black text-[#1a3a4a] rounded-xl py-2.5 outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} min={1} />
+                <button onClick={() => setQuantity(q => q + 10)} className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90" style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', color: '#059669' }}>+</button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2">السعر المقترح للطبلية (ريال) — اختياري</label>
+              <input
+                type="number"
+                value={price || ''}
+                onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+                placeholder="0 — اتركه فارغاً للتفاوض"
+                className="w-full rounded-2xl px-4 py-3 text-[13px] text-[#1a3a4a] outline-none"
+                style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
+              />
+            </div>
+
+            <div>
+              <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2">رسالة للمشتري (اختياري)</label>
+              <div className="relative">
+                <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="أضف تفاصيل عرضك أو ملاحظاتك..." rows={3} maxLength={300} className="w-full rounded-2xl px-4 py-3 text-[13px] text-[#1a3a4a] resize-none outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} />
+                <span className="absolute bottom-2 left-3 text-[10px] text-[#a0b5c0]">{message.length}/300</span>
+              </div>
+            </div>
+
+            {error && <p className="text-[12px] text-red-600 text-center font-semibold">{error}</p>}
+
+            <button onClick={handleSend} disabled={loading} className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-70" style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 6px 20px rgba(5,150,105,0.3)' }}>
+              {loading ? <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Send className="w-5 h-5" />}
+              {loading ? 'جاري إرسال العرض...' : 'إرسال العرض للمشتري'}
+            </button>
+            <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
+              لاحقاً
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function DealsTab({ phone, pendingDemandOffer, onPendingDemandOfferCleared }: Props) {
   const {
     activeDeals, completedDeals, cancelledDeals,
     loading, actionLoading,
@@ -240,9 +398,16 @@ export default function DealsTab({ phone }: Props) {
   const [filter, setFilter] = useState<DealFilter>('active');
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [toast, setToast] = useState<ToastConfig | null>(null);
+  const [showPendingOfferDialog, setShowPendingOfferDialog] = useState(!!pendingDemandOffer);
   const [ratingDialog, setRatingDialog] = useState<{
     dealId: string; ratedPhone: string; ratedName: string; userType: 'supplier' | 'buyer';
   } | null>(null);
+
+  useEffect(() => {
+    if (pendingDemandOffer) {
+      setShowPendingOfferDialog(true);
+    }
+  }, [pendingDemandOffer]);
 
   const counts = {
     active: activeDeals.length,
@@ -297,6 +462,23 @@ export default function DealsTab({ phone }: Props) {
           message={toast.message}
           variant={toast.variant}
           onClose={() => setToast(null)}
+        />
+      )}
+
+      {showPendingOfferDialog && pendingDemandOffer && (
+        <PendingOfferDialog
+          offer={pendingDemandOffer}
+          supplierPhone={phone}
+          onClose={() => {
+            setShowPendingOfferDialog(false);
+            onPendingDemandOfferCleared?.();
+          }}
+          onSent={() => {
+            setShowPendingOfferDialog(false);
+            onPendingDemandOfferCleared?.();
+            setToast({ title: 'تم إرسال العرض', message: 'ستُشعَر فور رد المشتري — تابع هنا في صفقاتك', variant: 'success' });
+            refresh();
+          }}
         />
       )}
 

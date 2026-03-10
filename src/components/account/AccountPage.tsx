@@ -33,6 +33,15 @@ interface InventoryPrefill {
   city?: string;
 }
 
+interface PendingDemandOffer {
+  order_id: string;
+  pallet_type: string;
+  size: string;
+  quality: string;
+  city: string;
+  quantity: number;
+}
+
 interface Props {
   session: AppSession;
   onClose: () => void;
@@ -40,9 +49,11 @@ interface Props {
   onCreateOrder: () => void;
   onLogout: () => void;
   initialTab?: AccountTab;
+  pendingDemandOffer?: PendingDemandOffer | null;
+  onPendingDemandOfferCleared?: () => void;
 }
 
-export default function AccountPage({ session, onClose, onAddInventory, onCreateOrder, onLogout, initialTab }: Props) {
+export default function AccountPage({ session, onClose, onAddInventory, onCreateOrder, onLogout, initialTab, pendingDemandOffer, onPendingDemandOfferCleared }: Props) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<AccountTab>(initialTab || 'warehouse');
 
@@ -106,7 +117,7 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
       case 'warehouse':
         return <CloudWarehouseTab phone={localSession.profile.phone} onAddInventory={onAddInventory} onAddInventoryWithPrefill={onAddInventory} />;
       case 'deals':
-        return <DealsTab phone={localSession.profile.phone} />;
+        return <DealsTab phone={localSession.profile.phone} pendingDemandOffer={pendingDemandOffer ?? null} onPendingDemandOfferCleared={onPendingDemandOfferCleared} />;
       case 'orders':
         return <MyOrdersTab phone={localSession.profile.phone} onCreateOrder={onCreateOrder} onGoToDeals={() => setActiveTab('deals')} onGoToWarehouse={() => setActiveTab('warehouse')} />;
       case 'settings':
