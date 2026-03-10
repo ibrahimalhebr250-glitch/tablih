@@ -65,39 +65,8 @@ function App() {
   const [accountInitialTab, setAccountInitialTab] = useState<'warehouse' | 'deals' | 'orders' | 'settings' | undefined>();
   const [pendingDemandOrderId, setPendingDemandOrderId] = useState<string | null>(null);
 
-  const checkPendingMarketRequest = useCallback(async (phone: string) => {
-    const raw = sessionStorage.getItem('pending_market_request');
-    if (!raw) return;
-    try {
-      const pending = JSON.parse(raw);
-      if (!pending.inventory_batch_id) return;
-      sessionStorage.removeItem('pending_market_request');
-      const { data } = await supabase.rpc('create_order_from_market_offer', {
-        p_buyer_phone: phone,
-        p_inventory_batch_id: pending.inventory_batch_id,
-        p_quantity: pending.quantity || 1,
-        p_buyer_message: null,
-      });
-      if (data?.success) {
-        setAccountInitialTab('orders');
-        setTimeout(() => setModal('account'), 100);
-      }
-    } catch {
-      sessionStorage.removeItem('pending_market_request');
-    }
-  }, []);
-
-  const checkPendingDemandOffer = useCallback((_phone: string) => {
-    const raw = sessionStorage.getItem('pending_demand_offer');
-    if (!raw) return;
-    try {
-      const pending = JSON.parse(raw);
-      if (!pending.order_id) return;
-      sessionStorage.removeItem('pending_demand_offer');
-      setPendingDemandOrderId(pending.order_id);
-    } catch {
-      sessionStorage.removeItem('pending_demand_offer');
-    }
+  const hasPendingAfterLogin = useCallback(() => {
+    return !!(sessionStorage.getItem('pending_market_request') || sessionStorage.getItem('pending_demand_offer'));
   }, []);
 
   useEffect(() => {
@@ -131,23 +100,10 @@ function App() {
       throw new Error(msg);
     }
 
-    const hasPending = sessionStorage.getItem('pending_market_request');
-    if (hasPending) {
-      const phone = result.session?.profile?.phone || data.phone;
+    if (hasPendingAfterLogin()) {
       setModal('none');
       setFreshLogin(true);
       setMainView('marketplace');
-      await checkPendingMarketRequest(phone);
-      return;
-    }
-
-    const hasPendingDemandOffer = sessionStorage.getItem('pending_demand_offer');
-    if (hasPendingDemandOffer) {
-      const phone = result.session?.profile?.phone || data.phone;
-      setModal('none');
-      setFreshLogin(true);
-      setMainView('marketplace');
-      checkPendingDemandOffer(phone);
       return;
     }
 
@@ -174,23 +130,10 @@ function App() {
       throw new Error(msg);
     }
 
-    const hasPending = sessionStorage.getItem('pending_market_request');
-    if (hasPending) {
-      const userPhone = result.session?.profile?.phone || phone;
+    if (hasPendingAfterLogin()) {
       setModal('none');
       setFreshLogin(true);
       setMainView('marketplace');
-      await checkPendingMarketRequest(userPhone);
-      return;
-    }
-
-    const hasPendingDemandOffer = sessionStorage.getItem('pending_demand_offer');
-    if (hasPendingDemandOffer) {
-      const userPhone = result.session?.profile?.phone || phone;
-      setModal('none');
-      setFreshLogin(true);
-      setMainView('marketplace');
-      checkPendingDemandOffer(userPhone);
       return;
     }
 

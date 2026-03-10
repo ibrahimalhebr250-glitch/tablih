@@ -331,7 +331,9 @@ export default function MarketSection({
   const [autoOpenOfferForId, setAutoOpenOfferForId] = useState<string | null>(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
+  const prevIsAuth = useRef(false);
   const prevSheetOpen = useRef(false);
+  const itemsRef = useRef<MarketItem[]>([]);
 
   useEffect(() => {
     const nowOpen = !!(selectedSupply || selectedDemand);
@@ -340,6 +342,67 @@ export default function MarketSection({
       onDetailSheetChange?.(nowOpen);
     }
   }, [selectedSupply, selectedDemand, onDetailSheetChange]);
+
+  useEffect(() => {
+    if (!isAuthenticated || prevIsAuth.current) return;
+    prevIsAuth.current = true;
+
+    const rawDemand = sessionStorage.getItem('pending_demand_offer');
+    if (rawDemand) {
+      try {
+        const pending = JSON.parse(rawDemand);
+        if (pending.order_id) {
+          sessionStorage.removeItem('pending_demand_offer');
+          const checkAndOpen = (currentItems: MarketItem[]) => {
+            const match = currentItems.find(i => i.kind === 'demand' && i.id === pending.order_id) as DemandCard | undefined;
+            if (match) {
+              setAutoOpenOfferForId(pending.order_id);
+              setSelectedDemand(match);
+            }
+          };
+          if (itemsRef.current.length > 0) {
+            checkAndOpen(itemsRef.current);
+          } else {
+            const interval = setInterval(() => {
+              if (itemsRef.current.length > 0) {
+                clearInterval(interval);
+                checkAndOpen(itemsRef.current);
+              }
+            }, 200);
+            setTimeout(() => clearInterval(interval), 10000);
+          }
+        }
+      } catch {
+        sessionStorage.removeItem('pending_demand_offer');
+      }
+    }
+
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!prevIsAuth.current) prevIsAuth.current = !!isAuthenticated;
+  }, []);
+
+  useEffect(() => {
+    const phone = sessionPhone || userPhone;
+    if (!isAuthenticated || !phone) return;
+    const rawMarket = sessionStorage.getItem('pending_market_request');
+    if (!rawMarket) return;
+    try {
+      const pending = JSON.parse(rawMarket);
+      if (pending.inventory_batch_id) {
+        sessionStorage.removeItem('pending_market_request');
+        supabase.rpc('create_order_from_market_offer', {
+          p_buyer_phone: phone,
+          p_inventory_batch_id: pending.inventory_batch_id,
+          p_quantity: pending.quantity || 1,
+          p_buyer_message: null,
+        });
+      }
+    } catch {
+      sessionStorage.removeItem('pending_market_request');
+    }
+  }, [isAuthenticated, sessionPhone, userPhone]);
 
   useEffect(() => {
     if (!pendingDemandOrderId || loading) return;
@@ -451,6 +514,7 @@ export default function MarketSection({
         if (supplyItems[i]) merged.push(supplyItems[i]);
         if (demandItems[i]) merged.push(demandItems[i]);
       }
+      itemsRef.current = merged;
       setItems(merged);
     } catch (e) {
       console.error('Market load error:', e);
