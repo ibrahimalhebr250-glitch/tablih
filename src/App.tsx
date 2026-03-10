@@ -129,16 +129,12 @@ function App() {
       throw new Error(msg);
     }
 
-    if (result.session) {
-      pendingSession.current = result.session;
-      await activateRole('buyer');
-    }
-
     const hasPending = sessionStorage.getItem('pending_market_request');
     if (hasPending) {
       const phone = result.session?.profile?.phone || data.phone;
       await checkPendingMarketRequest(phone);
       setFreshLogin(true);
+      setModal('none');
       setMainView('marketplace');
       return;
     }
@@ -146,8 +142,9 @@ function App() {
     const hasPendingDemandOffer = sessionStorage.getItem('pending_demand_offer');
     if (hasPendingDemandOffer) {
       const phone = result.session?.profile?.phone || data.phone;
-      await checkPendingDemandOffer(phone);
+      checkPendingDemandOffer(phone);
       setFreshLogin(true);
+      setModal('none');
       setMainView('marketplace');
       return;
     }
@@ -155,12 +152,14 @@ function App() {
     const next = pendingAfterAuth.current;
     pendingAfterAuth.current = null;
 
-    if (!next || next === 'none') {
-      setModal('account');
-      setFreshLogin(true);
-      setMainView('marketplace');
+    setModal('none');
+    setFreshLogin(true);
+    setMainView('marketplace');
+
+    if (next && next !== 'none') {
+      setTimeout(() => setModal(next), 50);
     } else {
-      setModal(next);
+      setTimeout(() => setModal('account'), 50);
     }
   };
 
@@ -173,16 +172,12 @@ function App() {
       throw new Error(msg);
     }
 
-    if (result.session) {
-      pendingSession.current = result.session;
-      await activateRole('buyer');
-    }
-
     const hasPending = sessionStorage.getItem('pending_market_request');
     if (hasPending) {
       const userPhone = result.session?.profile?.phone || phone;
       await checkPendingMarketRequest(userPhone);
       setFreshLogin(true);
+      setModal('none');
       setMainView('marketplace');
       return;
     }
@@ -190,8 +185,9 @@ function App() {
     const hasPendingDemandOffer = sessionStorage.getItem('pending_demand_offer');
     if (hasPendingDemandOffer) {
       const userPhone = result.session?.profile?.phone || phone;
-      await checkPendingDemandOffer(userPhone);
+      checkPendingDemandOffer(userPhone);
       setFreshLogin(true);
+      setModal('none');
       setMainView('marketplace');
       return;
     }
@@ -199,12 +195,14 @@ function App() {
     const next = pendingAfterAuth.current;
     pendingAfterAuth.current = null;
 
-    if (!next || next === 'none') {
-      setModal('account');
-      setFreshLogin(true);
-      setMainView('marketplace');
+    setModal('none');
+    setFreshLogin(true);
+    setMainView('marketplace');
+
+    if (next && next !== 'none') {
+      setTimeout(() => setModal(next), 50);
     } else {
-      setModal(next);
+      setTimeout(() => setModal('account'), 50);
     }
   };
 
