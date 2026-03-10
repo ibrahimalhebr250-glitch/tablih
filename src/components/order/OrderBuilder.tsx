@@ -119,9 +119,24 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
             <X className="w-4 h-4 text-white" />
           </button>
           <div className="text-center flex-1 px-4">
-            <h2 className="text-[15px] lg:text-[17px] font-bold text-white leading-tight">
-              {currentTitle.title}
-            </h2>
+            <div className="flex items-center justify-center gap-2">
+              <h2 className="text-[15px] lg:text-[17px] font-bold text-white leading-tight">
+                {currentTitle.title}
+              </h2>
+              {builder.step === 'form' && allowedTypes.length > 1 && (() => {
+                const cfg = REQUEST_TYPE_CONFIG[requestType];
+                const Icon = cfg.icon;
+                return (
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold"
+                    style={{ backgroundColor: cfg.bg, color: cfg.color }}
+                  >
+                    <Icon className="w-3 h-3" />
+                    {cfg.label}
+                  </span>
+                );
+              })()}
+            </div>
             {currentTitle.sub && (
               <p className="text-[11px] text-white/50 mt-0.5 leading-snug">
                 {currentTitle.sub}
@@ -256,6 +271,8 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
             form={builder.form}
             isComplete={builder.isFormComplete}
             onSubmit={builder.handleCompleteOrder}
+            requestType={requestType}
+            requestTypeConfig={REQUEST_TYPE_CONFIG}
           />
         )}
 
