@@ -308,9 +308,10 @@ interface Props {
   card: SupplyCard;
   onClose: () => void;
   sessionPhone?: string | null;
+  onLoginRequired?: () => void;
 }
 
-export default function SupplyDetailSheet({ card, onClose, sessionPhone }: Props) {
+export default function SupplyDetailSheet({ card, onClose, sessionPhone, onLoginRequired }: Props) {
   const isAuthenticated = !!sessionPhone;
   const buyerPhone = sessionPhone ?? undefined;
   const [imgIndex, setImgIndex] = useState(0);
@@ -378,7 +379,7 @@ export default function SupplyDetailSheet({ card, onClose, sessionPhone }: Props
     }));
     setShowWelcomeMessage(false);
     onClose();
-    window.location.hash = '#/account';
+    onLoginRequired?.();
   };
 
   const handleRequestSent = () => {

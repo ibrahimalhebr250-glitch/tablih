@@ -63,6 +63,7 @@ function App() {
   const [inventoryPrefill, setInventoryPrefill] = useState<{ pallet_type?: string; size?: string; quality?: string; quantity?: number; city?: string } | undefined>();
   const [inventorySource, setInventorySource] = useState<'supplier_added' | 'purchase_transfer'>('supplier_added');
   const [accountInitialTab, setAccountInitialTab] = useState<'warehouse' | 'deals' | 'orders' | 'settings' | undefined>();
+  const [pendingDemandOrderId, setPendingDemandOrderId] = useState<string | null>(null);
 
   const checkPendingMarketRequest = useCallback(async (phone: string) => {
     const raw = sessionStorage.getItem('pending_market_request');
@@ -84,22 +85,14 @@ function App() {
     }
   }, []);
 
-  const checkPendingDemandOffer = useCallback(async (phone: string) => {
+  const checkPendingDemandOffer = useCallback((_phone: string) => {
     const raw = sessionStorage.getItem('pending_demand_offer');
     if (!raw) return;
     try {
       const pending = JSON.parse(raw);
       if (!pending.order_id) return;
       sessionStorage.removeItem('pending_demand_offer');
-      await supabase.rpc('create_supplier_offer_for_demand', {
-        p_supplier_phone: phone,
-        p_order_id: pending.order_id,
-        p_quantity: pending.quantity || 1,
-        p_price_per_pallet: 0,
-        p_supplier_message: null,
-      });
-      setAccountInitialTab('orders');
-      setModal('account');
+      setPendingDemandOrderId(pending.order_id);
     } catch {
       sessionStorage.removeItem('pending_demand_offer');
     }
@@ -313,6 +306,9 @@ function App() {
                           onShowAuth={() => openAuth('none')}
                           onDetailSheetChange={setIsDetailSheetOpen}
                           onGoToDeals={() => setModal('buyerDeals')}
+                          onLoginRequired={() => openAuth('none')}
+                          pendingDemandOrderId={pendingDemandOrderId}
+                          onPendingDemandCleared={() => setPendingDemandOrderId(null)}
                         />
                       </div>
                     ) : (
@@ -368,6 +364,7 @@ function App() {
                       onShowAuth={() => openAuth('none')}
                       onDetailSheetChange={setIsDetailSheetOpen}
                       onGoToDeals={() => openAuth('none')}
+                      onLoginRequired={() => openAuth('none')}
                     />
                   </div>
                 </Suspense>
@@ -409,6 +406,9 @@ function App() {
                         onShowAuth={() => openAuth('none')}
                         onDetailSheetChange={setIsDetailSheetOpen}
                         onGoToDeals={() => setModal('buyerDeals')}
+                        onLoginRequired={() => openAuth('none')}
+                        pendingDemandOrderId={pendingDemandOrderId}
+                        onPendingDemandCleared={() => setPendingDemandOrderId(null)}
                       />
                     </>
                   ) : (
@@ -454,6 +454,7 @@ function App() {
                   onShowAuth={() => openAuth('none')}
                   onDetailSheetChange={setIsDetailSheetOpen}
                   onGoToDeals={() => openAuth('none')}
+                  onLoginRequired={() => openAuth('none')}
                 />
               </Suspense>
             </div>

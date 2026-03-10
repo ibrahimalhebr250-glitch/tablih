@@ -298,6 +298,9 @@ interface MarketSectionProps {
   onAuthRequired?: () => void;
   onDetailSheetChange?: (open: boolean) => void;
   onGoToDeals?: () => void;
+  onLoginRequired?: () => void;
+  pendingDemandOrderId?: string | null;
+  onPendingDemandCleared?: () => void;
 }
 
 export default function MarketSection({
@@ -308,6 +311,9 @@ export default function MarketSection({
   onAuthRequired,
   onDetailSheetChange,
   onGoToDeals,
+  onLoginRequired,
+  pendingDemandOrderId,
+  onPendingDemandCleared,
 }: MarketSectionProps) {
   const { t } = useTranslation();
   const resolvedPhone = sessionPhone ?? (isAuthenticated && userPhone ? userPhone : null);
@@ -333,6 +339,15 @@ export default function MarketSection({
       onDetailSheetChange?.(nowOpen);
     }
   }, [selectedSupply, selectedDemand, onDetailSheetChange]);
+
+  useEffect(() => {
+    if (!pendingDemandOrderId || loading) return;
+    const match = items.find(i => i.kind === 'demand' && i.id === pendingDemandOrderId) as DemandCard | undefined;
+    if (match) {
+      setSelectedDemand(match);
+      onPendingDemandCleared?.();
+    }
+  }, [pendingDemandOrderId, items, loading, onPendingDemandCleared]);
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -663,6 +678,7 @@ export default function MarketSection({
           card={selectedSupply}
           sessionPhone={resolvedPhone}
           onClose={() => setSelectedSupply(null)}
+          onLoginRequired={onLoginRequired}
         />
       )}
       {selectedDemand && (
@@ -670,6 +686,7 @@ export default function MarketSection({
           card={selectedDemand}
           sessionPhone={resolvedPhone}
           onClose={() => setSelectedDemand(null)}
+          onLoginRequired={onLoginRequired}
         />
       )}
       {showAuthPrompt && (

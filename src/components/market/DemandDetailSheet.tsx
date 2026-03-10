@@ -281,9 +281,10 @@ interface Props {
   card: DemandCard;
   onClose: () => void;
   sessionPhone?: string | null;
+  onLoginRequired?: () => void;
 }
 
-export default function DemandDetailSheet({ card, onClose, sessionPhone }: Props) {
+export default function DemandDetailSheet({ card, onClose, sessionPhone, onLoginRequired }: Props) {
   const isAuthenticated = !!sessionPhone;
   const supplierPhone = sessionPhone ?? undefined;
   const [isFavorited, setIsFavorited] = useState(false);
@@ -344,7 +345,7 @@ export default function DemandDetailSheet({ card, onClose, sessionPhone }: Props
     }));
     setShowLoginPrompt(false);
     onClose();
-    window.location.hash = '#/account';
+    onLoginRequired?.();
   };
 
   const handleOfferSent = () => {
