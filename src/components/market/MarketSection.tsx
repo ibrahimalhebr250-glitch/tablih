@@ -328,6 +328,7 @@ export default function MarketSection({
   const [filterQuality, setFilterQuality] = useState('');
   const [selectedSupply, setSelectedSupply] = useState<SupplyCard | null>(null);
   const [selectedDemand, setSelectedDemand] = useState<DemandCard | null>(null);
+  const [autoOpenOfferForId, setAutoOpenOfferForId] = useState<string | null>(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const prevSheetOpen = useRef(false);
@@ -344,6 +345,7 @@ export default function MarketSection({
     if (!pendingDemandOrderId || loading) return;
     const match = items.find(i => i.kind === 'demand' && i.id === pendingDemandOrderId) as DemandCard | undefined;
     if (match) {
+      setAutoOpenOfferForId(pendingDemandOrderId);
       setSelectedDemand(match);
       onPendingDemandCleared?.();
     }
@@ -685,8 +687,9 @@ export default function MarketSection({
         <DemandDetailSheet
           card={selectedDemand}
           sessionPhone={resolvedPhone}
-          onClose={() => setSelectedDemand(null)}
+          onClose={() => { setSelectedDemand(null); setAutoOpenOfferForId(null); }}
           onLoginRequired={onLoginRequired}
+          autoOpenOffer={selectedDemand.id === autoOpenOfferForId}
         />
       )}
       {showAuthPrompt && (

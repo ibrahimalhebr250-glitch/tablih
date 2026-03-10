@@ -72,14 +72,16 @@ function App() {
       const pending = JSON.parse(raw);
       if (!pending.inventory_batch_id) return;
       sessionStorage.removeItem('pending_market_request');
-      await supabase.rpc('create_order_from_market_offer', {
+      const { data } = await supabase.rpc('create_order_from_market_offer', {
         p_buyer_phone: phone,
         p_inventory_batch_id: pending.inventory_batch_id,
         p_quantity: pending.quantity || 1,
         p_buyer_message: null,
       });
-      setAccountInitialTab('orders');
-      setModal('account');
+      if (data?.success) {
+        setAccountInitialTab('orders');
+        setTimeout(() => setModal('account'), 100);
+      }
     } catch {
       sessionStorage.removeItem('pending_market_request');
     }
@@ -132,20 +134,20 @@ function App() {
     const hasPending = sessionStorage.getItem('pending_market_request');
     if (hasPending) {
       const phone = result.session?.profile?.phone || data.phone;
-      await checkPendingMarketRequest(phone);
-      setFreshLogin(true);
       setModal('none');
+      setFreshLogin(true);
       setMainView('marketplace');
+      await checkPendingMarketRequest(phone);
       return;
     }
 
     const hasPendingDemandOffer = sessionStorage.getItem('pending_demand_offer');
     if (hasPendingDemandOffer) {
       const phone = result.session?.profile?.phone || data.phone;
-      checkPendingDemandOffer(phone);
-      setFreshLogin(true);
       setModal('none');
+      setFreshLogin(true);
       setMainView('marketplace');
+      checkPendingDemandOffer(phone);
       return;
     }
 
@@ -175,20 +177,20 @@ function App() {
     const hasPending = sessionStorage.getItem('pending_market_request');
     if (hasPending) {
       const userPhone = result.session?.profile?.phone || phone;
-      await checkPendingMarketRequest(userPhone);
-      setFreshLogin(true);
       setModal('none');
+      setFreshLogin(true);
       setMainView('marketplace');
+      await checkPendingMarketRequest(userPhone);
       return;
     }
 
     const hasPendingDemandOffer = sessionStorage.getItem('pending_demand_offer');
     if (hasPendingDemandOffer) {
       const userPhone = result.session?.profile?.phone || phone;
-      checkPendingDemandOffer(userPhone);
-      setFreshLogin(true);
       setModal('none');
+      setFreshLogin(true);
       setMainView('marketplace');
+      checkPendingDemandOffer(userPhone);
       return;
     }
 

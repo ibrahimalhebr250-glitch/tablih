@@ -282,9 +282,10 @@ interface Props {
   onClose: () => void;
   sessionPhone?: string | null;
   onLoginRequired?: () => void;
+  autoOpenOffer?: boolean;
 }
 
-export default function DemandDetailSheet({ card, onClose, sessionPhone, onLoginRequired }: Props) {
+export default function DemandDetailSheet({ card, onClose, sessionPhone, onLoginRequired, autoOpenOffer }: Props) {
   const isAuthenticated = !!sessionPhone;
   const supplierPhone = sessionPhone ?? undefined;
   const [isFavorited, setIsFavorited] = useState(false);
@@ -299,7 +300,18 @@ export default function DemandDetailSheet({ card, onClose, sessionPhone, onLogin
   const isSelf = isAuthenticated && supplierPhone === card.phone;
 
   useEffect(() => { loadRatingSummary(); }, [card.phone]);
-  useEffect(() => { if (isAuthenticated && supplierPhone && !isSelf) loadExistingOffer(); }, [isAuthenticated, supplierPhone, card.id]);
+  useEffect(() => {
+    if (isAuthenticated && supplierPhone && !isSelf) {
+      loadExistingOffer();
+    }
+  }, [isAuthenticated, supplierPhone, card.id]);
+
+  useEffect(() => {
+    if (autoOpenOffer && isAuthenticated && !isSelf) {
+      const t = setTimeout(() => setShowOfferDialog(true), 300);
+      return () => clearTimeout(t);
+    }
+  }, [autoOpenOffer, isAuthenticated, isSelf]);
 
   const loadRatingSummary = async () => {
     try {
