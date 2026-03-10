@@ -9,6 +9,11 @@ import {
   Radar,
   XCircle,
   MessageSquare,
+  User,
+  Package,
+  Tag,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useAccountOrders } from '../../../hooks/useAccountOrders';
 import { ActiveOrderCard, MatchedOrderCard, CompletedOrderCard } from '../orders/OrderCards';
@@ -40,6 +45,272 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string; bor
   deal_created: { label: 'الصفقة أُنشئت', color: '#1d4ed8', bg: '#EFF6FF', border: '#BFDBFE' },
   cancelled:    { label: 'ملغي', color: '#6b7280', bg: '#f3f4f6', border: '#e5e7eb' },
 };
+
+interface IncomingOffer {
+  id: string;
+  order_id: string;
+  supplier_phone: string;
+  supplier_name: string;
+  quantity: number;
+  price_per_pallet: number;
+  supplier_message: string | null;
+  status: string;
+  deal_id: string | null;
+  created_at: string;
+  pallet_type: string;
+  size: string;
+  quality: string;
+  city: string;
+  order_quantity: number;
+}
+
+function BuyerReceivedOffers({ phone, onOfferActioned }: { phone: string; onOfferActioned?: () => void }) {
+  const [offers, setOffers] = useState<IncomingOffer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionId, setActionId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ title: string; msg: string; ok: boolean } | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data } = await supabase.rpc('get_buyer_incoming_offers', { p_buyer_phone: phone });
+      setOffers((data as IncomingOffer[]) || []);
+    } catch {
+      setOffers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    const ch = supabase
+      .channel('buyer_incoming_offers_' + phone)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'supplier_demand_offers', filter: `buyer_phone=eq.${phone}` }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [phone]);
+
+  const handleAccept = async (offerId: string) => {
+    setActionId(offerId);
+    try {
+      const { data, error } = await supabase.rpc('buyer_accept_supplier_offer', {
+        p_buyer_phone: phone,
+        p_offer_id: offerId,
+      });
+      if (error || !data?.success) {
+        setToast({ title: 'خطأ', msg: data?.error || 'حدث خطأ', ok: false });
+      } else {
+        setToast({ title: 'تم قبول العرض!', msg: 'الصفقة أُنشئت — تابعها في تاب صفقاتي', ok: true });
+        onOfferActioned?.();
+        load();
+      }
+    } catch {
+      setToast({ title: 'خطأ', msg: 'تعذّر الاتصال، حاول مرة أخرى', ok: false });
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const handleReject = async (offerId: string) => {
+    setActionId(offerId);
+    try {
+      const { data, error } = await supabase.rpc('buyer_reject_supplier_offer', {
+        p_buyer_phone: phone,
+        p_offer_id: offerId,
+      });
+      if (error || !data?.success) {
+        setToast({ title: 'خطأ', msg: data?.error || 'حدث خطأ', ok: false });
+      } else {
+        setToast({ title: 'تم رفض العرض', msg: 'يمكنك قبول عروض أخرى من موردين آخرين', ok: true });
+        load();
+      }
+    } catch {
+      setToast({ title: 'خطأ', msg: 'تعذّر الاتصال، حاول مرة أخرى', ok: false });
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  if (loading || offers.length === 0) return null;
+
+  const pendingOffers = offers.filter(o => o.status === 'pending');
+  const otherOffers   = offers.filter(o => o.status !== 'pending');
+
+  const StatusBadge = ({ status }: { status: string }) => {
+    const map: Record<string, { label: string; color: string; bg: string; border: string }> = {
+      pending:      { label: 'في انتظار ردّك', color: '#b45309', bg: '#FFFBEB', border: '#FDE68A' },
+      accepted:     { label: 'قبلته',           color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' },
+      deal_created: { label: 'صفقة مُنشأة',     color: '#1d4ed8', bg: '#EFF6FF', border: '#BFDBFE' },
+      rejected:     { label: 'رفضته',            color: '#6b7280', bg: '#f3f4f6', border: '#e5e7eb' },
+    };
+    const s = map[status] || map.pending;
+    return (
+      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
+        {s.label}
+      </span>
+    );
+  };
+
+  return (
+    <div className="space-y-3 mb-1">
+      {toast && (
+        <div
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-[500] px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300"
+          style={{
+            background: toast.ok ? '#ECFDF5' : '#FEF2F2',
+            border: `1.5px solid ${toast.ok ? '#A7F3D0' : '#FECACA'}`,
+            minWidth: 260,
+          }}
+          onClick={() => setToast(null)}
+        >
+          {toast.ok
+            ? <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+            : <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+          }
+          <div dir="rtl">
+            <p className="text-[13px] font-black" style={{ color: toast.ok ? '#065F46' : '#991B1B' }}>{toast.title}</p>
+            <p className="text-[11px]" style={{ color: toast.ok ? '#059669' : '#DC2626' }}>{toast.msg}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-2" dir="rtl">
+        <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: pendingOffers.length > 0 ? '#F59E0B' : '#9ca3af' }} />
+        <h3 className="text-[13px] font-black text-[#1a3a4a]">عروض المورّدين على طلباتك</h3>
+        {pendingOffers.length > 0 && (
+          <span className="text-[10px] font-black px-2 py-0.5 rounded-full text-white" style={{ background: '#F59E0B' }}>
+            {pendingOffers.length} جديد
+          </span>
+        )}
+        <button onClick={load} className="mr-auto w-6 h-6 rounded-lg bg-white/80 border border-[#e2edf5] flex items-center justify-center">
+          <RefreshCw className="w-3 h-3 text-[#7a9aab]" />
+        </button>
+      </div>
+
+      {pendingOffers.map(offer => (
+        <div
+          key={offer.id}
+          className="rounded-2xl overflow-hidden"
+          style={{ background: 'white', border: '2px solid #FDE68A', boxShadow: '0 4px 16px rgba(245,158,11,0.12)' }}
+        >
+          <div className="px-4 pt-4 pb-3 space-y-3">
+            <div className="flex items-start justify-between" dir="rtl">
+              <StatusBadge status={offer.status} />
+              <div className="text-right">
+                <p className="text-[15px] font-black text-[#1a3a4a]">{offer.pallet_type}</p>
+                <div className="flex items-center gap-1.5 justify-end mt-0.5">
+                  <span className="text-[10px] text-[#7a9aab]">{offer.city}</span>
+                  {offer.quality && <span className="text-[10px] text-[#7a9aab]">— جودة {offer.quality}</span>}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl p-3 space-y-2" style={{ background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)', border: '1.5px solid #FDE68A' }} dir="rtl">
+              <div className="flex items-center gap-2 mb-1">
+                <User className="w-3.5 h-3.5 text-amber-600" />
+                <span className="text-[12px] font-black text-[#1a3a4a]">{offer.supplier_name}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl p-2.5 flex items-center gap-2" style={{ background: 'rgba(255,255,255,0.7)' }}>
+                  <Package className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-[9px] text-[#92400E]">الكمية المعروضة</p>
+                    <p className="text-[13px] font-black text-[#1a3a4a]">{offer.quantity.toLocaleString()} طبلية</p>
+                  </div>
+                </div>
+                <div className="rounded-xl p-2.5 flex items-center gap-2" style={{ background: 'rgba(255,255,255,0.7)' }}>
+                  <Tag className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-[9px] text-[#92400E]">السعر / طبلية</p>
+                    <p className="text-[13px] font-black text-[#1a3a4a]">
+                      {offer.price_per_pallet > 0 ? `${offer.price_per_pallet} ر.س` : 'قابل للتفاوض'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {offer.supplier_message && (
+                <div className="rounded-xl p-2.5" style={{ background: 'rgba(255,255,255,0.7)' }} dir="rtl">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <MessageSquare className="w-3 h-3 text-amber-600" />
+                    <span className="text-[10px] font-bold text-[#92400E]">رسالة المورد</span>
+                  </div>
+                  <p className="text-[12px] text-[#1a3a4a] leading-relaxed">{offer.supplier_message}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => handleReject(offer.id)}
+                disabled={actionId === offer.id}
+                className="flex items-center justify-center gap-1.5 py-3 rounded-2xl text-[12px] font-bold transition-all active:scale-[0.97] disabled:opacity-60"
+                style={{ background: '#FEF2F2', color: '#DC2626', border: '1.5px solid #FECACA' }}
+              >
+                {actionId === offer.id
+                  ? <div className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-600 animate-spin" />
+                  : <XCircle className="w-4 h-4" />
+                }
+                رفض
+              </button>
+              <button
+                onClick={() => handleAccept(offer.id)}
+                disabled={actionId === offer.id}
+                className="flex items-center justify-center gap-1.5 py-3 rounded-2xl text-[12px] font-black text-white transition-all active:scale-[0.97] disabled:opacity-60"
+                style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 4px 12px rgba(5,150,105,0.3)' }}
+              >
+                {actionId === offer.id
+                  ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  : <CheckCircle2 className="w-4 h-4" />
+                }
+                قبول وبدء الصفقة
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {otherOffers.length > 0 && (
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{ background: 'white', border: '1px solid #e2edf5' }}
+        >
+          <button
+            onClick={() => setExpandedId(expandedId === 'history' ? null : 'history')}
+            className="w-full flex items-center justify-between px-4 py-3"
+            dir="rtl"
+          >
+            <div className="flex items-center gap-1.5">
+              {expandedId === 'history' ? <ChevronUp className="w-3.5 h-3.5 text-[#7a9aab]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#7a9aab]" />}
+            </div>
+            <span className="text-[12px] font-bold text-[#4a6a7e]">{otherOffers.length} عرض سابق</span>
+          </button>
+          {expandedId === 'history' && (
+            <div className="px-4 pb-4 space-y-2">
+              {otherOffers.map(offer => (
+                <div
+                  key={offer.id}
+                  className="rounded-xl p-3 flex items-center justify-between"
+                  style={{ background: '#f8fbfd', border: '1px solid #e2edf5' }}
+                  dir="rtl"
+                >
+                  <StatusBadge status={offer.status} />
+                  <div className="text-right">
+                    <p className="text-[12px] font-bold text-[#1a3a4a]">{offer.supplier_name}</p>
+                    <p className="text-[10px] text-[#7a9aab]">{offer.pallet_type} — {offer.quantity} طبلية</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="h-px" style={{ background: '#e2edf5' }} />
+    </div>
+  );
+}
 
 function BuyerNegotiationRequests({ phone }: { phone: string }) {
   const [requests, setRequests] = useState<any[]>([]);
@@ -193,6 +464,8 @@ export default function MyOrdersTab({ phone, onCreateOrder, onGoToDeals, onGoToW
           onClose={() => setToast(null)}
         />
       )}
+
+      <BuyerReceivedOffers phone={phone} onOfferActioned={onGoToDeals} />
 
       <BuyerNegotiationRequests phone={phone} />
 
