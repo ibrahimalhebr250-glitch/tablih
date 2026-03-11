@@ -79,12 +79,14 @@ interface SentOffer {
   quality: string;
 }
 
-function SupplierSentOffers({ phone, onConfirmDeal, actionLoading }: {
+function SupplierSentOffers({ phone, onConfirmDeal, onStartDelivery, actionLoading }: {
   phone: string;
   onConfirmDeal: (dealId: string) => Promise<{ success: boolean; error?: string }>;
+  onStartDelivery: (dealId: string) => Promise<{ success: boolean; error?: string }>;
   actionLoading: string | null;
 }) {
   const [offers, setOffers] = useState<SentOffer[]>([]);
+  const [dealStatuses, setDealStatuses] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [errorMap, setErrorMap] = useState<Record<string, string>>({});
 
@@ -117,6 +119,19 @@ function SupplierSentOffers({ phone, onConfirmDeal, actionLoading }: {
           quality: row.orders?.quality || '',
         }));
         setOffers(mapped);
+
+        const dealIds = mapped.filter(o => o.deal_id && o.status === 'deal_created').map(o => o.deal_id!);
+        if (dealIds.length > 0) {
+          const { data: dealRows } = await supabase
+            .from('deals')
+            .select('id, status')
+            .in('id', dealIds);
+          if (dealRows) {
+            const statusMap: Record<string, string> = {};
+            for (const d of dealRows) statusMap[d.id] = d.status;
+            setDealStatuses(statusMap);
+          }
+        }
       }
     } catch {
       setOffers([]);
@@ -127,11 +142,15 @@ function SupplierSentOffers({ phone, onConfirmDeal, actionLoading }: {
 
   useEffect(() => {
     load();
-    const channel = supabase
+    const ch1 = supabase
       .channel('sent_offers_' + phone)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'supplier_demand_offers', filter: `supplier_phone=eq.${phone}` }, () => load())
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const ch2 = supabase
+      .channel('offer_deals_' + phone)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'deals', filter: `supplier_phone=eq.${phone}` }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
   }, [phone]);
 
   if (loading || offers.length === 0) return null;
@@ -140,10 +159,13 @@ function SupplierSentOffers({ phone, onConfirmDeal, actionLoading }: {
   const dealCreatedOffers = offers.filter(o => o.status === 'deal_created');
   const archivedOffers = offers.filter(o => o.status === 'rejected');
 
-  const handleConfirm = async (offer: SentOffer) => {
+  const handleAction = async (offer: SentOffer, actualStatus: string) => {
     if (!offer.deal_id) return;
     setErrorMap(p => ({ ...p, [offer.id]: '' }));
-    const result = await onConfirmDeal(offer.deal_id);
+    const needsDelivery = actualStatus === 'inventory_reserved';
+    const result = needsDelivery
+      ? await onStartDelivery(offer.deal_id)
+      : await onConfirmDeal(offer.deal_id);
     if (!result.success) {
       setErrorMap(p => ({ ...p, [offer.id]: result.error || 'حدث خطأ' }));
     }
@@ -155,29 +177,44 @@ function SupplierSentOffers({ phone, onConfirmDeal, actionLoading }: {
         <div className="space-y-2">
           <div className="flex items-center gap-2" dir="rtl">
             <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <h3 className="text-[13px] font-black text-[#1a3a4a]">بانتظار اعتمادك</h3>
+            <h3 className="text-[13px] font-black text-[#1a3a4a]">صفقات تحتاج إجراء</h3>
             <span className="text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse" style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' }}>
-              {dealCreatedOffers.length} صفقة جديدة
+              {dealCreatedOffers.length} صفقة
             </span>
           </div>
 
           {dealCreatedOffers.map(offer => {
-            const isConfirming = actionLoading === offer.deal_id;
+            const actualStatus = offer.deal_id ? (dealStatuses[offer.deal_id] ?? 'matched') : 'matched';
+            const isReadyToDeliver = actualStatus === 'inventory_reserved';
+            const isActing = actionLoading === offer.deal_id;
             const errMsg = errorMap[offer.id];
+
+            const headerBg = isReadyToDeliver
+              ? 'linear-gradient(135deg, #ECFDF5, #D1FAE5)'
+              : 'linear-gradient(135deg, #FFFBEB, #FEF3C7)';
+            const borderColor = isReadyToDeliver ? '#10b981' : '#F59E0B';
+
             return (
               <div
                 key={offer.id}
                 className="rounded-2xl overflow-hidden"
-                style={{ background: 'white', border: '2px solid #F59E0B', boxShadow: '0 4px 20px rgba(245,158,11,0.15)' }}
+                style={{ background: 'white', border: `2px solid ${borderColor}`, boxShadow: `0 4px 20px ${isReadyToDeliver ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)'}` }}
               >
-                <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)' }} dir="rtl">
+                <div className="px-4 py-3 flex items-center justify-between" style={{ background: headerBg }} dir="rtl">
                   <div className="flex items-center gap-2">
-                    <Bell className="w-4 h-4 text-amber-600 animate-pulse" />
-                    <span className="text-[12px] font-black text-amber-800">المشتري قبل عرضك — اعتمد الصفقة الآن</span>
+                    {isReadyToDeliver
+                      ? <Play className="w-4 h-4 text-green-600" />
+                      : <Bell className="w-4 h-4 text-amber-600 animate-pulse" />
+                    }
+                    <span className={`text-[12px] font-black ${isReadyToDeliver ? 'text-green-800' : 'text-amber-800'}`}>
+                      {isReadyToDeliver ? 'الصفقة محجوزة — ابدأ التسليم الآن' : 'المشتري قبل عرضك — اعتمد الصفقة'}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl" style={{ background: '#FEF3C7', border: '1px solid #FDE68A' }}>
-                    <Handshake className="w-3.5 h-3.5 text-amber-700" />
-                    <span className="text-[10px] font-black text-amber-700">صفقة جديدة</span>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl" style={{ background: isReadyToDeliver ? '#D1FAE5' : '#FEF3C7', border: `1px solid ${isReadyToDeliver ? '#A7F3D0' : '#FDE68A'}` }}>
+                    <Handshake className={`w-3.5 h-3.5 ${isReadyToDeliver ? 'text-green-700' : 'text-amber-700'}`} />
+                    <span className={`text-[10px] font-black ${isReadyToDeliver ? 'text-green-700' : 'text-amber-700'}`}>
+                      {isReadyToDeliver ? 'جاهزة للتسليم' : 'صفقة جديدة'}
+                    </span>
                   </div>
                 </div>
 
@@ -207,18 +244,24 @@ function SupplierSentOffers({ phone, onConfirmDeal, actionLoading }: {
                   )}
 
                   <button
-                    onClick={() => handleConfirm(offer)}
-                    disabled={isConfirming || !offer.deal_id}
+                    onClick={() => handleAction(offer, actualStatus)}
+                    disabled={isActing || !offer.deal_id}
                     className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-60"
-                    style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 4px 16px rgba(5,150,105,0.3)' }}
+                    style={{
+                      background: isReadyToDeliver
+                        ? 'linear-gradient(135deg, #0369A1, #0284C7)'
+                        : 'linear-gradient(135deg, #059669, #10b981)',
+                      boxShadow: isReadyToDeliver
+                        ? '0 4px 16px rgba(3,105,161,0.3)'
+                        : '0 4px 16px rgba(5,150,105,0.3)',
+                    }}
                   >
-                    {isConfirming ? (
+                    {isActing ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : isReadyToDeliver ? (
+                      <><Play className="w-4 h-4" /> بدء التسليم</>
                     ) : (
-                      <>
-                        <Check className="w-4 h-4" />
-                        اعتماد الصفقة والمتابعة
-                      </>
+                      <><Check className="w-4 h-4" /> اعتماد الصفقة</>
                     )}
                   </button>
                 </div>
@@ -836,7 +879,16 @@ export default function DealsTab({ phone, pendingDemandOffer, onPendingDemandOff
         />
       )}
 
-      <SupplierSentOffers phone={phone} onConfirmDeal={supplierConfirm} actionLoading={actionLoading} />
+      <SupplierSentOffers
+        phone={phone}
+        onConfirmDeal={supplierConfirm}
+        onStartDelivery={async (id) => {
+          const result = await startDelivery(id);
+          if (result.success) setToast({ title: 'تم بدء التسليم', message: 'تواصل مع المشتري عبر واتساب لتنسيق الاستلام', variant: 'success' });
+          return result;
+        }}
+        actionLoading={actionLoading}
+      />
 
       <SupplierNegotiationRequests phone={phone} />
 
