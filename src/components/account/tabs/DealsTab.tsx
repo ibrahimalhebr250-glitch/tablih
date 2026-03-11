@@ -79,10 +79,9 @@ interface SentOffer {
   quality: string;
 }
 
-function SupplierSentOffers({ phone, onConfirmDeal, onStartDelivery, actionLoading }: {
+function SupplierSentOffers({ phone, onConfirmDeal, actionLoading }: {
   phone: string;
   onConfirmDeal: (dealId: string) => Promise<{ success: boolean; error?: string }>;
-  onStartDelivery: (dealId: string) => Promise<{ success: boolean; error?: string }>;
   actionLoading: string | null;
 }) {
   const [offers, setOffers] = useState<SentOffer[]>([]);
@@ -159,13 +158,10 @@ function SupplierSentOffers({ phone, onConfirmDeal, onStartDelivery, actionLoadi
   const dealCreatedOffers = offers.filter(o => o.status === 'deal_created');
   const archivedOffers = offers.filter(o => o.status === 'rejected');
 
-  const handleAction = async (offer: SentOffer, actualStatus: string) => {
+  const handleAction = async (offer: SentOffer) => {
     if (!offer.deal_id) return;
     setErrorMap(p => ({ ...p, [offer.id]: '' }));
-    const needsDelivery = actualStatus === 'inventory_reserved';
-    const result = needsDelivery
-      ? await onStartDelivery(offer.deal_id)
-      : await onConfirmDeal(offer.deal_id);
+    const result = await onConfirmDeal(offer.deal_id);
     if (!result.success) {
       setErrorMap(p => ({ ...p, [offer.id]: result.error || 'حدث خطأ' }));
     }
@@ -244,7 +240,7 @@ function SupplierSentOffers({ phone, onConfirmDeal, onStartDelivery, actionLoadi
                   )}
 
                   <button
-                    onClick={() => handleAction(offer, actualStatus)}
+                    onClick={() => handleAction(offer)}
                     disabled={isActing || !offer.deal_id}
                     className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-60"
                     style={{
@@ -881,10 +877,9 @@ export default function DealsTab({ phone, pendingDemandOffer, onPendingDemandOff
 
       <SupplierSentOffers
         phone={phone}
-        onConfirmDeal={supplierConfirm}
-        onStartDelivery={async (id) => {
-          const result = await startDelivery(id);
-          if (result.success) setToast({ title: 'تم بدء التسليم', message: 'تواصل مع المشتري عبر واتساب لتنسيق الاستلام', variant: 'success' });
+        onConfirmDeal={async (id) => {
+          const result = await supplierConfirm(id);
+          if (result.success) setToast({ title: 'تم اعتماد الصفقة', message: 'الصفقة جارية — تواصل مع المشتري لتنسيق التسليم', variant: 'success' });
           return result;
         }}
         actionLoading={actionLoading}
