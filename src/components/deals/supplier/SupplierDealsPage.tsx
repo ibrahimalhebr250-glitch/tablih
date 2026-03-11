@@ -779,6 +779,12 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
         variant: 'success',
       });
       setActiveTab('ended');
+    } else {
+      setToast({
+        title: 'تعذّر تأكيد التسليم',
+        message: result.error ?? 'حدث خطأ غير متوقع، حاول مجدداً',
+        variant: 'error',
+      });
     }
   };
 

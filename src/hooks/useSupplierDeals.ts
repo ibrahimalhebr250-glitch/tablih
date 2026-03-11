@@ -67,9 +67,20 @@ export function useSupplierDeals(phone: string) {
       p_deal_id: dealId,
       p_supplier_phone: phone,
     });
+    if (error) { setActionLoading(null); return { success: false, error: error.message }; }
+    if (!data?.success) { setActionLoading(null); return { success: false, error: data?.error ?? 'فشلت العملية' }; }
+    if (data?.next_step === 'confirm_delivery') {
+      const { data: d2, error: e2 } = await supabase.rpc('supplier_confirm_delivery_v4', {
+        p_deal_id: dealId,
+        p_supplier_phone: phone,
+      });
+      setActionLoading(null);
+      if (e2) return { success: false, error: e2.message };
+      if (!d2?.success) return { success: false, error: d2?.error ?? 'فشل تأكيد التسليم' };
+      await fetchDeals();
+      return { success: true };
+    }
     setActionLoading(null);
-    if (error) return { success: false, error: error.message };
-    if (!data?.success) return { success: false, error: data?.error ?? 'فشلت العملية' };
     await fetchDeals();
     return { success: true };
   }, [phone, fetchDeals]);

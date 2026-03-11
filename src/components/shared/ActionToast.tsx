@@ -6,7 +6,7 @@ interface ActionToastProps {
   message: string;
   onClose: () => void;
   autoClose?: number;
-  variant?: 'success' | 'info';
+  variant?: 'success' | 'info' | 'error';
 }
 
 export function ActionToast({ title, message, onClose, autoClose = 5000, variant = 'success' }: ActionToastProps) {
@@ -23,6 +23,8 @@ export function ActionToast({ title, message, onClose, autoClose = 5000, variant
 
   const colors = variant === 'success'
     ? { bg: 'linear-gradient(135deg, #166534, #15803d)', accent: '#86EFAC', icon: '#4ade80' }
+    : variant === 'error'
+    ? { bg: 'linear-gradient(135deg, #991b1b, #b91c1c)', accent: '#FCA5A5', icon: '#f87171' }
     : { bg: 'linear-gradient(135deg, #1e40af, #1d4ed8)', accent: '#93C5FD', icon: '#60a5fa' };
 
   return (
@@ -69,5 +71,5 @@ export function ActionToast({ title, message, onClose, autoClose = 5000, variant
 export interface ToastConfig {
   title: string;
   message: string;
-  variant?: 'success' | 'info';
+  variant?: 'success' | 'info' | 'error';
 }
