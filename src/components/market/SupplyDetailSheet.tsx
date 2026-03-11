@@ -147,7 +147,6 @@ function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisti
   onSent: () => void;
 }) {
   const existingRequest = rawExisting?.status === 'rejected' ? null : rawExisting;
-  const [message, setMessage] = useState('');
   const [quantity, setQuantity] = useState(card.available_quantity);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -163,7 +162,7 @@ function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisti
         p_buyer_phone: buyerPhone,
         p_inventory_batch_id: card.id,
         p_quantity: quantity,
-        p_buyer_message: message.trim() || null,
+        p_buyer_message: null,
       });
       if (err) throw err;
       if (data && !data.success) { setError(data.error || 'حدث خطأ'); return; }
@@ -274,13 +273,6 @@ function NegotiationRequestDialog({ card, buyerPhone, existingRequest: rawExisti
                 <p className="text-[10px] text-[#a0b5c0] text-right mt-1">الحد الأقصى: {card.available_quantity} طبلية</p>
               </div>
 
-              <div>
-                <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">رسالة للمورد (اختياري)</label>
-                <div className="relative">
-                  <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="أضف ملاحظاتك أو متطلباتك الخاصة..." rows={3} maxLength={300} dir="rtl" className="w-full rounded-2xl px-4 py-3 text-[13px] text-[#1a3a4a] resize-none outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} />
-                  <span className="absolute bottom-2 left-3 text-[10px] text-[#a0b5c0]">{message.length}/300</span>
-                </div>
-              </div>
 
               {error && <p className="text-[12px] text-red-600 text-center font-semibold">{error}</p>}
 

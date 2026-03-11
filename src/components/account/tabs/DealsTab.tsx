@@ -449,7 +449,6 @@ function InlinePendingOfferCard({ offer, supplierPhone, onClose, onSent }: {
 }) {
   const [quantity, setQuantity] = useState(offer.quantity);
   const [price, setPrice] = useState(0);
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
@@ -505,7 +504,7 @@ function InlinePendingOfferCard({ offer, supplierPhone, onClose, onSent }: {
         p_order_id: offer.order_id,
         p_quantity: quantity,
         p_price_per_pallet: price,
-        p_supplier_message: message.trim() || null,
+        p_supplier_message: null,
         p_inventory_batch_id: selectedBatchId,
       });
       if (err) throw err;
@@ -683,13 +682,6 @@ function InlinePendingOfferCard({ offer, supplierPhone, onClose, onSent }: {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[12px] font-bold text-[#1a3a4a] mb-1.5">رسالة للمشتري (اختياري)</label>
-                  <div className="relative">
-                    <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="أضف تفاصيل عرضك أو ملاحظاتك..." rows={2} maxLength={300} className="w-full rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a3a4a] resize-none outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} />
-                    <span className="absolute bottom-2 left-3 text-[10px] text-[#a0b5c0]">{message.length}/300</span>
-                  </div>
-                </div>
               </>
             )}
 
