@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowRight, ArrowLeft, Target, Check, Warehouse } from 'lucide-react';
 import { useInventoryBuilder } from '../../hooks/useInventoryBuilder';
-import { useInventoryMatch } from '../../hooks/useInventoryMatch';
 import { usePlatformSettings } from '../../hooks/usePlatformSettings';
 import { supabase } from '../../lib/supabase';
 import type { PalletType, PalletQuality, PalletSize, InventoryWizardStep } from '../../types/inventory';
@@ -57,7 +56,6 @@ export default function InventoryBuilder({
 
   const { settings } = usePlatformSettings();
   const builder = useInventoryBuilder(sessionPhone, prefill, settings.inventory_submission.fields_config);
-  const { supplierStock } = useInventoryMatch(builder.form, builder.phone);
 
   const [showRegistration, setShowRegistration] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<{ url: string; preview: string; file?: File; id?: string; uploading?: boolean; error?: string }[]>([]);
@@ -468,16 +466,7 @@ export default function InventoryBuilder({
               </p>
             )}
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {builder.step === 'form' && (
-              <div className="flex items-center gap-1 bg-white/10 rounded-lg px-2.5 py-1.5">
-                <Warehouse className="w-3 h-3 text-white/60" />
-                <span className="text-[10px] font-bold text-white/80">
-                  {supplierStock > 0 ? `${supplierStock.toLocaleString('ar-SA')} نشط` : '—'}
-                </span>
-              </div>
-            )}
-          </div>
+          <div className="w-9" />
         </header>
 
         {builder.step === 'form' && renderStepIndicator()}

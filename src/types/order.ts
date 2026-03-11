@@ -41,4 +41,4 @@ export interface SavedOrder {
   created_at: string;
 }
 
-export type BuilderStep = 'form' | 'auth' | 'matching' | 'result';
+export type BuilderStep = 'form' | 'auth';

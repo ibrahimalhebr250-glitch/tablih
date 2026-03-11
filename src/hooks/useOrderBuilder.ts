@@ -39,26 +39,18 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
   const [phone, setPhone] = useState(prefilledPhone ?? '');
   const [isAuthenticated, setIsAuthenticated] = useState(!!prefilledPhone);
   const [savedOrderId, setSavedOrderId] = useState<string | null>(null);
-  const [savedRequestId, setSavedRequestId] = useState<string | null>(null);
 
   const phoneRef = useRef(phone);
   useEffect(() => { phoneRef.current = phone; }, [phone]);
 
-  const logOperation = useCallback(async (action: string, details?: any) => {
+  const logOperation = useCallback(async (action: string, details?: Record<string, unknown>) => {
     const currentPhone = phoneRef.current;
     if (!currentPhone) return;
-
     try {
       await supabase
         .from('order_operations_log')
-        .insert([{
-          phone: currentPhone,
-          action,
-          details,
-          timestamp: new Date().toISOString()
-        }]);
-    } catch (err) {
-      console.error('Failed to log operation:', err);
+        .insert([{ phone: currentPhone, action, details, timestamp: new Date().toISOString() }]);
+    } catch {
     }
   }, []);
 
@@ -120,23 +112,14 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
       setStep('auth');
       logOperation('start_auth', {});
     } else {
-      setStep('matching');
-      logOperation('start_matching', {});
+      logOperation('submit_order', {});
     }
   }, [isAuthenticated, logOperation]);
 
   const handleAuthComplete = useCallback((userPhone: string) => {
     setPhone(userPhone);
     setIsAuthenticated(true);
-    setStep('matching');
     logOperation('auth_complete', { phone: userPhone });
-  }, [logOperation]);
-
-  const handleMatchingDone = useCallback((orderId: string, requestId: string) => {
-    setSavedOrderId(orderId);
-    setSavedRequestId(requestId);
-    setStep('result');
-    logOperation('matching_complete', { orderId, requestId });
   }, [logOperation]);
 
   const reset = useCallback(() => {
@@ -144,7 +127,6 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
     setForm(startForm);
     setPhone(prefilledPhone ?? '');
     setSavedOrderId(null);
-    setSavedRequestId(null);
   }, [prefilledPhone]);
 
   return {
@@ -153,7 +135,6 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
     phone,
     isAuthenticated,
     savedOrderId,
-    savedRequestId,
     isFormComplete,
     setPalletType,
     setSize,
@@ -164,7 +145,6 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
     setFlexibility,
     handleCompleteOrder,
     handleAuthComplete,
-    handleMatchingDone,
     setStep,
     reset,
   };

@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Zap, RefreshCw, ShoppingBag } from 'lucide-react';
 import { useOrderBuilder } from '../../hooks/useOrderBuilder';
-import { useMatching } from '../../hooks/useMatching';
 import { usePlatformSettings } from '../../hooks/usePlatformSettings';
 import { useDynamicOrderBuilder } from '../../hooks/useDynamicOrderBuilder';
 import TypeSelector from './TypeSelector';
@@ -14,8 +13,6 @@ import ConditionSelector from './ConditionSelector';
 import FlexibilityToggle from './FlexibilityToggle';
 import OrderSummaryBar from './OrderSummaryBar';
 import AuthSheet from '../account/AuthSheet';
-import MatchingScreen from './MatchingScreen';
-import MatchResultScreen from './MatchResultScreen';
 
 interface PrefillOpportunity {
   pallet_type: string;
@@ -53,7 +50,6 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
     quantity: prefillOpportunity.available_quantity,
     city: prefillOpportunity.city,
   } : undefined, settings.request_creation.fields_config);
-  const matching = useMatching();
   const [requestType, setRequestType] = useState<'standard' | 'urgent' | 'recurring'>('standard');
   const [flexibilitySelections, setFlexibilitySelections] = useState<Record<string, boolean>>({});
 
@@ -80,14 +76,6 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
       document.body
     );
   }
-
-  const stepTitles: Record<string, { title: string; sub?: string }> = {
-    form: { title: 'إنشاء طلب جديد', sub: 'حدّد مواصفات طلبك وسيتم مطابقته فورًا مع الشبكة' },
-    matching: { title: 'المطابقة الذكية' },
-    result: { title: 'نتيجة المطابقة' },
-  };
-
-  const currentTitle = stepTitles[builder.step] ?? stepTitles.form;
 
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center" style={{ touchAction: 'none' }}>
@@ -121,9 +109,9 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
           <div className="text-center flex-1 px-4">
             <div className="flex items-center justify-center gap-2">
               <h2 className="text-[15px] lg:text-[17px] font-bold text-white leading-tight">
-                {currentTitle.title}
+                إنشاء طلب جديد
               </h2>
-              {builder.step === 'form' && allowedTypes.length > 1 && (() => {
+              {allowedTypes.length > 1 && (() => {
                 const cfg = REQUEST_TYPE_CONFIG[requestType];
                 const Icon = cfg.icon;
                 return (
@@ -137,11 +125,9 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
                 );
               })()}
             </div>
-            {currentTitle.sub && (
-              <p className="text-[11px] text-white/50 mt-0.5 leading-snug">
-                {currentTitle.sub}
-              </p>
-            )}
+            <p className="text-[11px] text-white/50 mt-0.5 leading-snug">
+              حدّد مواصفات طلبك وأضفه إلى السوق
+            </p>
           </div>
           <div className="w-9" />
         </header>
@@ -231,39 +217,6 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
               />
             </div>
           )}
-
-          {builder.step === 'matching' && (
-            <MatchingScreen
-              form={builder.form}
-              phone={builder.phone}
-              onDone={builder.handleMatchingDone}
-              runMatching={matching.runMatching}
-              matchResult={matching.matchResult}
-            />
-          )}
-
-          {builder.step === 'result' && matching.matchResult && (
-            <MatchResultScreen
-              form={builder.form}
-              requestId={builder.savedRequestId}
-              matchResult={matching.matchResult}
-              onReset={() => {
-                builder.reset();
-                onClose();
-              }}
-              onEdit={() => builder.setStep('form')}
-              onExecute={() => {
-                builder.reset();
-                onClose();
-                onOpenDeals?.();
-              }}
-              onAutoRedirect={() => {
-                builder.reset();
-                onClose();
-                onOpenAccount?.();
-              }}
-            />
-          )}
         </div>
 
         {builder.step === 'form' && (
@@ -292,12 +245,6 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
             onClose={() => builder.setStep('form')}
           />,
           document.body
-        )}
-
-        {matching.error && (
-          <div className="absolute bottom-24 left-4 right-4 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 z-50">
-            <p className="text-[12px] text-red-600 text-right">{matching.error}</p>
-          </div>
         )}
       </div>
     </div>,
