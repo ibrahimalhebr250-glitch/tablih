@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   ArrowRight,
   Settings,
@@ -8,16 +8,24 @@ import {
   Pencil,
   LogOut,
   X,
+  Handshake,
+  Cloud,
+  MessageSquare,
+  DollarSign,
 } from 'lucide-react';
 import type { AppSession } from '../../types/session';
-import { supabase } from '../../lib/supabase';
 import { useTranslation } from '../../lib/i18n';
 import { getTrustConfig } from '../shared/TrustRatingBadge';
 import AccountSummaryCards from './AccountSummaryCards';
 import SettingsTab from './tabs/SettingsTab';
 import AccountEditSheet from './AccountEditSheet';
+import CloudWarehouseTab from './tabs/CloudWarehouseTab';
+import MyDealsTab from './tabs/MyDealsTab';
+import NegotiationRequestsTab from './tabs/NegotiationRequestsTab';
+import CommissionsTab from './tabs/CommissionsTab';
+import { useAccountData } from '../../hooks/useAccountData';
 
-type AccountTab = 'settings';
+type AccountTab = 'warehouse' | 'deals' | 'negotiations' | 'commissions' | 'settings';
 
 interface Props {
   session: AppSession;
@@ -27,41 +35,53 @@ interface Props {
 
 export default function AccountPage({ session, onClose, onLogout }: Props) {
   const { t } = useTranslation();
-  const [activeTab] = useState<AccountTab>('settings');
-
-  const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Settings }[] = [
-    { key: 'settings', label: t('account.settings'), icon: Settings },
-  ];
+  const [activeTab, setActiveTab] = useState<AccountTab>('warehouse');
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [showEditSheet, setShowEditSheet] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [localSession, setLocalSession] = useState(session);
-  const [stats, setStats] = useState({ inventory: 0, purchases: 0, activeDeals: 0, orders: 0 });
+
+  const phone = session.profile.phone;
+  const {
+    loading,
+    inventory,
+    publishedInventory,
+    unpublishedInventory,
+    reservedInventory,
+    purchases,
+    marketCardDeals,
+    commissions,
+    pendingCommissions,
+    totalPendingCommission,
+    negotiationRequests,
+    getCounterpartyName,
+    acceptNegotiation,
+    rejectNegotiation,
+    refresh,
+  } = useAccountData(phone);
 
   const isCompany = localSession.profile.user_type === 'company';
   const displayName = isCompany
     ? (localSession.profile.company_name || t('account.defaultUser'))
     : (localSession.profile.display_name || t('account.defaultUser'));
-  const initials = displayName.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const initials = displayName.trim().split(/\s+/).slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
   const trustConfig = getTrustConfig(3);
   const TrustIcon = trustConfig.icon;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const phone = session.profile.phone;
-      const [profileRes, invRes, purchasesRes, dealsRes, ordersRes] = await Promise.all([
-        supabase.from('platform_users').select('profile_image_url').eq('phone', phone).maybeSingle(),
-        supabase.from('inventory_batches').select('quantity', { count: 'exact' }).eq('phone', phone),
-        supabase.from('buyer_inventory').select('id', { count: 'exact' }).eq('buyer_phone', phone),
-        supabase.from('deals').select('id', { count: 'exact' }).or(`buyer_phone.eq.${phone},supplier_phone.eq.${phone}`).in('status', ['pending_supplier', 'matched', 'supplier_confirmed', 'awaiting_buyer', 'inventory_reserved', 'in_delivery']),
-        supabase.from('orders').select('id', { count: 'exact' }).eq('phone', phone).in('status', ['pending', 'unmatched', 'partially_matched', 'matched']),
-      ]);
-      if (profileRes.data?.profile_image_url) setProfileImageUrl(profileRes.data.profile_image_url);
-      const totalInventory = invRes.data?.reduce((sum, b) => sum + (b.quantity || 0), 0) || 0;
-      setStats({ inventory: totalInventory, purchases: purchasesRes.count || 0, activeDeals: dealsRes.count || 0, orders: ordersRes.count || 0 });
-    };
-    fetchData();
-  }, [session.profile.phone]);
+  const stats = {
+    inventory: inventory.reduce((s, b) => s + (b.quantity_available ?? b.quantity ?? 0), 0),
+    purchases: purchases.reduce((s, p) => s + p.quantity, 0),
+    activeDeals: marketCardDeals.filter(d => !['completed', 'cancelled'].includes(d.status)).length,
+    orders: negotiationRequests.length,
+  };
+
+  const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Settings; badge?: number }[] = [
+    { key: 'warehouse', label: 'مستودعي', icon: Cloud },
+    { key: 'deals', label: 'صفقاتي', icon: Handshake, badge: marketCardDeals.filter(d => !['completed', 'cancelled'].includes(d.status)).length },
+    { key: 'negotiations', label: 'التفاوض', icon: MessageSquare, badge: negotiationRequests.length },
+    { key: 'commissions', label: 'العمولات', icon: DollarSign, badge: pendingCommissions.length },
+    { key: 'settings', label: t('account.settings'), icon: Settings },
+  ];
 
   const handleEditSaved = (updates: { display_name?: string; company_name?: string; city?: string; activity_type?: string; profile_image_url?: string | null }) => {
     if (updates.profile_image_url !== undefined) setProfileImageUrl(updates.profile_image_url);
@@ -78,7 +98,49 @@ export default function AccountPage({ session, onClose, onLogout }: Props) {
   };
 
   const renderTab = () => {
-    return <SettingsTab session={localSession} onLogout={onLogout} onEditProfile={() => setShowEditSheet(true)} />;
+    switch (activeTab) {
+      case 'warehouse':
+        return (
+          <CloudWarehouseTab
+            inventory={inventory}
+            publishedInventory={publishedInventory}
+            unpublishedInventory={unpublishedInventory}
+            reservedInventory={reservedInventory}
+            purchases={purchases}
+            loading={loading}
+          />
+        );
+      case 'deals':
+        return (
+          <MyDealsTab
+            deals={marketCardDeals}
+            myPhone={phone}
+            getCounterpartyName={getCounterpartyName}
+            loading={loading}
+          />
+        );
+      case 'negotiations':
+        return (
+          <NegotiationRequestsTab
+            requests={negotiationRequests}
+            getCounterpartyName={getCounterpartyName}
+            onAccept={acceptNegotiation}
+            onReject={rejectNegotiation}
+            loading={loading}
+          />
+        );
+      case 'commissions':
+        return (
+          <CommissionsTab
+            commissions={commissions}
+            pendingCommissions={pendingCommissions}
+            totalPendingCommission={totalPendingCommission}
+            loading={loading}
+          />
+        );
+      case 'settings':
+        return <SettingsTab session={localSession} onLogout={onLogout} onEditProfile={() => setShowEditSheet(true)} />;
+    }
   };
 
   return (
@@ -162,14 +224,13 @@ export default function AccountPage({ session, onClose, onLogout }: Props) {
           </div>
         </div>
 
-        {/* Stats row */}
         <div className="px-4 pb-4 flex-shrink-0">
           <div className="grid grid-cols-2 gap-2">
             {[
-              { label: t('inventory.myInventory'), value: stats.inventory, unit: t('market.pallets'), color: '#22c55e' },
-              { label: t('inventory.myPurchases'), value: stats.purchases, unit: '', color: '#60a5fa' },
-              { label: t('deals.title'), value: stats.activeDeals, unit: '', color: '#34d399' },
-              { label: t('orders.myOrders'), value: stats.orders, unit: '', color: '#fbbf24' },
+              { label: 'مخزوني', value: stats.inventory, unit: 'طبلية', color: '#22c55e' },
+              { label: 'مشترياتي', value: stats.purchases, unit: 'طبلية', color: '#60a5fa' },
+              { label: 'صفقات نشطة', value: stats.activeDeals, unit: '', color: '#34d399' },
+              { label: 'طلبات تفاوض', value: stats.orders, unit: '', color: '#fbbf24' },
             ].map(s => (
               <div key={s.label} className="rounded-xl p-2.5" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <p className="text-[10px] text-white/40 mb-0.5">{s.label}</p>
@@ -179,7 +240,6 @@ export default function AccountPage({ session, onClose, onLogout }: Props) {
           </div>
         </div>
 
-        {/* Nav tabs */}
         <nav className="flex-1 px-3 pb-4 space-y-1" dir="rtl">
           {TAB_CONFIG.map(tab => {
             const Icon = tab.icon;
@@ -193,12 +253,16 @@ export default function AccountPage({ session, onClose, onLogout }: Props) {
               >
                 <Icon className="w-4 h-4 flex-shrink-0" />
                 <span className="flex-1 text-right">{tab.label}</span>
+                {tab.badge != null && tab.badge > 0 && (
+                  <span className="text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: isActive ? 'rgba(255,255,255,0.25)' : '#2563eb', color: 'white' }}>
+                    {tab.badge}
+                  </span>
+                )}
               </button>
             );
           })}
         </nav>
 
-        {/* Logout */}
         <div className="px-3 pb-5 flex-shrink-0">
           <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-[13px] font-bold text-red-300/70 hover:text-red-300 hover:bg-red-500/10 transition-all" dir="rtl">
             <LogOut className="w-4 h-4" />
@@ -220,7 +284,12 @@ export default function AccountPage({ session, onClose, onLogout }: Props) {
               <button onClick={onClose} className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center active:scale-95 transition-transform backdrop-blur-sm border border-white/10">
                 <ArrowRight className="w-5 h-5 text-white" />
               </button>
-              <h1 className="text-[16px] font-bold text-white">{t('navigation.myAccount')}</h1>
+              <div className="flex items-center gap-2">
+                <button onClick={refresh} className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center active:scale-95 border border-white/10">
+                  <Handshake className="w-4 h-4 text-white/60" />
+                </button>
+                <h1 className="text-[16px] font-bold text-white">{t('navigation.myAccount')}</h1>
+              </div>
               <button onClick={() => setShowLogoutConfirm(true)} className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-95 transition-transform backdrop-blur-sm border border-red-400/30" style={{ background: 'rgba(220,38,38,0.15)' }}>
                 <LogOut className="w-4 h-4 text-red-300" />
               </button>
@@ -275,6 +344,11 @@ export default function AccountPage({ session, onClose, onLogout }: Props) {
                 {stats.activeDeals} صفقة نشطة
               </span>
             )}
+            {pendingCommissions.length > 0 && (
+              <span className="text-[11px] font-bold px-3 py-1 rounded-full" style={{ background: 'rgba(180,83,9,0.1)', color: '#b45309', border: '1px solid rgba(180,83,9,0.2)' }}>
+                {pendingCommissions.length} عمولة معلقة
+              </span>
+            )}
           </div>
         </div>
 
@@ -284,8 +358,8 @@ export default function AccountPage({ session, onClose, onLogout }: Props) {
         </div>
 
         {/* Mobile: Tab Navigation */}
-        <div className="flex-shrink-0 px-4 pt-3 pb-1 md:hidden">
-          <div className="flex gap-1 p-1 rounded-2xl" style={{ background: 'rgba(255,255,255,0.7)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', border: '1px solid rgba(255,255,255,0.9)' }} dir="rtl">
+        <div className="flex-shrink-0 px-3 pt-3 pb-1 md:hidden">
+          <div className="flex gap-1 p-1 rounded-2xl overflow-x-auto no-scrollbar" style={{ background: 'rgba(255,255,255,0.7)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', border: '1px solid rgba(255,255,255,0.9)' }} dir="rtl">
             {TAB_CONFIG.map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.key;
@@ -293,11 +367,16 @@ export default function AccountPage({ session, onClose, onLogout }: Props) {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex-1 relative flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-bold transition-all ${isActive ? 'text-white shadow-lg' : 'text-[#5a7a8a] hover:text-[#1a4a5e] hover:bg-white/50'}`}
+                  className={`flex-shrink-0 relative flex items-center justify-center gap-1 py-2 px-2.5 rounded-xl text-[11px] font-bold transition-all ${isActive ? 'text-white shadow-lg' : 'text-[#5a7a8a] hover:text-[#1a4a5e] hover:bg-white/50'}`}
                   style={isActive ? { background: 'linear-gradient(135deg, #1a4a5e 0%, #2c6f8a 100%)', boxShadow: '0 4px 12px rgba(26,74,94,0.3)' } : undefined}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5" />
                   <span>{tab.label}</span>
+                  {tab.badge != null && tab.badge > 0 && (
+                    <span className="absolute -top-0.5 -left-0.5 text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center bg-[#2563eb] text-white">
+                      {tab.badge > 9 ? '9+' : tab.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
