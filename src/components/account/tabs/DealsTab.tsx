@@ -914,7 +914,13 @@ export default function DealsTab({ phone, pendingDemandOffer, onPendingDemandOff
         phone={phone}
         onConfirmDeal={async (id) => {
           const result = await supplierConfirm(id);
-          if (result.success) setToast({ title: 'تم اعتماد الصفقة', message: 'الصفقة محجوزة — اضغط بدء التسليم عند الاستعداد', variant: 'success' });
+          if (result.success) {
+            if ((result as any).next_step === 'completed') {
+              setToast({ title: 'تم تأكيد التسليم', message: 'الصفقة اكتملت بنجاح', variant: 'success' });
+            } else {
+              setToast({ title: 'تم اعتماد الصفقة', message: 'الصفقة محجوزة — اضغط بدء التسليم عند الاستعداد', variant: 'success' });
+            }
+          }
           return result;
         }}
         onStartDelivery={async (id) => {

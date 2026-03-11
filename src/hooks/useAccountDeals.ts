@@ -98,11 +98,19 @@ export function useAccountDeals(phone: string) {
   const supplierConfirm = useCallback(async (dealId: string) => {
     setActionLoading(dealId);
     const { data, error } = await supabase.rpc('supplier_confirm_deal_v4', { p_deal_id: dealId, p_supplier_phone: phone });
+    if (error) { setActionLoading(null); return { success: false, error: error.message }; }
+    if (!data?.success) { setActionLoading(null); return { success: false, error: data?.error ?? 'فشلت العملية' }; }
+    if (data?.next_step === 'confirm_delivery') {
+      const { data: d2, error: e2 } = await supabase.rpc('supplier_confirm_delivery_v4', { p_deal_id: dealId, p_supplier_phone: phone });
+      setActionLoading(null);
+      if (e2) return { success: false, error: e2.message };
+      if (!d2?.success) return { success: false, error: d2?.error ?? 'فشل تأكيد التسليم' };
+      await fetchDeals();
+      return { success: true, next_step: 'completed' };
+    }
     setActionLoading(null);
-    if (error) return { success: false, error: error.message };
-    if (!data?.success) return { success: false, error: data?.error ?? 'فشلت العملية' };
     await fetchDeals();
-    return { success: true };
+    return { success: true, next_step: data?.next_step };
   }, [phone, fetchDeals]);
 
   const buyerConfirm = useCallback(async (dealId: string) => {
