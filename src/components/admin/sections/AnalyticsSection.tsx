@@ -543,7 +543,7 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
               <h3 className="text-[15px] font-black text-[#1a2f3e]">مراقبة لحظية</h3>
-              <span className="text-[11px] text-[#94a3b8]">يتحدث كل 15 ثانية</span>
+              <span className="text-[11px] text-[#94a3b8]">يتحدث كل 10 ثوانٍ · لحظي</span>
             </div>
             <button
               onClick={loadLiveVisitors}
@@ -600,6 +600,57 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
             </div>
           </div>
 
+          {/* Device breakdown */}
+          {liveSessions.length > 0 && (() => {
+            const mobileCount = liveSessions.filter(s => {
+              const ua = (s.user_agent ?? '').toLowerCase();
+              return s.device_type === 'mobile' || ua.includes('mobile') || ua.includes('android') || ua.includes('iphone') || ua.includes('ipad');
+            }).length;
+            const desktopCount = liveSessions.length - mobileCount;
+            const mobilePercent = Math.round((mobileCount / liveSessions.length) * 100);
+            const desktopPercent = 100 - mobilePercent;
+            return (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl px-5 py-4 flex items-center gap-4" style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0' }}>
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#dcfce7' }}>
+                    <Smartphone className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[11px] font-bold text-green-700 mb-0.5">من الجوال</div>
+                    <div className="text-[28px] font-black text-green-700 leading-none">{mobileCount}</div>
+                    <div className="text-[10px] text-green-600 mt-0.5">{mobilePercent}% من الجلسات</div>
+                  </div>
+                  <div className="w-12 h-12 flex-shrink-0">
+                    <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#bbf7d0" strokeWidth="3" />
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#16a34a" strokeWidth="3"
+                        strokeDasharray={`${mobilePercent} ${100 - mobilePercent}`}
+                        strokeLinecap="round" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="rounded-2xl px-5 py-4 flex items-center gap-4" style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe' }}>
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#dbeafe' }}>
+                    <Monitor className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[11px] font-bold text-blue-700 mb-0.5">من الكمبيوتر</div>
+                    <div className="text-[28px] font-black text-blue-700 leading-none">{desktopCount}</div>
+                    <div className="text-[10px] text-blue-600 mt-0.5">{desktopPercent}% من الجلسات</div>
+                  </div>
+                  <div className="w-12 h-12 flex-shrink-0">
+                    <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#bfdbfe" strokeWidth="3" />
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#2563eb" strokeWidth="3"
+                        strokeDasharray={`${desktopPercent} ${100 - desktopPercent}`}
+                        strokeLinecap="round" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Live sessions table */}
           <div className="rounded-2xl overflow-hidden" style={{ border: '1.5px solid #e2edf5', boxShadow: '0 2px 8px rgba(26,58,74,0.06)' }}>
             <div className="px-5 py-3.5 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #1a3a4a, #2c5f7c)' }}>
@@ -607,56 +658,109 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                 <span className="text-[13px] font-black text-white">الجلسات الأخيرة — آخر 60 دقيقة</span>
               </div>
-              <span className="text-[11px] text-white/60">{liveSessions.length} جلسة</span>
+              <div className="flex items-center gap-3">
+                {liveSessions.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Smartphone className="w-3 h-3 text-green-400" />
+                      <span className="text-[11px] text-green-400 font-bold">
+                        {liveSessions.filter(s => {
+                          const ua = (s.user_agent ?? '').toLowerCase();
+                          return s.device_type === 'mobile' || ua.includes('mobile') || ua.includes('android') || ua.includes('iphone') || ua.includes('ipad');
+                        }).length}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Monitor className="w-3 h-3 text-blue-300" />
+                      <span className="text-[11px] text-blue-300 font-bold">
+                        {liveSessions.filter(s => {
+                          const ua = (s.user_agent ?? '').toLowerCase();
+                          return s.device_type !== 'mobile' && !ua.includes('mobile') && !ua.includes('android') && !ua.includes('iphone') && !ua.includes('ipad');
+                        }).length}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <span className="text-[11px] text-white/50">{liveSessions.length} جلسة</span>
+              </div>
             </div>
 
             {liveSessions.length === 0 ? (
               <div className="bg-white px-5 py-10 text-center">
                 <Activity className="w-10 h-10 mx-auto mb-2 text-[#d1e5f0]" />
                 <p className="text-[13px] text-[#94a3b8]">لا توجد جلسات في آخر ساعة</p>
+                <p className="text-[11px] text-[#b0c4ce] mt-1">ستظهر الجلسات فور دخول أي زائر</p>
               </div>
             ) : (
-              <div className="bg-white divide-y divide-[#f0f6fa]">
+              <div className="bg-white divide-y divide-[#f0f6fa] max-h-96 overflow-y-auto">
                 {liveSessions.map((s) => {
                   const ua = (s.user_agent ?? '').toLowerCase();
                   const isPhone = s.device_type === 'mobile' ||
                     ua.includes('mobile') || ua.includes('android') || ua.includes('iphone') ||
                     ua.includes('ipad') || ua.includes('ipod') || ua.includes('blackberry') || ua.includes('windows phone');
                   const minutesAgo = Math.floor((Date.now() - new Date(s.last_seen_at).getTime()) / 60000);
-                  const isActive = minutesAgo <= 5;
+                  const isActive = minutesAgo <= 3;
+                  const isRecent = minutesAgo <= 10;
 
                   return (
-                    <div key={s.session_id} className="px-5 py-3 flex items-center gap-4">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: isPhone ? '#f0fdf4' : '#eff6ff' }}>
+                    <div
+                      key={s.session_id}
+                      className="px-5 py-3.5 flex items-center gap-3.5 transition-colors hover:bg-[#fafcfe]"
+                      style={isActive ? { borderRight: '3px solid #16a34a' } : {}}
+                    >
+                      <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 relative"
+                        style={{ background: isPhone ? '#f0fdf4' : '#eff6ff', border: `1.5px solid ${isPhone ? '#bbf7d0' : '#bfdbfe'}` }}
+                      >
                         {isPhone
                           ? <Smartphone className="w-4 h-4 text-green-600" />
                           : <Monitor className="w-4 h-4 text-blue-600" />
                         }
+                        {isActive && (
+                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          {isActive && <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />}
+                        <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-[12px] font-bold text-[#1a2f3e] truncate">
-                            {s.phone ? s.phone : `زائر ${s.visitor_id.slice(0, 8)}...`}
+                            {s.phone ? s.phone : `زائر ${s.visitor_id.slice(0, 8)}`}
                           </span>
                           {s.phone && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0" style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}>
                               مسجّل
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] text-[#94a3b8] truncate">
-                          {isPhone ? 'جوال' : 'كمبيوتر'} · {s.page_count} صفحة
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="flex items-center gap-1 px-2 py-0.5 rounded-full"
+                            style={{
+                              background: isPhone ? '#f0fdf4' : '#eff6ff',
+                              border: `1px solid ${isPhone ? '#bbf7d0' : '#bfdbfe'}`
+                            }}
+                          >
+                            {isPhone
+                              ? <Smartphone className="w-2.5 h-2.5 text-green-600" />
+                              : <Monitor className="w-2.5 h-2.5 text-blue-600" />
+                            }
+                            <span className="text-[9px] font-bold" style={{ color: isPhone ? '#16a34a' : '#2563eb' }}>
+                              {isPhone ? 'جوال' : 'كمبيوتر'}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-[#94a3b8]">{s.page_count} صفحة</span>
                         </div>
                       </div>
-                      <div className="text-left flex-shrink-0">
-                        <div className="flex items-center gap-1 justify-end">
-                          <Clock className="w-3 h-3 text-[#94a3b8]" />
-                          <span className="text-[11px] text-[#94a3b8]">
-                            {minutesAgo === 0 ? 'الآن' : `${minutesAgo}د`}
+                      <div className="text-left flex-shrink-0 flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-1">
+                          {isActive && <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />}
+                          <span
+                            className="text-[11px] font-bold"
+                            style={{ color: isActive ? '#16a34a' : isRecent ? '#0369a1' : '#94a3b8' }}
+                          >
+                            {minutesAgo === 0 ? 'الآن' : `منذ ${minutesAgo}د`}
                           </span>
                         </div>
-                        <div className="text-[10px] text-[#c4d4dc] text-left">
+                        <div className="text-[10px] text-[#c4d4dc]">
                           {new Date(s.created_at).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
