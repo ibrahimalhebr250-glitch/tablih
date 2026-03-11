@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Package, Star, ShoppingBag, Heart, Home, X, Handshake, LogIn, CheckCircle, Send, Clock, CheckCircle2, XCircle, MessageSquare, Warehouse, AlertTriangle } from 'lucide-react';
+import { MapPin, Package, Star, ShoppingBag, Heart, Home, X, Handshake, LogIn, CheckCircle, Send, Clock, CheckCircle2, XCircle, MessageSquare, Warehouse, AlertTriangle, Info } from 'lucide-react';
 import TrustRatingBadge from '../shared/TrustRatingBadge';
 import VisitorRatingDialog from './VisitorRatingDialog';
 import { CommentsSection } from '../shared/CommentsSection';
@@ -125,7 +125,6 @@ function SupplierOfferDialog({ card, supplierPhone, existingOffer: rawExisting, 
   onSent: () => void;
 }) {
   const existingOffer = rawExisting?.status === 'rejected' ? null : rawExisting;
-  const [message, setMessage] = useState('');
   const [quantity, setQuantity] = useState(card.quantity);
   const [price, setPrice] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -186,7 +185,7 @@ function SupplierOfferDialog({ card, supplierPhone, existingOffer: rawExisting, 
         p_order_id: card.id,
         p_quantity: quantity,
         p_price_per_pallet: price,
-        p_supplier_message: message.trim() || null,
+        p_supplier_message: null,
         p_inventory_batch_id: selectedBatchId,
       });
       if (err) throw err;
@@ -398,12 +397,11 @@ function SupplierOfferDialog({ card, supplierPhone, existingOffer: rawExisting, 
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">رسالة للمشتري (اختياري)</label>
-                    <div className="relative">
-                      <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="أضف تفاصيل عرضك أو ملاحظاتك..." rows={3} maxLength={300} dir="rtl" className="w-full rounded-2xl px-4 py-3 text-[13px] text-[#1a3a4a] resize-none outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} />
-                      <span className="absolute bottom-2 left-3 text-[10px] text-[#a0b5c0]">{message.length}/300</span>
-                    </div>
+                  <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+                    <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-[#1e40af] leading-relaxed">
+                      يتم التفاوض ومتابعة الصفقة <span className="font-black">داخل المنصة فقط</span>. بعد قبول العرض وتثبيت العمولة ستظهر معلومات التواصل بين الطرفين.
+                    </p>
                   </div>
                 </>
               )}
