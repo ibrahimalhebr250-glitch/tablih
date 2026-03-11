@@ -17,6 +17,7 @@ import {
   Play,
   Loader2,
   Bell,
+  Truck,
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useAccountDeals } from '../../../hooks/useAccountDeals';
@@ -79,9 +80,11 @@ interface SentOffer {
   quality: string;
 }
 
-function SupplierSentOffers({ phone, onConfirmDeal, actionLoading }: {
+function SupplierSentOffers({ phone, onConfirmDeal, onStartDelivery, onConfirmDelivery, actionLoading }: {
   phone: string;
   onConfirmDeal: (dealId: string) => Promise<{ success: boolean; error?: string }>;
+  onStartDelivery: (dealId: string) => Promise<{ success: boolean; error?: string }>;
+  onConfirmDelivery: (dealId: string) => Promise<{ success: boolean; error?: string }>;
   actionLoading: string | null;
 }) {
   const [offers, setOffers] = useState<SentOffer[]>([]);
@@ -161,7 +164,15 @@ function SupplierSentOffers({ phone, onConfirmDeal, actionLoading }: {
   const handleAction = async (offer: SentOffer) => {
     if (!offer.deal_id) return;
     setErrorMap(p => ({ ...p, [offer.id]: '' }));
-    const result = await onConfirmDeal(offer.deal_id);
+    const actualStatus = dealStatuses[offer.deal_id];
+    let result: { success: boolean; error?: string };
+    if (actualStatus === 'in_delivery' || actualStatus === 'execution_in_progress') {
+      result = await onConfirmDelivery(offer.deal_id);
+    } else if (actualStatus === 'inventory_reserved') {
+      result = await onStartDelivery(offer.deal_id);
+    } else {
+      result = await onConfirmDeal(offer.deal_id);
+    }
     if (!result.success) {
       setErrorMap(p => ({ ...p, [offer.id]: result.error || 'حدث خطأ' }));
     } else {
@@ -182,36 +193,64 @@ function SupplierSentOffers({ phone, onConfirmDeal, actionLoading }: {
           </div>
 
           {dealCreatedOffers.map(offer => {
-            const actualStatus = offer.deal_id ? (dealStatuses[offer.deal_id] ?? 'matched') : 'matched';
-            const isReadyToDeliver = actualStatus === 'inventory_reserved';
+            const actualStatus = offer.deal_id ? (dealStatuses[offer.deal_id] ?? null) : null;
+            const isNeedsConfirm = !actualStatus || ['matched', 'pending_confirmation', 'pending_supplier', 'awaiting_buyer'].includes(actualStatus);
+            const isReserved = actualStatus === 'inventory_reserved';
+            const isInDelivery = actualStatus === 'in_delivery' || actualStatus === 'execution_in_progress';
             const isActing = actionLoading === offer.deal_id;
             const errMsg = errorMap[offer.id];
 
-            const headerBg = isReadyToDeliver
-              ? 'linear-gradient(135deg, #ECFDF5, #D1FAE5)'
-              : 'linear-gradient(135deg, #FFFBEB, #FEF3C7)';
-            const borderColor = isReadyToDeliver ? '#10b981' : '#F59E0B';
+            let headerBg = 'linear-gradient(135deg, #FFFBEB, #FEF3C7)';
+            let borderColor = '#F59E0B';
+            let headerTitle = 'المشتري قبل عرضك — اعتمد الصفقة';
+            let badgeLabel = 'بانتظار الاعتماد';
+            let btnBg = 'linear-gradient(135deg, #059669, #10b981)';
+            let btnShadow = '0 4px 16px rgba(5,150,105,0.3)';
+            let btnIcon = <><Check className="w-4 h-4" /> اعتماد الصفقة</>;
+
+            if (isReserved) {
+              headerBg = 'linear-gradient(135deg, #ECFDF5, #D1FAE5)';
+              borderColor = '#10b981';
+              headerTitle = 'الصفقة محجوزة — ابدأ التسليم الآن';
+              badgeLabel = 'جاهزة للتسليم';
+              btnBg = 'linear-gradient(135deg, #0369A1, #0284C7)';
+              btnShadow = '0 4px 16px rgba(3,105,161,0.3)';
+              btnIcon = <><Play className="w-4 h-4" /> بدء التسليم</>;
+            } else if (isInDelivery) {
+              headerBg = 'linear-gradient(135deg, #EFF6FF, #DBEAFE)';
+              borderColor = '#3b82f6';
+              headerTitle = 'التسليم جارٍ — أكّد الإتمام';
+              badgeLabel = 'جارٍ التسليم';
+              btnBg = 'linear-gradient(135deg, #16a34a, #15803d)';
+              btnShadow = '0 4px 16px rgba(22,163,74,0.3)';
+              btnIcon = <><CheckCircle2 className="w-4 h-4" /> تأكيد إتمام التسليم</>;
+            }
 
             return (
               <div
                 key={offer.id}
                 className="rounded-2xl overflow-hidden"
-                style={{ background: 'white', border: `2px solid ${borderColor}`, boxShadow: `0 4px 20px ${isReadyToDeliver ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)'}` }}
+                style={{ background: 'white', border: `2px solid ${borderColor}`, boxShadow: `0 4px 20px ${isReserved ? 'rgba(16,185,129,0.12)' : isInDelivery ? 'rgba(59,130,246,0.12)' : 'rgba(245,158,11,0.12)'}` }}
               >
                 <div className="px-4 py-3 flex items-center justify-between" style={{ background: headerBg }} dir="rtl">
                   <div className="flex items-center gap-2">
-                    {isReadyToDeliver
-                      ? <Play className="w-4 h-4 text-green-600" />
-                      : <Bell className="w-4 h-4 text-amber-600 animate-pulse" />
+                    {isInDelivery
+                      ? <Truck className="w-4 h-4 text-blue-600 animate-pulse" />
+                      : isReserved
+                        ? <Play className="w-4 h-4 text-green-600" />
+                        : <Bell className="w-4 h-4 text-amber-600 animate-pulse" />
                     }
-                    <span className={`text-[12px] font-black ${isReadyToDeliver ? 'text-green-800' : 'text-amber-800'}`}>
-                      {isReadyToDeliver ? 'الصفقة محجوزة — ابدأ التسليم الآن' : 'المشتري قبل عرضك — اعتمد الصفقة'}
+                    <span className={`text-[12px] font-black ${isInDelivery ? 'text-blue-800' : isReserved ? 'text-green-800' : 'text-amber-800'}`}>
+                      {headerTitle}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl" style={{ background: isReadyToDeliver ? '#D1FAE5' : '#FEF3C7', border: `1px solid ${isReadyToDeliver ? '#A7F3D0' : '#FDE68A'}` }}>
-                    <Handshake className={`w-3.5 h-3.5 ${isReadyToDeliver ? 'text-green-700' : 'text-amber-700'}`} />
-                    <span className={`text-[10px] font-black ${isReadyToDeliver ? 'text-green-700' : 'text-amber-700'}`}>
-                      {isReadyToDeliver ? 'جاهزة للتسليم' : 'صفقة جديدة'}
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl" style={{
+                    background: isInDelivery ? '#DBEAFE' : isReserved ? '#D1FAE5' : '#FEF3C7',
+                    border: `1px solid ${isInDelivery ? '#BFDBFE' : isReserved ? '#A7F3D0' : '#FDE68A'}`,
+                  }}>
+                    <Handshake className={`w-3.5 h-3.5 ${isInDelivery ? 'text-blue-700' : isReserved ? 'text-green-700' : 'text-amber-700'}`} />
+                    <span className={`text-[10px] font-black ${isInDelivery ? 'text-blue-700' : isReserved ? 'text-green-700' : 'text-amber-700'}`}>
+                      {badgeLabel}
                     </span>
                   </div>
                 </div>
@@ -241,27 +280,21 @@ function SupplierSentOffers({ phone, onConfirmDeal, actionLoading }: {
                     </div>
                   )}
 
-                  <button
-                    onClick={() => handleAction(offer)}
-                    disabled={isActing || !offer.deal_id}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-60"
-                    style={{
-                      background: isReadyToDeliver
-                        ? 'linear-gradient(135deg, #0369A1, #0284C7)'
-                        : 'linear-gradient(135deg, #059669, #10b981)',
-                      boxShadow: isReadyToDeliver
-                        ? '0 4px 16px rgba(3,105,161,0.3)'
-                        : '0 4px 16px rgba(5,150,105,0.3)',
-                    }}
-                  >
-                    {isActing ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : isReadyToDeliver ? (
-                      <><Play className="w-4 h-4" /> بدء التسليم</>
-                    ) : (
-                      <><Check className="w-4 h-4" /> اعتماد الصفقة</>
-                    )}
-                  </button>
+                  {isNeedsConfirm && actualStatus === 'awaiting_buyer' ? (
+                    <div className="flex items-center gap-2 justify-center py-2.5 rounded-xl" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+                      <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+                      <span className="text-[11px] font-bold text-blue-700">في انتظار تأكيد المشتري</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleAction(offer)}
+                      disabled={isActing || !offer.deal_id}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-60"
+                      style={{ background: btnBg, boxShadow: btnShadow }}
+                    >
+                      {isActing ? <Loader2 className="w-4 h-4 animate-spin" /> : btnIcon}
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -881,7 +914,17 @@ export default function DealsTab({ phone, pendingDemandOffer, onPendingDemandOff
         phone={phone}
         onConfirmDeal={async (id) => {
           const result = await supplierConfirm(id);
-          if (result.success) setToast({ title: 'تم اعتماد الصفقة', message: 'الصفقة جارية — تواصل مع المشتري لتنسيق التسليم', variant: 'success' });
+          if (result.success) setToast({ title: 'تم اعتماد الصفقة', message: 'الصفقة محجوزة — اضغط بدء التسليم عند الاستعداد', variant: 'success' });
+          return result;
+        }}
+        onStartDelivery={async (id) => {
+          const result = await startDelivery(id);
+          if (result.success) setToast({ title: 'تم بدء التسليم', message: 'تواصل مع المشتري عبر واتساب لتنسيق الاستلام', variant: 'success' });
+          return result;
+        }}
+        onConfirmDelivery={async (id) => {
+          const result = await confirmDelivery(id);
+          if (result.success) setToast({ title: 'تم تأكيد التسليم', message: 'الصفقة اكتملت بنجاح', variant: 'success' });
           return result;
         }}
         actionLoading={actionLoading}
