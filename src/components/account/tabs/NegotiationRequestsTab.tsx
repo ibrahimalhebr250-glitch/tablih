@@ -69,9 +69,9 @@ function RequestCard({ request, buyerName, onAccept, onReject }: {
             <span className="text-[11px] text-[#7a9aab]">المدينة</span>
           </div>
         )}
-        {request.batch_ref && (
+        {request.batch_id && (
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-mono text-[#7a9aab]">{request.batch_ref}</span>
+            <span className="text-[11px] font-mono text-[#7a9aab]">{request.batch_id}</span>
             <span className="text-[11px] text-[#7a9aab]">رقم الدفعة</span>
           </div>
         )}

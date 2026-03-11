@@ -4,7 +4,7 @@ import type { Deal } from '../types/deal';
 
 export interface InventoryBatch {
   id: string;
-  batch_ref: string;
+  batch_id: string;
   pallet_type: string;
   size: string;
   quality: string;
@@ -60,7 +60,7 @@ export interface NegotiationRequest {
   size?: string;
   quality?: string;
   city?: string;
-  batch_ref?: string;
+  batch_id?: string;
 }
 
 export function useAccountData(phone: string) {
@@ -79,7 +79,7 @@ export function useAccountData(phone: string) {
     const [invRes, purchasesRes, dealsRes, commRes, negRes] = await Promise.all([
       supabase
         .from('inventory_batches')
-        .select('id, batch_ref, pallet_type, size, quality, pallet_condition, city, quantity, quantity_available, price_per_pallet, publish_to_market, status, inventory_source, created_at')
+        .select('id, batch_id, pallet_type, size, quality, pallet_condition, city, quantity, quantity_available, price_per_pallet, publish_to_market, status, inventory_source, created_at')
         .eq('phone', phone)
         .order('created_at', { ascending: false }),
 
@@ -121,17 +121,17 @@ export function useAccountData(phone: string) {
       const batchIds = [...new Set(negData.map(n => n.inventory_batch_id).filter(Boolean))];
       const { data: batches } = await supabase
         .from('inventory_batches')
-        .select('id, batch_ref, pallet_type, size, quality, city')
+        .select('id, batch_id, pallet_type, size, quality, city')
         .in('id', batchIds);
 
-      const batchMap: Record<string, { batch_ref: string; pallet_type: string; size: string; quality: string; city: string }> = {};
+      const batchMap: Record<string, { batch_id: string; pallet_type: string; size: string; quality: string; city: string }> = {};
       for (const b of batches ?? []) {
         batchMap[b.id] = b;
       }
 
       const enriched = negData.map(n => ({
         ...n,
-        batch_ref: batchMap[n.inventory_batch_id]?.batch_ref,
+        batch_id: batchMap[n.inventory_batch_id]?.batch_id,
         pallet_type: batchMap[n.inventory_batch_id]?.pallet_type,
         size: batchMap[n.inventory_batch_id]?.size,
         quality: batchMap[n.inventory_batch_id]?.quality,

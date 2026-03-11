@@ -18,7 +18,7 @@ function InventoryCard({ batch }: { batch: InventoryBatch }) {
   return (
     <div className="bg-white rounded-2xl border border-[#e2edf5] shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#f0f6fa]" style={{ background: '#f8fbfd' }}>
-        <span className="text-[10px] font-mono text-[#9ab0bf]">{batch.batch_ref}</span>
+        <span className="text-[10px] font-mono text-[#9ab0bf]">{batch.batch_id}</span>
         <div className="flex items-center gap-1.5">
           {batch.publish_to_market ? (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-1">
