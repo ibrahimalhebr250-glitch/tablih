@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Handshake, RefreshCw, Bell, Package, CheckCircle, MapPin, Layers, Hash, Banknote, CheckSquare, Square, Receipt, MessageCircle, Truck, XCircle, AlertTriangle, Star } from 'lucide-react';
+import { ArrowRight, Handshake, RefreshCw, Bell, Package, CheckCircle, MapPin, Layers, Hash, Banknote, CheckSquare, Square, Receipt, MessageCircle, Truck, XCircle, AlertTriangle, Star, ShieldAlert } from 'lucide-react';
 import { useSupplierDeals } from '../../../hooks/useSupplierDeals';
 import { DEAL_STATUS_CONFIG } from '../../../types/deal';
 import type { Deal } from '../../../types/deal';
@@ -166,6 +166,100 @@ function ConfirmDialog({ deal, onConfirm, onCancel, loading, error }: {
   );
 }
 
+function DeliveryPledgeDialog({ deal, onConfirm, onCancel, loading }: {
+  deal: Deal; onConfirm: () => void; onCancel: () => void; loading: boolean;
+}) {
+  const [pledged, setPledged] = useState(false);
+  const feePerPallet = deal.platform_fee_per_pallet ?? 0.25;
+  const totalFee = deal.platform_fee ?? (feePerPallet * deal.quantity);
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center" onClick={onCancel}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative w-full sm:max-w-md max-h-[95vh] flex flex-col rounded-t-3xl sm:rounded-3xl overflow-hidden"
+        style={{ background: '#f4f9fc' }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div className="text-center">
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-[#FFF7ED] flex items-center justify-center mb-2">
+              <ShieldAlert className="w-6 h-6 text-[#F59E0B]" />
+            </div>
+            <h3 className="text-[15px] font-black text-[#1a2f3e] mb-0.5">بدء إجراءات التسليم</h3>
+            <p className="text-[11px] text-[#7a9aab]">{deal.deal_ref}</p>
+          </div>
+
+          <div className="bg-[#FFF7ED] border border-[#FDE68A] rounded-xl p-3.5 space-y-2.5" dir="rtl">
+            <div className="flex items-center gap-2 text-[#92400E]">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <p className="text-[12px] font-black">تعهد قبل بدء التسليم</p>
+            </div>
+            <p className="text-[11px] text-[#92400E] leading-relaxed">
+              بضغطك على "بدء التسليم" أنت تتعهد بتحصيل رسوم المنصة البالغة
+              <span className="font-black mx-1">{totalFee.toLocaleString('ar-SA')} ر.س</span>
+              ({feePerPallet} ر.س × {deal.quantity} طبلية) من المشتري وتسليمها للمنصة فور إتمام الصفقة.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-[#e2edf5] p-3.5 space-y-2" dir="rtl">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-bold text-[#1a2f3e]">{deal.pallet_type} · {deal.size} · درجة {deal.quality}</span>
+              <span className="text-[11px] text-[#7a9aab]">النوع</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-bold text-[#1a2f3e]">{deal.quantity.toLocaleString('ar-SA')} طبلية</span>
+              <span className="text-[11px] text-[#7a9aab]">الكمية</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-bold text-[#F59E0B]">{totalFee.toLocaleString('ar-SA')} ر.س</span>
+              <span className="text-[11px] text-[#7a9aab]">رسوم المنصة المستحقة</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setPledged(!pledged)}
+            className="w-full flex items-center gap-3 p-3 rounded-xl transition-colors"
+            style={{ background: pledged ? '#F0FDF4' : '#f8fbfd', border: `1.5px solid ${pledged ? '#86EFAC' : '#e2edf5'}` }}
+            dir="rtl"
+          >
+            {pledged
+              ? <CheckSquare className="w-5 h-5 text-[#16a34a] flex-shrink-0" />
+              : <Square className="w-5 h-5 text-[#b0c8d5] flex-shrink-0" />
+            }
+            <span className="text-[12px] font-bold text-right" style={{ color: pledged ? '#166534' : '#4a6a7e' }}>
+              أتعهد بتحصيل رسوم المنصة من المشتري وتسليمها للمنصة
+            </span>
+          </button>
+        </div>
+
+        <div className="flex-shrink-0 p-4 pt-2 border-t border-[#e8f0f5] bg-[#f4f9fc]">
+          {!pledged ? (
+            <button onClick={onCancel} className="w-full py-3.5 rounded-2xl bg-white border border-[#e2edf5] text-[13px] font-bold text-[#4a6a7e] active:scale-[0.97] transition-transform">
+              إلغاء
+            </button>
+          ) : (
+            <div className="flex gap-3">
+              <button onClick={onCancel} className="w-[90px] flex-shrink-0 py-3.5 rounded-2xl bg-white border border-[#e2edf5] text-[13px] font-bold text-[#4a6a7e] active:scale-[0.97] transition-transform">
+                إلغاء
+              </button>
+              <button
+                disabled={loading}
+                onClick={onConfirm}
+                className="flex-1 py-3.5 rounded-2xl text-[13px] font-bold text-white active:scale-[0.97] transition-transform disabled:opacity-60 flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(135deg, #0369A1, #0284C7)', boxShadow: '0 4px 16px rgba(3,105,161,0.3)' }}
+              >
+                <Truck className="w-4 h-4" />
+                {loading ? 'جارٍ التحديث...' : 'بدء التسليم'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FailDeliveryDialog({ deal, onConfirm, onCancel, loading }: {
   deal: Deal; onConfirm: () => void; onCancel: () => void; loading: boolean;
 }) {
@@ -289,29 +383,12 @@ function ReservedDealCard({ deal, onStartDelivery, loading }: {
         </div>
 
         <div className="border-t border-[#f0f6fa] pt-3">
-          <a
-            href={buildWhatsAppLink(deal.buyer_phone, 'supplier', deal)}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => {
-              getDefaultTemplate('supplier').then(tpl => {
-                logWhatsAppContact({
-                  deal_id: deal.id,
-                  deal_ref: deal.deal_ref,
-                  sender_phone: deal.supplier_phone ?? '',
-                  sender_role: 'supplier',
-                  recipient_phone: deal.buyer_phone ?? '',
-                  template_id: tpl?.id,
-                  context_data: { pallet_type: deal.pallet_type, quantity: deal.quantity, city: deal.city },
-                });
-              });
-            }}
-            className="flex items-center justify-center gap-2.5 w-full py-3 rounded-xl text-[13px] font-bold text-white active:scale-[0.97] transition-transform"
-            style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 4px 14px rgba(37,211,102,0.3)' }}
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span>تواصل مع المشتري عبر واتساب</span>
-          </a>
+          <div className="flex items-center gap-2 justify-center py-2.5 rounded-xl bg-amber-50 border border-amber-200" dir="rtl">
+            <ShieldAlert className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+            <span className="text-[11px] font-bold text-amber-700">
+              سيظهر واتساب بعد بدء إجراءات التسليم
+            </span>
+          </div>
         </div>
       </div>
       <div className="px-4 pb-4">
@@ -322,7 +399,7 @@ function ReservedDealCard({ deal, onStartDelivery, loading }: {
           style={{ background: 'linear-gradient(135deg, #0369A1, #0284C7)', boxShadow: '0 4px 14px rgba(3,105,161,0.25)' }}
         >
           <Truck className="w-4 h-4" />
-          {loading ? 'جارٍ التحديث...' : 'بدء التسليم'}
+          {loading ? 'جارٍ التحديث...' : 'بدء إجراءات التسليم'}
         </button>
       </div>
     </div>
@@ -581,7 +658,7 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
   const {
     loading, actionLoading,
     newRequests, reservedDeals, inDelivery, endedDeals,
-    confirmDeal, startDelivery, confirmDelivery, failDelivery,
+    confirmDeal, startDeliveryWithPledge, confirmDelivery, failDelivery,
     refresh,
   } = useSupplierDeals(phone);
 
@@ -589,6 +666,7 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
   const [confirmingDeal, setConfirmingDeal] = useState<Deal | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [failingDeal, setFailingDeal] = useState<Deal | null>(null);
+  const [pledgingDeal, setPledgingDeal] = useState<Deal | null>(null);
   const [toast, setToast] = useState<ToastConfig | null>(null);
   const [ratingDialog, setRatingDialog] = useState<{ dealId: string; buyerPhone: string; buyerName: string } | null>(null);
 
@@ -617,12 +695,14 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
     }
   };
 
-  const handleStartDelivery = async (dealId: string) => {
-    const result = await startDelivery(dealId);
+  const handleStartDelivery = async () => {
+    if (!pledgingDeal) return;
+    const result = await startDeliveryWithPledge(pledgingDeal.id);
     if (result.success) {
+      setPledgingDeal(null);
       setToast({
-        title: 'تم تسجيل بدء التسليم',
-        message: 'الصفقة الآن في مرحلة التسليم — تواصل مع المشتري عبر واتساب لتنسيق الاستلام',
+        title: 'تم بدء إجراءات التسليم',
+        message: 'تواصل مع المشتري الآن عبر واتساب لتنسيق موعد الاستلام',
         variant: 'success',
       });
       setActiveTab('delivery');
@@ -702,6 +782,15 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
             onConfirm={handleFailDelivery}
             onCancel={() => setFailingDeal(null)}
             loading={actionLoading === failingDeal.id}
+          />
+        )}
+
+        {pledgingDeal && (
+          <DeliveryPledgeDialog
+            deal={pledgingDeal}
+            onConfirm={handleStartDelivery}
+            onCancel={() => setPledgingDeal(null)}
+            loading={actionLoading === pledgingDeal.id}
           />
         )}
 
@@ -794,7 +883,7 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
                   <ReservedDealCard
                     key={deal.id}
                     deal={deal}
-                    onStartDelivery={() => handleStartDelivery(deal.id)}
+                    onStartDelivery={() => setPledgingDeal(deal)}
                     loading={actionLoading === deal.id}
                   />
                 ))}

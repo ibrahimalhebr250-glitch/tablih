@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, ShoppingBag, RefreshCw, Bell, Package, CheckCircle, MessageCircle, CreditCard, Truck, Clock, Loader2, ShieldCheck, Star, Cloud } from 'lucide-react';
+import { ArrowRight, ShoppingBag, RefreshCw, Bell, Package, CheckCircle, MessageCircle, CreditCard, Truck, Clock, Loader2, ShieldCheck, Star, Cloud, ShieldAlert } from 'lucide-react';
 import { useBuyerDeals } from '../../../hooks/useBuyerDeals';
 import type { SupplierInfo } from '../../../hooks/useBuyerDeals';
 import { DEAL_STATUS_CONFIG } from '../../../types/deal';
@@ -155,29 +155,38 @@ function ActiveDealCard({ deal, supplierInfo }: { deal: Deal; supplierInfo: Supp
         </div>
 
         <div className="border-t border-[#f0f6fa] pt-3">
-          <a
-            href={buildWhatsAppLink(deal.supplier_phone, 'buyer', deal)}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => {
-              getDefaultTemplate('buyer').then(tpl => {
-                logWhatsAppContact({
-                  deal_id: deal.id,
-                  deal_ref: deal.deal_ref,
-                  sender_phone: deal.buyer_phone ?? '',
-                  sender_role: 'buyer',
-                  recipient_phone: deal.supplier_phone ?? '',
-                  template_id: tpl?.id,
-                  context_data: { pallet_type: deal.pallet_type, quantity: deal.quantity, city: deal.city },
+          {isInDelivery ? (
+            <a
+              href={buildWhatsAppLink(deal.supplier_phone, 'buyer', deal)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                getDefaultTemplate('buyer').then(tpl => {
+                  logWhatsAppContact({
+                    deal_id: deal.id,
+                    deal_ref: deal.deal_ref,
+                    sender_phone: deal.buyer_phone ?? '',
+                    sender_role: 'buyer',
+                    recipient_phone: deal.supplier_phone ?? '',
+                    template_id: tpl?.id,
+                    context_data: { pallet_type: deal.pallet_type, quantity: deal.quantity, city: deal.city },
+                  });
                 });
-              });
-            }}
-            className="flex items-center justify-center gap-2.5 w-full py-3 rounded-xl text-[13px] font-bold text-white active:scale-[0.97] transition-transform"
-            style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 4px 14px rgba(37,211,102,0.3)' }}
-          >
-            <MessageCircle className="w-4.5 h-4.5" />
-            <span>تواصل مع المورد عبر واتساب</span>
-          </a>
+              }}
+              className="flex items-center justify-center gap-2.5 w-full py-3 rounded-xl text-[13px] font-bold text-white active:scale-[0.97] transition-transform"
+              style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 4px 14px rgba(37,211,102,0.3)' }}
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>تواصل مع المورد عبر واتساب</span>
+            </a>
+          ) : (
+            <div className="flex items-center gap-2 justify-center py-2.5 rounded-xl bg-amber-50 border border-amber-200" dir="rtl">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+              <span className="text-[11px] font-bold text-amber-700">
+                سيظهر واتساب عند بدء إجراءات التسليم من المورد
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -82,6 +82,19 @@ export function useSupplierDeals(phone: string) {
     return { success: true };
   }, [phone, fetchDeals]);
 
+  const startDeliveryWithPledge = useCallback(async (dealId: string) => {
+    setActionLoading(dealId);
+    const { data, error } = await supabase.rpc('supplier_start_delivery_with_pledge', {
+      p_deal_id: dealId,
+      p_supplier_phone: phone,
+    });
+    setActionLoading(null);
+    if (error) return { success: false, error: error.message };
+    if (!data?.success) return { success: false, error: data?.error ?? 'فشلت العملية' };
+    await fetchDeals();
+    return { success: true };
+  }, [phone, fetchDeals]);
+
   const confirmDelivery = useCallback(async (dealId: string) => {
     setActionLoading(dealId);
     const { data, error } = await supabase.rpc('supplier_confirm_delivery_v4', {
@@ -140,6 +153,7 @@ export function useSupplierDeals(phone: string) {
     actionLoading,
     confirmDeal,
     startDelivery,
+    startDeliveryWithPledge,
     confirmDelivery,
     failDelivery,
     markNotSold,
