@@ -166,13 +166,14 @@ interface ActiveCardProps {
   onViewDetail: (deal: Deal) => void;
   onSupplierConfirm?: (dealId: string) => Promise<{ success: boolean; error?: string }>;
   onStartDelivery?: (dealId: string) => Promise<{ success: boolean; error?: string }>;
+  onConfirmDelivery?: (dealId: string) => Promise<{ success: boolean; error?: string }>;
   onBuyerConfirmAction?: (deal: Deal) => void;
   actionLoading?: string | null;
 }
 
 export function ActiveDealCard({
   deal, isBuyer, counterparty, onViewDetail,
-  onSupplierConfirm, onStartDelivery, onBuyerConfirmAction, actionLoading,
+  onSupplierConfirm, onStartDelivery, onConfirmDelivery, onBuyerConfirmAction, actionLoading,
 }: ActiveCardProps) {
   const [actionError, setActionError] = useState<string | null>(null);
   const counterpartyName = counterparty?.company_name || counterparty?.display_name || (isBuyer ? 'مورد' : 'مشتري');
@@ -198,6 +199,14 @@ export function ActiveDealCard({
     if (!onStartDelivery) return;
     setActionError(null);
     const result = await onStartDelivery(deal.id);
+    if (!result.success) setActionError(result.error || 'حدث خطأ');
+  };
+
+  const handleConfirmDelivery = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onConfirmDelivery) return;
+    setActionError(null);
+    const result = await onConfirmDelivery(deal.id);
     if (!result.success) setActionError(result.error || 'حدث خطأ');
   };
 
@@ -317,6 +326,17 @@ export function ActiveDealCard({
             <Package className="w-3.5 h-3.5 text-[#059669]" />
             <span className="text-[11px] font-bold text-[#059669]">الكمية محجوزة — انتظر تواصل المورد</span>
           </div>
+        )}
+
+        {isExecution && !isBuyer && onConfirmDelivery && (
+          <button
+            onClick={handleConfirmDelivery}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-60"
+            style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 3px 10px rgba(5,150,105,0.25)' }}
+          >
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4" /> تأكيد إتمام التسليم</>}
+          </button>
         )}
 
         {isExecution && (

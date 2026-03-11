@@ -164,6 +164,8 @@ function SupplierSentOffers({ phone, onConfirmDeal, actionLoading }: {
     const result = await onConfirmDeal(offer.deal_id);
     if (!result.success) {
       setErrorMap(p => ({ ...p, [offer.id]: result.error || 'حدث خطأ' }));
+    } else {
+      await load();
     }
   };
 
@@ -977,6 +979,11 @@ export default function DealsTab({ phone, pendingDemandOffer, onPendingDemandOff
                   onStartDelivery={!buyer ? async (id) => {
                     const result = await startDelivery(id);
                     if (result.success) setToast({ title: 'تم بدء التسليم', message: 'تواصل مع المشتري عبر واتساب لتنسيق الاستلام', variant: 'success' });
+                    return result;
+                  } : undefined}
+                  onConfirmDelivery={!buyer ? async (id) => {
+                    const result = await confirmDelivery(id);
+                    if (result.success) setToast({ title: 'تم تأكيد التسليم', message: 'الصفقة اكتملت بنجاح', variant: 'success' });
                     return result;
                   } : undefined}
                   onBuyerConfirmAction={buyer ? setSelectedDeal : undefined}
