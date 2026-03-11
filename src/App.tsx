@@ -103,16 +103,10 @@ function App() {
       }
       return id;
     };
-    const getOrCreateSessionId = () => {
-      let sid = sessionStorage.getItem('_psid');
-      if (!sid) {
-        sid = crypto.randomUUID();
-        sessionStorage.setItem('_psid', sid);
-      }
-      return sid;
-    };
+
     const visitorId = getOrCreateVisitorId();
-    const sessionId = getOrCreateSessionId();
+    const sessionId = crypto.randomUUID();
+    sessionStorage.setItem('_psid', sessionId);
 
     supabase.rpc('log_platform_visit', {
       p_visitor_id: visitorId,
@@ -125,7 +119,7 @@ function App() {
       p_visitor_id: visitorId,
       p_session_id: sessionId,
       p_user_agent: navigator.userAgent.slice(0, 200),
-      p_referrer: document.referrer.slice(0, 500) || null,
+      p_referrer: document.referrer ? document.referrer.slice(0, 500) : null,
       p_phone: null,
     }).then(() => {}).catch(() => {});
 

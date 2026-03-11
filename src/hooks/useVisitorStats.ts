@@ -8,7 +8,11 @@ export interface VisitorPeriodStats {
   last7d: number;
   last14d: number;
   last30d: number;
+  last30m: number;
+  last1h: number;
   total: number;
+  totalSessions: number;
+  identified: number;
   avgDaily: number;
   peakDay: { date: string; count: number } | null;
   lastUpdated: string;
@@ -17,6 +21,7 @@ export interface VisitorPeriodStats {
 export interface VisitorDailyPoint {
   date: string;
   count: number;
+  sessions: number;
   label: string;
 }
 
@@ -27,76 +32,62 @@ export function useVisitorStats() {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const load = useCallback(async () => {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    thirtyDaysAgo.setHours(0, 0, 0, 0);
-
-    const [{ data, error }, { count: totalCount }] = await Promise.all([
-      supabase
-        .from('platform_visitor_logs')
-        .select('visitor_id, visit_date, created_at')
-        .gte('created_at', thirtyDaysAgo.toISOString())
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('platform_visitor_logs')
-        .select('visitor_id', { count: 'exact', head: true }),
+    const [statsResult, dailyResult] = await Promise.all([
+      supabase.rpc('admin_get_visitor_stats'),
+      supabase.rpc('admin_get_daily_visitors', { days_back: 30 }),
     ]);
 
-    if (error || !data) {
+    if (statsResult.error || !statsResult.data) {
       setLoading(false);
       return;
     }
 
-    const now = Date.now();
-    const h = (hours: number) => new Date(now - hours * 3600 * 1000).toISOString();
-    const d = (days: number) => new Date(now - days * 86400 * 1000).toISOString();
+    const s = statsResult.data as Record<string, number>;
 
-    const uniqueIn = (cutoff: string) =>
-      new Set(data.filter(r => r.created_at >= cutoff).map(r => r.visitor_id)).size;
+    const dailyRows: Array<{ day: string; unique_visitors: number; total_sessions: number }> =
+      dailyResult.data ?? [];
 
-    const last24h = uniqueIn(h(24));
-    const last48h = uniqueIn(h(48));
-    const last72h = uniqueIn(h(72));
-    const last7d = uniqueIn(d(7));
-    const last14d = uniqueIn(d(14));
-    const last30d = uniqueIn(d(30));
-
-    const byDay: Record<string, Set<string>> = {};
-    data.forEach(r => {
-      const day = r.visit_date as string;
-      if (!byDay[day]) byDay[day] = new Set();
-      byDay[day].add(r.visitor_id);
+    const byDay: Record<string, { visitors: number; sessions: number }> = {};
+    dailyRows.forEach(row => {
+      byDay[row.day] = { visitors: Number(row.unique_visitors), sessions: Number(row.total_sessions) };
     });
 
     const chartPoints: VisitorDailyPoint[] = [];
+    let peakDay: { date: string; count: number } | null = null;
+    let totalVisitorsInPeriod = 0;
+    let activeDays = 0;
+
     for (let i = 29; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
       const key = date.toISOString().slice(0, 10);
-      const count = byDay[key]?.size ?? 0;
+      const count = byDay[key]?.visitors ?? 0;
+      const sessions = byDay[key]?.sessions ?? 0;
       const label = date.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' });
-      chartPoints.push({ date: key, count, label });
+      chartPoints.push({ date: key, count, sessions, label });
+      if (count > 0) {
+        activeDays++;
+        totalVisitorsInPeriod += count;
+        if (!peakDay || count > peakDay.count) {
+          peakDay = { date: key, count };
+        }
+      }
     }
 
-    const days = Object.entries(byDay);
-    let peakDay: { date: string; count: number } | null = null;
-    days.forEach(([date, visitors]) => {
-      if (!peakDay || visitors.size > peakDay.count) {
-        peakDay = { date, count: visitors.size };
-      }
-    });
-
-    const activeDays = days.filter(([, v]) => v.size > 0).length;
-    const avgDaily = activeDays > 0 ? Math.round(last30d / activeDays) : 0;
+    const avgDaily = activeDays > 0 ? Math.round(totalVisitorsInPeriod / activeDays) : 0;
 
     setStats({
-      last24h,
-      last48h,
-      last72h,
-      last7d,
-      last14d,
-      last30d,
-      total: totalCount ?? 0,
+      last24h: s.last24h ?? 0,
+      last48h: s.last48h ?? 0,
+      last72h: s.last72h ?? 0,
+      last7d: s.last7d ?? 0,
+      last14d: s.last14d ?? 0,
+      last30d: s.last30d ?? 0,
+      last30m: s.last30m ?? 0,
+      last1h: s.last1h ?? 0,
+      total: s.total_unique ?? 0,
+      totalSessions: s.total_sessions ?? 0,
+      identified: s.total_identified ?? 0,
       avgDaily,
       peakDay,
       lastUpdated: new Date().toLocaleTimeString('ar-SA'),
@@ -109,24 +100,23 @@ export function useVisitorStats() {
     load();
 
     channelRef.current = supabase
-      .channel('visitor_logs_realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'platform_visitor_logs' },
-        () => { load(); }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'visitor_sessions' },
-        () => { load(); }
-      )
+      .channel('visitor_stats_realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'visitor_sessions' }, () => {
+        load();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'visitor_sessions' }, () => {
+        load();
+      })
       .subscribe();
+
+    const interval = setInterval(load, 60000);
 
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
+      clearInterval(interval);
     };
   }, [load]);
 

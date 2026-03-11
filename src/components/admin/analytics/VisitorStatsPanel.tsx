@@ -1,4 +1,4 @@
-import { Users, TrendingUp, Calendar, Clock, RefreshCw, Award } from 'lucide-react';
+import { Users, TrendingUp, Calendar, Clock, RefreshCw, Award, Zap, Activity } from 'lucide-react';
 import { useVisitorStats } from '../../../hooks/useVisitorStats';
 import type { VisitorDailyPoint } from '../../../hooks/useVisitorStats';
 
@@ -43,9 +43,7 @@ function MiniBarChart({ data }: { data: VisitorDailyPoint[] }) {
 
 function FullBarChart({ data }: { data: VisitorDailyPoint[] }) {
   const max = Math.max(...data.map(d => d.count), 1);
-
   const yTicks = [0, Math.round(max * 0.25), Math.round(max * 0.5), Math.round(max * 0.75), max];
-
   const showEvery = Math.ceil(data.length / 10);
 
   return (
@@ -78,7 +76,7 @@ function FullBarChart({ data }: { data: VisitorDailyPoint[] }) {
                     }}
                   />
                   <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#1a3a4a] text-white text-[9px] font-bold px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg">
-                    {point.label}: {point.count.toLocaleString()}
+                    {point.label}: {point.count.toLocaleString()} زائر ({point.sessions} جلسة)
                   </div>
                 </div>
               );
@@ -102,12 +100,12 @@ function FullBarChart({ data }: { data: VisitorDailyPoint[] }) {
 }
 
 const PERIOD_CARDS = [
-  { key: 'last24h' as const, label: 'آخر 24 ساعة', hours: 24, color: '#2563eb', bg: '#EFF6FF', border: '#BFDBFE' },
-  { key: 'last48h' as const, label: 'آخر 48 ساعة', hours: 48, color: '#0369a1', bg: '#F0F9FF', border: '#BAE6FD' },
-  { key: 'last72h' as const, label: 'آخر 72 ساعة', hours: 72, color: '#0f766e', bg: '#F0FDFA', border: '#99F6E4' },
-  { key: 'last7d' as const, label: 'آخر 7 أيام', hours: 168, color: '#16a34a', bg: '#F0FDF4', border: '#BBF7D0' },
-  { key: 'last14d' as const, label: 'آخر 14 يوم', hours: 336, color: '#ca8a04', bg: '#FEFCE8', border: '#FDE68A' },
-  { key: 'last30d' as const, label: 'آخر 30 يوم', hours: 720, color: '#dc2626', bg: '#FFF7ED', border: '#FED7AA' },
+  { key: 'last24h' as const, label: 'آخر 24 ساعة', color: '#2563eb', bg: '#EFF6FF', border: '#BFDBFE' },
+  { key: 'last48h' as const, label: 'آخر 48 ساعة', color: '#0369a1', bg: '#F0F9FF', border: '#BAE6FD' },
+  { key: 'last72h' as const, label: 'آخر 72 ساعة', color: '#0f766e', bg: '#F0FDFA', border: '#99F6E4' },
+  { key: 'last7d' as const, label: 'آخر 7 أيام', color: '#16a34a', bg: '#F0FDF4', border: '#BBF7D0' },
+  { key: 'last14d' as const, label: 'آخر 14 يوم', color: '#ca8a04', bg: '#FEFCE8', border: '#FDE68A' },
+  { key: 'last30d' as const, label: 'آخر 30 يوم', color: '#dc2626', bg: '#FFF7ED', border: '#FED7AA' },
 ];
 
 export default function VisitorStatsPanel() {
@@ -141,6 +139,38 @@ export default function VisitorStatsPanel() {
           </button>
         </div>
       </div>
+
+      {/* Live now cards */}
+      {!loading && stats && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-2xl px-4 py-3.5 flex flex-col gap-1" style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0' }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-[11px] font-bold text-green-700">نشط الآن (30 دقيقة)</span>
+              </div>
+              <Activity className="w-3.5 h-3.5 text-green-600" />
+            </div>
+            <div className="text-[28px] font-black text-green-700">
+              {stats.last30m.toLocaleString('ar-SA')}
+            </div>
+            <div className="text-[10px] text-[#94a3b8]">زائر فريد</div>
+          </div>
+          <div className="rounded-2xl px-4 py-3.5 flex flex-col gap-1" style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe' }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                <span className="text-[11px] font-bold text-blue-700">آخر ساعة</span>
+              </div>
+              <Zap className="w-3.5 h-3.5 text-blue-600" />
+            </div>
+            <div className="text-[28px] font-black text-blue-700">
+              {stats.last1h.toLocaleString('ar-SA')}
+            </div>
+            <div className="text-[10px] text-[#94a3b8]">زائر فريد</div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -213,15 +243,20 @@ export default function VisitorStatsPanel() {
               <span className="text-[40px] font-black text-[#1a2f3e] leading-none">
                 {stats.total.toLocaleString('ar-SA')}
               </span>
-              <span className="text-[15px] font-bold text-[#4a7a94] mb-1">زائر</span>
+              <span className="text-[15px] font-bold text-[#4a7a94] mb-1">زائر فريد</span>
             </div>
-            <div className="grid grid-cols-3 gap-3 pt-3 border-t border-[#f0f6fa]">
+            <div className="grid grid-cols-4 gap-3 pt-3 border-t border-[#f0f6fa]">
               <div className="text-center">
                 <div className="text-[11px] text-[#94a3b8] mb-1">متوسط يومي</div>
                 <div className="text-[18px] font-black text-[#1a3a4a]">{stats.avgDaily.toLocaleString('ar-SA')}</div>
                 <div className="text-[10px] text-[#94a3b8]">زائر/يوم</div>
               </div>
-              <div className="text-center border-x border-[#f0f6fa]">
+              <div className="text-center border-r border-[#f0f6fa]">
+                <div className="text-[11px] text-[#94a3b8] mb-1">إجمالي الجلسات</div>
+                <div className="text-[18px] font-black text-[#0369a1]">{stats.totalSessions.toLocaleString('ar-SA')}</div>
+                <div className="text-[10px] text-[#94a3b8]">جلسة</div>
+              </div>
+              <div className="text-center border-r border-[#f0f6fa]">
                 <div className="text-[11px] text-[#94a3b8] mb-1">أعلى يوم</div>
                 {stats.peakDay ? (
                   <>
@@ -232,10 +267,10 @@ export default function VisitorStatsPanel() {
                   <div className="text-[18px] font-black text-[#1a3a4a]">—</div>
                 )}
               </div>
-              <div className="text-center">
+              <div className="text-center border-r border-[#f0f6fa]">
                 <div className="text-[11px] text-[#94a3b8] mb-1">آخر تحديث</div>
                 <div className="text-[14px] font-black text-[#1a3a4a]">{stats.lastUpdated}</div>
-                <div className="text-[10px] text-[#94a3b8]">كل دقيقة</div>
+                <div className="text-[10px] text-[#94a3b8]">تلقائي</div>
               </div>
             </div>
           </div>

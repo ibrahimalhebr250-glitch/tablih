@@ -61,9 +61,8 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
 
     sessionChannelRef.current = supabase
       .channel('analytics_sessions_rt')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'visitor_sessions' }, (payload) => {
-        setLiveVisitors(prev => prev + 1);
-        loadRealtimeStats();
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'visitor_sessions' }, () => {
+        loadLiveVisitors();
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'visitor_sessions' }, () => {
         loadLiveVisitors();
@@ -71,7 +70,7 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
       .subscribe();
 
     loadLiveVisitors();
-    const liveInterval = setInterval(loadLiveVisitors, 30000);
+    const liveInterval = setInterval(loadLiveVisitors, 15000);
 
     return () => {
       if (behaviorChannelRef.current) supabase.removeChannel(behaviorChannelRef.current);
@@ -82,8 +81,12 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
   }, []);
 
   const loadLiveVisitors = async () => {
-    const { data } = await supabase.rpc('get_live_visitor_count', { minutes_ago: 30 });
-    if (typeof data === 'number') setLiveVisitors(data);
+    const { data } = await supabase.rpc('admin_get_visitor_stats');
+    if (data) {
+      const s = data as Record<string, number>;
+      setLiveVisitors(s.last30m ?? 0);
+      setRealtimeUsers(s.last30m ?? 0);
+    }
   };
 
   const loadAnalytics = async () => {
@@ -225,23 +228,12 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
   };
 
   const loadRealtimeStats = async () => {
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-
-    const [{ data: behaviorData }, { data: visitorData }] = await Promise.all([
-      supabase
-        .from('user_behavior_tracking')
-        .select('user_phone, session_id')
-        .gte('created_at', thirtyMinutesAgo.toISOString()),
-      supabase
-        .from('platform_visitor_logs')
-        .select('visitor_id, session_id')
-        .gte('created_at', thirtyMinutesAgo.toISOString()),
-    ]);
-
-    const sessions = new Set<string>();
-    behaviorData?.forEach(d => { if (d.session_id) sessions.add(d.session_id); });
-    visitorData?.forEach(d => { if (d.session_id) sessions.add(d.session_id); });
-    setRealtimeUsers(sessions.size);
+    const { data } = await supabase.rpc('admin_get_visitor_stats');
+    if (data) {
+      const s = data as Record<string, number>;
+      setRealtimeUsers(s.last30m ?? 0);
+      setLiveVisitors(s.last30m ?? 0);
+    }
   };
 
   const exportData = () => {
