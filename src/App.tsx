@@ -8,6 +8,7 @@ import TopNavigation from './components/shared/TopNavigation';
 import DesktopSidebar from './components/desktop/DesktopSidebar';
 import DesktopRightPanel from './components/desktop/DesktopRightPanel';
 import { supabase } from './lib/supabase';
+import { analytics, initializeAnalytics } from './lib/analytics';
 import type { AdminStaffData } from './components/admin/AdminLoginSheet';
 
 const OrderBuilder = lazy(() => import('./components/order/OrderBuilder'));
@@ -71,6 +72,16 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (modal !== 'none') {
+      analytics.trackPageView(`/modal/${modal}`, modal);
+    }
+  }, [modal]);
+
+  useEffect(() => {
+    analytics.trackPageView(`/view/${mainView}`, mainView);
+  }, [mainView]);
+
+  useEffect(() => {
     const storedAdminData = sessionStorage.getItem('adminStaffData');
     if (storedAdminData) {
       try {
@@ -82,6 +93,8 @@ function App() {
   }, []);
 
   useEffect(() => {
+    initializeAnalytics();
+
     const getOrCreateVisitorId = () => {
       let id = localStorage.getItem('_pvid');
       if (!id) {
@@ -106,6 +119,8 @@ function App() {
       p_phone: null,
       p_user_agent: navigator.userAgent.slice(0, 200),
     }).then(() => {}).catch(() => {});
+
+    analytics.trackPageView('/', 'منصة باليت');
   }, []);
 
   if (loading) {

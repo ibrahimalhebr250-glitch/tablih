@@ -76,7 +76,8 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
 
     const eventCounts: Record<string, number> = {};
     data.forEach(event => {
-      eventCounts[event.event_name] = (eventCounts[event.event_name] || 0) + 1;
+      const key = event.event_type || event.event_name || 'unknown';
+      eventCounts[key] = (eventCounts[key] || 0) + 1;
     });
 
     const topEvents = Object.entries(eventCounts)

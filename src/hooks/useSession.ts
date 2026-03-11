@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { sessionManager } from '../lib/sessionManager';
 import { logSessionError, logDBError } from '../lib/errorLogger';
+import { analytics } from '../lib/analytics';
 import type { AppSession, UserProfile, UserRole } from '../types/session';
 
 const SESSION_KEY = 'tbl_session';
@@ -253,6 +254,8 @@ export function useSession() {
         user_name: data.name
       });
 
+      analytics.trackUserRegistration(formattedPhone, data.userType);
+
       const s = await buildSession(newUser);
       return { success: true, session: s };
     },
@@ -297,6 +300,8 @@ export function useSession() {
         user_type: userType,
         user_name: user.display_name || user.company_name || formattedPhone
       });
+
+      analytics.trackUserLogin(formattedPhone, userType);
 
       const s = await buildSession(user);
       return { success: true, session: s };
