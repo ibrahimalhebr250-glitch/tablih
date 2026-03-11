@@ -66,7 +66,11 @@ function App() {
   const [accountInitialTab, setAccountInitialTab] = useState<'warehouse' | 'deals' | 'negotiations' | 'commissions' | 'settings' | undefined>(undefined);
 
   const hasPendingAfterLogin = useCallback(() => {
-    return !!(sessionStorage.getItem('pending_market_request') || sessionStorage.getItem('pending_demand_offer'));
+    return !!(
+      sessionStorage.getItem('pending_market_request') ||
+      sessionStorage.getItem('pending_demand_offer') ||
+      sessionStorage.getItem('pending_supply_card_deal')
+    );
   }, []);
 
   useEffect(() => {
@@ -178,8 +182,6 @@ function App() {
       throw new Error(msg);
     }
 
-    sessionStorage.removeItem('pending_demand_offer');
-
     if (hasPendingAfterLogin()) {
       setModal('none');
       setFreshLogin(true);
@@ -196,8 +198,6 @@ function App() {
 
     if (next && next !== 'none') {
       setTimeout(() => setModal(next), 50);
-    } else {
-      setTimeout(() => setModal('account'), 50);
     }
   };
 
@@ -209,8 +209,6 @@ function App() {
       setLoginError(msg);
       throw new Error(msg);
     }
-
-    sessionStorage.removeItem('pending_demand_offer');
 
     if (hasPendingAfterLogin()) {
       setModal('none');

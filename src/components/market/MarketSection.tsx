@@ -358,6 +358,7 @@ export default function MarketSection({
   const [selectedSupply, setSelectedSupply] = useState<SupplyCard | null>(null);
   const [selectedDemand, setSelectedDemand] = useState<DemandCard | null>(null);
   const [autoOpenOfferForId, setAutoOpenOfferForId] = useState<string | null>(null);
+  const [autoOpenDealForId, setAutoOpenDealForId] = useState<string | null>(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const prevIsAuth = useRef(false);
@@ -403,6 +404,36 @@ export default function MarketSection({
         }
       } catch {
         sessionStorage.removeItem('pending_demand_offer');
+      }
+    }
+
+    const rawSupply = sessionStorage.getItem('pending_supply_card_deal');
+    if (rawSupply) {
+      try {
+        const pending = JSON.parse(rawSupply);
+        if (pending.inventory_batch_id) {
+          sessionStorage.removeItem('pending_supply_card_deal');
+          const checkAndOpen = (currentItems: MarketItem[]) => {
+            const match = currentItems.find(i => i.kind === 'supply' && i.id === pending.inventory_batch_id) as SupplyCard | undefined;
+            if (match) {
+              setAutoOpenDealForId(pending.inventory_batch_id);
+              setSelectedSupply(match);
+            }
+          };
+          if (itemsRef.current.length > 0) {
+            checkAndOpen(itemsRef.current);
+          } else {
+            const interval = setInterval(() => {
+              if (itemsRef.current.length > 0) {
+                clearInterval(interval);
+                checkAndOpen(itemsRef.current);
+              }
+            }, 200);
+            setTimeout(() => clearInterval(interval), 10000);
+          }
+        }
+      } catch {
+        sessionStorage.removeItem('pending_supply_card_deal');
       }
     }
 
@@ -773,8 +804,9 @@ export default function MarketSection({
         <SupplyDetailSheet
           card={selectedSupply}
           sessionPhone={resolvedPhone}
-          onClose={() => setSelectedSupply(null)}
+          onClose={() => { setSelectedSupply(null); setAutoOpenDealForId(null); }}
           onLoginRequired={onLoginRequired}
+          autoOpenDeal={selectedSupply.id === autoOpenDealForId}
         />
       )}
       {selectedDemand && (

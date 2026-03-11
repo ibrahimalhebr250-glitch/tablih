@@ -374,9 +374,10 @@ interface Props {
   onClose: () => void;
   sessionPhone?: string | null;
   onLoginRequired?: () => void;
+  autoOpenDeal?: boolean;
 }
 
-export default function SupplyDetailSheet({ card, onClose, sessionPhone, onLoginRequired }: Props) {
+export default function SupplyDetailSheet({ card, onClose, sessionPhone, onLoginRequired, autoOpenDeal }: Props) {
   const isAuthenticated = !!sessionPhone;
   const buyerPhone = sessionPhone ?? undefined;
   const [imgIndex, setImgIndex] = useState(0);
@@ -393,6 +394,13 @@ export default function SupplyDetailSheet({ card, onClose, sessionPhone, onLogin
 
   useEffect(() => { loadRatingSummary(); loadPlatformFee(); }, [card.phone]);
   useEffect(() => { if (isAuthenticated && buyerPhone && !isSelf) loadExistingDeal(); }, [isAuthenticated, buyerPhone, card.id]);
+
+  useEffect(() => {
+    if (autoOpenDeal && isAuthenticated && !isSelf) {
+      const t = setTimeout(() => setShowDealDialog(true), 300);
+      return () => clearTimeout(t);
+    }
+  }, [autoOpenDeal, isAuthenticated, isSelf]);
 
   const loadRatingSummary = async () => {
     try {
