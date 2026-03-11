@@ -211,6 +211,9 @@ function App() {
       throw new Error(msg);
     }
 
+    const isDealFlow = !!sessionStorage.getItem('pending_deal_flow');
+    sessionStorage.removeItem('pending_deal_flow');
+
     if (hasPendingAfterLogin()) {
       consumePendingMarketActions();
       setModal('none');
@@ -228,6 +231,8 @@ function App() {
 
     if (next && next !== 'none') {
       setTimeout(() => setModal(next), 50);
+    } else if (!isDealFlow) {
+      setTimeout(() => setModal('account'), 50);
     }
   };
 
@@ -240,6 +245,9 @@ function App() {
       throw new Error(msg);
     }
 
+    const isDealFlow = !!sessionStorage.getItem('pending_deal_flow');
+    sessionStorage.removeItem('pending_deal_flow');
+
     if (hasPendingAfterLogin()) {
       consumePendingMarketActions();
       setModal('none');
@@ -257,7 +265,7 @@ function App() {
 
     if (next && next !== 'none') {
       setTimeout(() => setModal(next), 50);
-    } else {
+    } else if (!isDealFlow) {
       setTimeout(() => setModal('account'), 50);
     }
   };
@@ -280,6 +288,7 @@ function App() {
   };
 
   const openAuthForDeal = () => {
+    sessionStorage.setItem('pending_deal_flow', '1');
     setAuthError('');
     setLoginError('');
     setModal('auth');
@@ -571,7 +580,14 @@ function App() {
             <AuthSheet
               onRegisterComplete={handleRegisterComplete}
               onLoginComplete={handleLoginComplete}
-              onClose={() => { setModal('none'); setAuthError(''); setLoginError(''); }}
+              onClose={() => {
+                sessionStorage.removeItem('pending_deal_flow');
+                sessionStorage.removeItem('pending_supply_card_deal');
+                sessionStorage.removeItem('pending_demand_offer');
+                setModal('none');
+                setAuthError('');
+                setLoginError('');
+              }}
               externalError={authError || loginError}
             />
           </Suspense>
