@@ -361,9 +361,9 @@ export default function MarketSection({
   const [autoOpenDealForId, setAutoOpenDealForId] = useState<string | null>(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
-  const prevIsAuth = useRef(false);
   const prevSheetOpen = useRef(false);
   const itemsRef = useRef<MarketItem[]>([]);
+  const pendingChecked = useRef(false);
 
   useEffect(() => {
     const nowOpen = !!(selectedSupply || selectedDemand);
@@ -373,33 +373,17 @@ export default function MarketSection({
     }
   }, [selectedSupply, selectedDemand, onDetailSheetChange]);
 
-  useEffect(() => {
-    if (!isAuthenticated || prevIsAuth.current) return;
-    prevIsAuth.current = true;
-
+  const checkAndResumePendingAction = useCallback((currentItems: MarketItem[]) => {
     const rawDemand = sessionStorage.getItem('pending_demand_offer');
     if (rawDemand) {
       try {
         const pending = JSON.parse(rawDemand);
         if (pending.order_id) {
           sessionStorage.removeItem('pending_demand_offer');
-          const checkAndOpen = (currentItems: MarketItem[]) => {
-            const match = currentItems.find(i => i.kind === 'demand' && i.id === pending.order_id) as DemandCard | undefined;
-            if (match) {
-              setAutoOpenOfferForId(pending.order_id);
-              setSelectedDemand(match);
-            }
-          };
-          if (itemsRef.current.length > 0) {
-            checkAndOpen(itemsRef.current);
-          } else {
-            const interval = setInterval(() => {
-              if (itemsRef.current.length > 0) {
-                clearInterval(interval);
-                checkAndOpen(itemsRef.current);
-              }
-            }, 200);
-            setTimeout(() => clearInterval(interval), 10000);
+          const match = currentItems.find(i => i.kind === 'demand' && i.id === pending.order_id) as DemandCard | undefined;
+          if (match) {
+            setAutoOpenOfferForId(pending.order_id);
+            setSelectedDemand(match);
           }
         }
       } catch {
@@ -413,35 +397,38 @@ export default function MarketSection({
         const pending = JSON.parse(rawSupply);
         if (pending.inventory_batch_id) {
           sessionStorage.removeItem('pending_supply_card_deal');
-          const checkAndOpen = (currentItems: MarketItem[]) => {
-            const match = currentItems.find(i => i.kind === 'supply' && i.id === pending.inventory_batch_id) as SupplyCard | undefined;
-            if (match) {
-              setAutoOpenDealForId(pending.inventory_batch_id);
-              setSelectedSupply(match);
-            }
-          };
-          if (itemsRef.current.length > 0) {
-            checkAndOpen(itemsRef.current);
-          } else {
-            const interval = setInterval(() => {
-              if (itemsRef.current.length > 0) {
-                clearInterval(interval);
-                checkAndOpen(itemsRef.current);
-              }
-            }, 200);
-            setTimeout(() => clearInterval(interval), 10000);
+          const match = currentItems.find(i => i.kind === 'supply' && i.id === pending.inventory_batch_id) as SupplyCard | undefined;
+          if (match) {
+            setAutoOpenDealForId(pending.inventory_batch_id);
+            setSelectedSupply(match);
           }
         }
       } catch {
         sessionStorage.removeItem('pending_supply_card_deal');
       }
     }
-
-  }, [isAuthenticated]);
+  }, []);
 
   useEffect(() => {
-    if (!prevIsAuth.current) prevIsAuth.current = !!isAuthenticated;
-  }, []);
+    if (!isAuthenticated || pendingChecked.current) return;
+    pendingChecked.current = true;
+
+    const hasDemand = !!sessionStorage.getItem('pending_demand_offer');
+    const hasSupply = !!sessionStorage.getItem('pending_supply_card_deal');
+    if (!hasDemand && !hasSupply) return;
+
+    if (itemsRef.current.length > 0) {
+      checkAndResumePendingAction(itemsRef.current);
+    } else {
+      const interval = setInterval(() => {
+        if (itemsRef.current.length > 0) {
+          clearInterval(interval);
+          checkAndResumePendingAction(itemsRef.current);
+        }
+      }, 200);
+      setTimeout(() => clearInterval(interval), 10000);
+    }
+  }, [isAuthenticated, checkAndResumePendingAction]);
 
   useEffect(() => {
     const phone = sessionPhone || userPhone;
