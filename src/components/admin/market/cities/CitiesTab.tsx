@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Plus, X, MapPin, Check } from 'lucide-react';
 import { useCities } from '../../../../hooks/useMarket';
 import type { City } from '../../../../hooks/useMarket';
 import TableControls from '../shared/TableControls';
@@ -18,14 +19,154 @@ const STATUS_BADGE: Record<string, { label: string; color: string; bg: string }>
 
 type View = { mode: 'list' } | { mode: 'view'; city: City } | { mode: 'edit'; city: City };
 
+function AddCityDialog({ onAdd, onClose }: {
+  onAdd: (name: string, status: string) => Promise<{ message: string } | null>;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState('');
+  const [status, setStatus] = useState('active');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!name.trim()) { setError('أدخل اسم المدينة'); return; }
+    setLoading(true);
+    setError('');
+    const err = await onAdd(name.trim(), status);
+    setLoading(false);
+    if (err) { setError(err.message); return; }
+    setSuccess(true);
+    setTimeout(onClose, 1200);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl"
+        style={{ background: 'white' }}
+        onClick={e => e.stopPropagation()}
+        dir="rtl"
+      >
+        <div className="px-6 py-4 flex items-center justify-between border-b border-[#e2edf5]" style={{ background: 'linear-gradient(135deg, #1a3a4a, #2c5f7c)' }}>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
+            <X className="w-4 h-4 text-white" />
+          </button>
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-[15px] font-black text-white">إضافة مدينة جديدة</p>
+              <p className="text-[11px] text-white/60">ستظهر فوراً في واجهة المخزون والطلبات</p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+              <MapPin className="w-5 h-5 text-white" />
+            </div>
+          </div>
+        </div>
+
+        {success ? (
+          <div className="px-6 py-8 flex flex-col items-center gap-3 text-center">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: '#f0fdf4', border: '2px solid #bbf7d0' }}>
+              <Check className="w-7 h-7 text-green-600" />
+            </div>
+            <p className="text-[15px] font-black text-[#1a3a4a]">تمت إضافة المدينة بنجاح</p>
+            <p className="text-[12px] text-[#7a9aab]">ستظهر الآن في قسمي إضافة مخزون وإنشاء طلب</p>
+          </div>
+        ) : (
+          <div className="px-6 py-5 space-y-4">
+            <div className="rounded-xl p-3 flex items-start gap-2.5" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+              <MapPin className="w-3.5 h-3.5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] text-blue-700 leading-relaxed">
+                أي مدينة تضيفها ستظهر فوراً في <span className="font-black">واجهة إضافة مخزون</span> و<span className="font-black">واجهة إنشاء طلب</span> للمستخدمين.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-[13px] font-bold text-[#1a3a4a] mb-2">اسم المدينة</label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                placeholder="مثال: الرياض"
+                autoFocus
+                className="w-full rounded-xl px-4 py-3 text-[14px] text-[#1a3a4a] outline-none"
+                style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
+              />
+            </div>
+
+            <div>
+              <label className="block text-[13px] font-bold text-[#1a3a4a] mb-2">الحالة</label>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(STATUS_BADGE).map(([key, badge]) => (
+                  <button
+                    key={key}
+                    onClick={() => setStatus(key)}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[12px] font-bold transition-all"
+                    style={{
+                      background: status === key ? badge.bg : '#f8fbfd',
+                      border: status === key ? `2px solid ${badge.color}` : '1.5px solid #e2edf5',
+                      color: status === key ? badge.color : '#7a9aab',
+                    }}
+                  >
+                    {status === key && (
+                      <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: badge.color }}>
+                        <Check className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
+                    {badge.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {error && (
+              <div className="rounded-xl px-4 py-3" style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
+                <p className="text-[12px] text-red-600 font-semibold">{error}</p>
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={onClose}
+                className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-[#4a6a7e]"
+                style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={loading || !name.trim()}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-black text-white disabled:opacity-60 transition-all"
+                style={{ background: 'linear-gradient(135deg, #1a3a4a, #2c5f7c)', boxShadow: '0 4px 14px rgba(26,58,74,0.25)' }}
+              >
+                {loading ? (
+                  <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
+                {loading ? 'جاري الإضافة...' : 'إضافة المدينة'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function CitiesTab() {
-  const { cities, loading, updateCity, deleteCity, freezeCity, activateCity, getCityStats } = useCities();
+  const { cities, loading, addCity, updateCity, deleteCity, freezeCity, activateCity, getCityStats } = useCities();
   const [view, setView] = useState<View>({ mode: 'list' });
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<City | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const filtered = useMemo(() => {
     return cities.filter(c => {
@@ -59,6 +200,13 @@ export default function CitiesTab() {
 
   return (
     <div className="space-y-4" dir="rtl">
+      {showAddDialog && (
+        <AddCityDialog
+          onAdd={addCity}
+          onClose={() => setShowAddDialog(false)}
+        />
+      )}
+
       {confirmDelete && (
         <ConfirmDialog
           title="حذف المدينة"
@@ -85,6 +233,23 @@ export default function CitiesTab() {
           </button>
         </div>
       )}
+
+      <div className="flex items-center justify-between">
+        <div className="rounded-xl px-4 py-2.5 flex items-center gap-2.5" style={{ background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', border: '1px solid #BFDBFE' }}>
+          <MapPin className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+          <p className="text-[11px] text-blue-700 leading-relaxed">
+            إضافة أو حذف مدينة يُحدّث <span className="font-black">إضافة مخزون</span> و<span className="font-black">إنشاء طلب</span> فوراً
+          </p>
+        </div>
+        <button
+          onClick={() => setShowAddDialog(true)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-black text-white transition-all hover:opacity-90 active:scale-95"
+          style={{ background: 'linear-gradient(135deg, #1a3a4a, #2c5f7c)', boxShadow: '0 4px 12px rgba(26,58,74,0.25)' }}
+        >
+          <Plus className="w-4 h-4" />
+          إضافة مدينة
+        </button>
+      </div>
 
       <TableControls
         search={search}
@@ -135,7 +300,24 @@ export default function CitiesTab() {
                   </tr>
                 ))
               ) : paginated.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-10 text-center text-[#7a9aab]">لا توجد نتائج</td></tr>
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: '#f0f6fa' }}>
+                        <MapPin className="w-6 h-6 text-[#b0c8d8]" />
+                      </div>
+                      <p className="text-[13px] text-[#7a9aab] font-semibold">لا توجد مدن</p>
+                      <button
+                        onClick={() => setShowAddDialog(true)}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold text-white"
+                        style={{ background: 'linear-gradient(135deg, #1a3a4a, #2c5f7c)' }}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        إضافة مدينة
+                      </button>
+                    </div>
+                  </td>
+                </tr>
               ) : (
                 paginated.map(city => {
                   const badge = STATUS_BADGE[city.status] ?? STATUS_BADGE.monitoring;
@@ -173,8 +355,11 @@ export default function CitiesTab() {
           </table>
         </div>
         {!loading && (
-          <div className="px-4 py-2 border-t border-[#f0f6fa] text-[11px] text-[#7a9aab]">
-            {filtered.length} مدينة إجمالاً
+          <div className="px-4 py-2 border-t border-[#f0f6fa] flex items-center justify-between">
+            <span className="text-[11px] text-[#7a9aab]">{filtered.length} مدينة إجمالاً</span>
+            <span className="text-[11px] text-[#7a9aab]">
+              {cities.filter(c => c.status === 'active').length} نشطة — {cities.filter(c => c.status === 'frozen').length} مجمدة
+            </span>
           </div>
         )}
       </div>

@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Minus, Plus, MapPin } from 'lucide-react';
-import { QUICK_QUANTITIES, SAUDI_CITIES } from '../../../types/inventory';
+import { QUICK_QUANTITIES } from '../../../types/inventory';
 import { useInventorySettings } from '../../../hooks/useInventorySettings';
+import { supabase } from '../../../lib/supabase';
 
 interface Props {
   quantity: number;
@@ -14,11 +15,38 @@ interface Props {
   onSetPrice: (v: number) => void;
 }
 
+function useActiveCities() {
+  const [cities, setCities] = useState<string[]>([]);
+  const [loadingCities, setLoadingCities] = useState(true);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase
+      .from('cities')
+      .select('name')
+      .eq('status', 'active')
+      .order('name');
+    setCities((data ?? []).map((r: { name: string }) => r.name));
+    setLoadingCities(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+    const channel = supabase
+      .channel('inventory_cities_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cities' }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [load]);
+
+  return { cities, loadingCities };
+}
+
 export default function Step2QuantityCity({
   quantity, city, pricePerPallet, minQuantity: propMinQuantity, maxQuantity: propMaxQuantity,
   onSetQuantity, onSetCity, onSetPrice,
 }: Props) {
   const { settings, loading } = useInventorySettings();
+  const { cities: dbCities, loadingCities } = useActiveCities();
   const [showAllCities, setShowAllCities] = useState(false);
 
   const minQuantity = propMinQuantity ?? settings?.min_quantity ?? 100;
@@ -74,8 +102,8 @@ export default function Step2QuantityCity({
 
   const sliderPercent = ((pricePerPallet - minPrice) / (maxPrice - minPrice)) * 100;
 
-  const popularCities = SAUDI_CITIES.slice(0, 8);
-  const displayedCities = showAllCities ? SAUDI_CITIES : popularCities;
+  const popularCities = dbCities.slice(0, 8);
+  const displayedCities = showAllCities ? dbCities : popularCities;
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -149,36 +177,50 @@ export default function Step2QuantityCity({
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <div className="flex flex-wrap gap-2">
-            {displayedCities.map((c) => (
-              <button
-                key={c}
-                onClick={() => onSetCity(c)}
-                className={`px-3.5 py-2 rounded-xl text-[12px] font-bold transition-all select-none ${
-                  city === c
-                    ? 'bg-[#1a4a5e] text-white shadow-sm'
-                    : 'bg-gray-100 text-[#2c5f7c] hover:bg-gray-200 active:scale-95'
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-          {!showAllCities && SAUDI_CITIES.length > 8 && (
-            <button
-              onClick={() => setShowAllCities(true)}
-              className="mt-3 w-full py-2 text-[12px] font-bold text-[#1a4a5e] bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors select-none"
-            >
-              عرض كل المدن ({SAUDI_CITIES.length})
-            </button>
-          )}
-          {showAllCities && (
-            <button
-              onClick={() => setShowAllCities(false)}
-              className="mt-3 w-full py-2 text-[12px] font-bold text-[#a0b5c0] bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors select-none"
-            >
-              عرض أقل
-            </button>
+          {loadingCities ? (
+            <div className="flex flex-wrap gap-2">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="h-9 rounded-xl bg-gray-100 animate-pulse" style={{ width: `${60 + (i % 3) * 15}px` }} />
+              ))}
+            </div>
+          ) : dbCities.length === 0 ? (
+            <div className="text-center py-4">
+              <p className="text-[12px] text-[#a0b5c0]">لا توجد مدن متاحة حالياً</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-2">
+                {displayedCities.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => onSetCity(c)}
+                    className={`px-3.5 py-2 rounded-xl text-[12px] font-bold transition-all select-none ${
+                      city === c
+                        ? 'bg-[#1a4a5e] text-white shadow-sm'
+                        : 'bg-gray-100 text-[#2c5f7c] hover:bg-gray-200 active:scale-95'
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+              {!showAllCities && dbCities.length > 8 && (
+                <button
+                  onClick={() => setShowAllCities(true)}
+                  className="mt-3 w-full py-2 text-[12px] font-bold text-[#1a4a5e] bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors select-none"
+                >
+                  عرض كل المدن ({dbCities.length})
+                </button>
+              )}
+              {showAllCities && (
+                <button
+                  onClick={() => setShowAllCities(false)}
+                  className="mt-3 w-full py-2 text-[12px] font-bold text-[#a0b5c0] bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors select-none"
+                >
+                  عرض أقل
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

@@ -105,6 +105,20 @@ export function useCities() {
     return null;
   };
 
+  const addCity = async (name: string, status: string = 'active') => {
+    const trimmed = name.trim();
+    if (!trimmed) return { message: 'اسم المدينة مطلوب' };
+    const { error: err } = await supabase.from('cities').insert({
+      name: trimmed,
+      status,
+      minimum_quantity: 1,
+      matching_enabled: true,
+    });
+    if (err) return { message: err.message };
+    await fetch();
+    return null;
+  };
+
   const freezeCity = async (id: string) => {
     return updateCity(id, { status: 'frozen' });
   };
@@ -131,7 +145,7 @@ export function useCities() {
     };
   };
 
-  return { cities, loading, error, refetch: fetch, updateCity, deleteCity, freezeCity, activateCity, getCityStats };
+  return { cities, loading, error, refetch: fetch, addCity, updateCity, deleteCity, freezeCity, activateCity, getCityStats };
 }
 
 export function useInventory() {
