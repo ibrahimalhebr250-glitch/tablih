@@ -14,6 +14,9 @@ import {
   MapPin,
   AlertTriangle,
   Warehouse,
+  Play,
+  Loader2,
+  Bell,
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useAccountDeals } from '../../../hooks/useAccountDeals';
@@ -76,9 +79,14 @@ interface SentOffer {
   quality: string;
 }
 
-function SupplierSentOffers({ phone }: { phone: string }) {
+function SupplierSentOffers({ phone, onConfirmDeal, actionLoading }: {
+  phone: string;
+  onConfirmDeal: (dealId: string) => Promise<{ success: boolean; error?: string }>;
+  actionLoading: string | null;
+}) {
   const [offers, setOffers] = useState<SentOffer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMap, setErrorMap] = useState<Record<string, string>>({});
 
   const load = async () => {
     setLoading(true);
@@ -128,124 +136,147 @@ function SupplierSentOffers({ phone }: { phone: string }) {
 
   if (loading || offers.length === 0) return null;
 
-  const statusMap: Record<string, { label: string; color: string; bg: string; border: string; icon: ReactNode }> = {
-    pending: {
-      label: 'قيد الانتظار',
-      color: '#b45309', bg: '#FFFBEB', border: '#FDE68A',
-      icon: <Clock className="w-3.5 h-3.5" />,
-    },
-    accepted: {
-      label: 'قبله المشتري',
-      color: '#059669', bg: '#ECFDF5', border: '#A7F3D0',
-      icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-    },
-    deal_created: {
-      label: 'تم إنشاء الصفقة',
-      color: '#1d4ed8', bg: '#EFF6FF', border: '#BFDBFE',
-      icon: <Handshake className="w-3.5 h-3.5" />,
-    },
-    rejected: {
-      label: 'رفضه المشتري',
-      color: '#dc2626', bg: '#FEF2F2', border: '#FECACA',
-      icon: <XCircle className="w-3.5 h-3.5" />,
-    },
-  };
+  const pendingOffers = offers.filter(o => o.status === 'pending');
+  const dealCreatedOffers = offers.filter(o => o.status === 'deal_created');
+  const archivedOffers = offers.filter(o => o.status === 'rejected');
 
-  const activeOffers = offers.filter(o => o.status === 'pending');
-  const otherOffers = offers.filter(o => o.status !== 'pending');
+  const handleConfirm = async (offer: SentOffer) => {
+    if (!offer.deal_id) return;
+    setErrorMap(p => ({ ...p, [offer.id]: '' }));
+    const result = await onConfirmDeal(offer.deal_id);
+    if (!result.success) {
+      setErrorMap(p => ({ ...p, [offer.id]: result.error || 'حدث خطأ' }));
+    }
+  };
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-        <h3 className="text-[13px] font-black text-[#1a3a4a]">عروضي المرسلة للمشترين</h3>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#EFF6FF', color: '#1d4ed8', border: '1px solid #BFDBFE' }}>
-          {offers.length}
-        </span>
-      </div>
-
-      {activeOffers.map(offer => {
-        const st = statusMap[offer.status] || statusMap.pending;
-        return (
-          <div
-            key={offer.id}
-            className="rounded-2xl p-4"
-            style={{ background: 'white', border: `1.5px solid ${st.border}`, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
-          >
-            <div className="flex items-start justify-between mb-3" dir="rtl">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl" style={{ background: st.bg, color: st.color }}>
-                {st.icon}
-                <span className="text-[11px] font-black">{st.label}</span>
-              </div>
-              <div className="text-right">
-                <p className="text-[14px] font-black text-[#1a3a4a]">{offer.pallet_type}</p>
-                <p className="text-[10px] text-[#7a9aab]">{offer.city}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap" dir="rtl">
-              <span className="text-[11px] font-bold px-2 py-1 rounded-xl" style={{ background: '#f0f9f4', color: '#15803d' }}>
-                {offer.quantity.toLocaleString()} طبلية
-              </span>
-              {offer.price_per_pallet > 0 && (
-                <span className="text-[11px] font-bold px-2 py-1 rounded-xl" style={{ background: '#f0f9f4', color: '#15803d' }}>
-                  {offer.price_per_pallet} ر.س / طبلية
-                </span>
-              )}
-              <span className="text-[10px] text-[#a0b5c0]">
-                {new Date(offer.created_at).toLocaleDateString('ar-SA', { day: 'numeric', month: 'short' })}
-              </span>
-            </div>
-            {offer.status === 'pending' && (
-              <div className="mt-3 rounded-xl p-2.5 flex items-center gap-2" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }} dir="rtl">
-                <Clock className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                <p className="text-[11px] text-[#92400E]">في انتظار رد المشتري — ستصلك إشعار فور ردّه</p>
-              </div>
-            )}
-            {(offer.status === 'accepted' || offer.status === 'deal_created') && (
-              <div className="mt-3 rounded-xl p-2.5 flex items-center gap-2" style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }} dir="rtl">
-                <CheckCircle2 className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
-                <p className="text-[11px] text-[#065F46]">
-                  {offer.status === 'deal_created' ? 'تمت الصفقة! تابعها في الصفقات النشطة أدناه' : 'وافق المشتري على عرضك'}
-                </p>
-              </div>
-            )}
+      {dealCreatedOffers.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2" dir="rtl">
+            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <h3 className="text-[13px] font-black text-[#1a3a4a]">بانتظار اعتمادك</h3>
+            <span className="text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse" style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' }}>
+              {dealCreatedOffers.length} صفقة جديدة
+            </span>
           </div>
-        );
-      })}
 
-      {otherOffers.length > 0 && (
-        <details className="group">
-          <summary className="cursor-pointer text-[11px] font-bold text-[#7a9aab] py-1 list-none flex items-center gap-1.5 select-none" dir="rtl">
-            <span className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center text-[8px] group-open:rotate-90 transition-transform">▶</span>
-            {otherOffers.length} عرض سابق
-          </summary>
-          <div className="space-y-2 mt-2">
-            {otherOffers.map(offer => {
-              const st = statusMap[offer.status] || statusMap.rejected;
-              return (
-                <div
-                  key={offer.id}
-                  className="rounded-2xl p-3"
-                  style={{ background: '#f8fbfd', border: '1px solid #e2edf5' }}
-                >
-                  <div className="flex items-center justify-between" dir="rtl">
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg" style={{ background: st.bg, color: st.color }}>
-                      {st.icon}
-                      <span className="text-[10px] font-bold">{st.label}</span>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[12px] font-bold text-[#1a3a4a]">{offer.pallet_type} — {offer.city}</p>
-                      <p className="text-[10px] text-[#a0b5c0]">{offer.quantity} طبلية</p>
-                    </div>
+          {dealCreatedOffers.map(offer => {
+            const isConfirming = actionLoading === offer.deal_id;
+            const errMsg = errorMap[offer.id];
+            return (
+              <div
+                key={offer.id}
+                className="rounded-2xl overflow-hidden"
+                style={{ background: 'white', border: '2px solid #F59E0B', boxShadow: '0 4px 20px rgba(245,158,11,0.15)' }}
+              >
+                <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)' }} dir="rtl">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-amber-600 animate-pulse" />
+                    <span className="text-[12px] font-black text-amber-800">المشتري قبل عرضك — اعتمد الصفقة الآن</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl" style={{ background: '#FEF3C7', border: '1px solid #FDE68A' }}>
+                    <Handshake className="w-3.5 h-3.5 text-amber-700" />
+                    <span className="text-[10px] font-black text-amber-700">صفقة جديدة</span>
                   </div>
                 </div>
-              );
-            })}
+
+                <div className="p-4 space-y-3" dir="rtl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[12px] font-bold px-2.5 py-1 rounded-xl" style={{ background: '#f0f9f4', color: '#15803d' }}>
+                        {offer.quantity.toLocaleString()} طبلية
+                      </span>
+                      {offer.price_per_pallet > 0 && (
+                        <span className="text-[12px] font-bold px-2.5 py-1 rounded-xl" style={{ background: '#f0f9f4', color: '#15803d' }}>
+                          {offer.price_per_pallet.toLocaleString()} ر.س/طبلية
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[15px] font-black text-[#1a3a4a]">{offer.pallet_type}</p>
+                      <p className="text-[11px] text-[#7a9aab]">{offer.city}</p>
+                    </div>
+                  </div>
+
+                  {errMsg && (
+                    <div className="rounded-xl p-2.5 flex items-center gap-2" style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                      <p className="text-[11px] text-red-700 font-semibold">{errMsg}</p>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => handleConfirm(offer)}
+                    disabled={isConfirming || !offer.deal_id}
+                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-60"
+                    style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 4px 16px rgba(5,150,105,0.3)' }}
+                  >
+                    {isConfirming ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        اعتماد الصفقة والمتابعة
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          <div className="h-px" style={{ background: '#e2edf5' }} />
+        </div>
+      )}
+
+      {pendingOffers.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2" dir="rtl">
+            <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            <h3 className="text-[12px] font-bold text-[#7a9aab]">عروض قيد الانتظار</h3>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#EFF6FF', color: '#1d4ed8', border: '1px solid #BFDBFE' }}>
+              {pendingOffers.length}
+            </span>
+          </div>
+          {pendingOffers.map(offer => (
+            <div key={offer.id} className="rounded-xl p-3 flex items-center justify-between" style={{ background: 'white', border: '1px solid #e2edf5' }} dir="rtl">
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg" style={{ background: '#FFFBEB', color: '#b45309' }}>
+                <Clock className="w-3 h-3" />
+                <span className="text-[10px] font-bold">انتظار رد المشتري</span>
+              </div>
+              <div className="text-right">
+                <p className="text-[12px] font-bold text-[#1a3a4a]">{offer.pallet_type} — {offer.city}</p>
+                <p className="text-[10px] text-[#a0b5c0]">{offer.quantity.toLocaleString()} طبلية</p>
+              </div>
+            </div>
+          ))}
+          <div className="h-px" style={{ background: '#e2edf5' }} />
+        </div>
+      )}
+
+      {archivedOffers.length > 0 && (
+        <details className="group">
+          <summary className="cursor-pointer text-[11px] font-bold text-[#b0c4d0] py-1 list-none flex items-center gap-1.5 select-none" dir="rtl">
+            <span className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center text-[8px] group-open:rotate-90 transition-transform">▶</span>
+            {archivedOffers.length} عرض مرفوض
+          </summary>
+          <div className="space-y-2 mt-2">
+            {archivedOffers.map(offer => (
+              <div key={offer.id} className="rounded-xl p-3 flex items-center justify-between" style={{ background: '#f8fbfd', border: '1px solid #e2edf5' }} dir="rtl">
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg" style={{ background: '#FEF2F2', color: '#dc2626' }}>
+                  <XCircle className="w-3 h-3" />
+                  <span className="text-[10px] font-bold">رفضه المشتري</span>
+                </div>
+                <div className="text-right">
+                  <p className="text-[11px] font-bold text-[#1a3a4a]">{offer.pallet_type} — {offer.city}</p>
+                  <p className="text-[10px] text-[#a0b5c0]">{offer.quantity.toLocaleString()} طبلية</p>
+                </div>
+              </div>
+            ))}
           </div>
         </details>
       )}
-
-      <div className="h-px" style={{ background: '#e2edf5' }} />
     </div>
   );
 }
@@ -805,7 +836,7 @@ export default function DealsTab({ phone, pendingDemandOffer, onPendingDemandOff
         />
       )}
 
-      <SupplierSentOffers phone={phone} />
+      <SupplierSentOffers phone={phone} onConfirmDeal={supplierConfirm} actionLoading={actionLoading} />
 
       <SupplierNegotiationRequests phone={phone} />
 
@@ -891,6 +922,18 @@ export default function DealsTab({ phone, pendingDemandOffer, onPendingDemandOff
                   isBuyer={buyer}
                   counterparty={cp}
                   onViewDetail={setSelectedDeal}
+                  onSupplierConfirm={!buyer ? async (id) => {
+                    const result = await supplierConfirm(id);
+                    if (result.success) setToast({ title: 'تم اعتماد الصفقة', message: 'الصفقة محجوزة — اضغط بدء التسليم عند الاستعداد', variant: 'success' });
+                    return result;
+                  } : undefined}
+                  onStartDelivery={!buyer ? async (id) => {
+                    const result = await startDelivery(id);
+                    if (result.success) setToast({ title: 'تم بدء التسليم', message: 'تواصل مع المشتري عبر واتساب لتنسيق الاستلام', variant: 'success' });
+                    return result;
+                  } : undefined}
+                  onBuyerConfirmAction={buyer ? setSelectedDeal : undefined}
+                  actionLoading={actionLoading}
                 />
               );
             }

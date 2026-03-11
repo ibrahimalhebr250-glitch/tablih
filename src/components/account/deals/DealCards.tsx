@@ -164,107 +164,169 @@ interface ActiveCardProps {
   isBuyer: boolean;
   counterparty: CounterpartyInfo | null;
   onViewDetail: (deal: Deal) => void;
+  onSupplierConfirm?: (dealId: string) => Promise<{ success: boolean; error?: string }>;
+  onStartDelivery?: (dealId: string) => Promise<{ success: boolean; error?: string }>;
+  onBuyerConfirmAction?: (deal: Deal) => void;
+  actionLoading?: string | null;
 }
 
-export function ActiveDealCard({ deal, isBuyer, counterparty, onViewDetail }: ActiveCardProps) {
+export function ActiveDealCard({
+  deal, isBuyer, counterparty, onViewDetail,
+  onSupplierConfirm, onStartDelivery, onBuyerConfirmAction, actionLoading,
+}: ActiveCardProps) {
+  const [actionError, setActionError] = useState<string | null>(null);
   const counterpartyName = counterparty?.company_name || counterparty?.display_name || (isBuyer ? 'مورد' : 'مشتري');
   const indicator = getStatusIndicator(deal, isBuyer);
   const IndicatorIcon = indicator.icon;
+  const isLoading = actionLoading === deal.id;
 
   const isWaitingSupplier = deal.status === 'pending_confirmation' || deal.status === 'pending_supplier' || deal.status === 'matched';
   const isWaitingBuyer = deal.status === 'awaiting_buyer' || deal.status === 'supplier_confirmed';
   const isExecution = deal.status === 'execution_in_progress' || deal.status === 'in_delivery';
   const isReserved = deal.status === 'inventory_reserved';
 
+  const handleSupplierConfirm = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onSupplierConfirm) return;
+    setActionError(null);
+    const result = await onSupplierConfirm(deal.id);
+    if (!result.success) setActionError(result.error || 'حدث خطأ');
+  };
+
+  const handleStartDelivery = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onStartDelivery) return;
+    setActionError(null);
+    const result = await onStartDelivery(deal.id);
+    if (!result.success) setActionError(result.error || 'حدث خطأ');
+  };
+
+  const handleBuyerAction = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onBuyerConfirmAction?.(deal);
+  };
+
   return (
-    <button
-      onClick={() => onViewDetail(deal)}
-      className="w-full text-right bg-white rounded-2xl overflow-hidden transition-transform active:scale-[0.98]"
+    <div
+      className="w-full text-right bg-white rounded-2xl overflow-hidden"
       style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.05)', border: `1.5px solid ${indicator.border}` }}
       dir="rtl"
     >
-      <div className="flex items-center justify-between px-4 py-2" style={{ background: indicator.bg, borderBottom: `1px solid ${indicator.border}` }}>
-        <div className="flex items-center gap-1.5">
-          {indicator.pulse && <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: indicator.color }} />}
-          <IndicatorIcon className="w-3 h-3" style={{ color: indicator.color }} />
-          <span className="text-[10px] font-bold" style={{ color: indicator.color }}>{indicator.text}</span>
-        </div>
-        {isExecution && deal.execution_deadline && (
-          <CountdownBadge deadline={deal.execution_deadline} />
-        )}
-        {!isExecution && (
-          <span className="text-[9px] font-mono text-[#9ab0bf]" dir="ltr">{deal.deal_ref}</span>
-        )}
-      </div>
-
-      <div className="p-4 space-y-2">
-        <DealHeader deal={deal} isBuyer={isBuyer} />
-        <InfoRow label={isBuyer ? 'المورد' : 'المشتري'} value={counterpartyName} />
-        <InfoRow label="النوع" value={`${deal.pallet_type} · ${deal.size} · درجة ${deal.quality}`} />
-        <div className="flex items-center justify-between gap-4">
+      <button
+        onClick={() => onViewDetail(deal)}
+        className="w-full text-right"
+      >
+        <div className="flex items-center justify-between px-4 py-2" style={{ background: indicator.bg, borderBottom: `1px solid ${indicator.border}` }}>
           <div className="flex items-center gap-1.5">
-            <MapPin className="w-3 h-3 text-[#7a9aab]" />
-            <span className="text-[11px] text-[#7a9aab]">{deal.city}</span>
+            {indicator.pulse && <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: indicator.color }} />}
+            <IndicatorIcon className="w-3 h-3" style={{ color: indicator.color }} />
+            <span className="text-[10px] font-bold" style={{ color: indicator.color }}>{indicator.text}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Layers className="w-3 h-3 text-[#1a4a5e]" />
-            <span className="text-[12px] font-bold text-[#1a4a5e]">{deal.quantity.toLocaleString('ar-SA')} طبلية</span>
-          </div>
+          {isExecution && deal.execution_deadline && (
+            <CountdownBadge deadline={deal.execution_deadline} />
+          )}
+          {!isExecution && (
+            <span className="text-[9px] font-mono text-[#9ab0bf]" dir="ltr">{deal.deal_ref}</span>
+          )}
         </div>
 
-        <PriceBlock deal={deal} isBuyer={isBuyer} />
+        <div className="p-4 space-y-2">
+          <DealHeader deal={deal} isBuyer={isBuyer} />
+          <InfoRow label={isBuyer ? 'المورد' : 'المشتري'} value={counterpartyName} />
+          <InfoRow label="النوع" value={`${deal.pallet_type} · ${deal.size} · درجة ${deal.quality}`} />
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-3 h-3 text-[#7a9aab]" />
+              <span className="text-[11px] text-[#7a9aab]">{deal.city}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Layers className="w-3 h-3 text-[#1a4a5e]" />
+              <span className="text-[12px] font-bold text-[#1a4a5e]">{deal.quantity.toLocaleString('ar-SA')} طبلية</span>
+            </div>
+          </div>
+          <PriceBlock deal={deal} isBuyer={isBuyer} />
+        </div>
+      </button>
+
+      <div className="px-4 pb-4 space-y-2">
+        {actionError && (
+          <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
+            <span className="text-[11px] text-red-700 font-semibold">{actionError}</span>
+          </div>
+        )}
 
         {isWaitingSupplier && isBuyer && (
-          <div className="flex items-center gap-2 justify-center py-2 rounded-xl bg-amber-50 border border-amber-200 mt-1">
+          <div className="flex items-center gap-2 justify-center py-2 rounded-xl bg-amber-50 border border-amber-200">
             <Loader2 className="w-3.5 h-3.5 text-amber-600 animate-spin" />
             <span className="text-[11px] font-bold text-amber-700">في انتظار اعتماد المورد</span>
           </div>
         )}
 
-        {isWaitingSupplier && !isBuyer && (
-          <div className="flex items-center gap-2 justify-center py-2 rounded-xl bg-amber-50 border border-amber-200 mt-1">
-            <Handshake className="w-3.5 h-3.5 text-amber-600" />
-            <span className="text-[11px] font-bold text-amber-700">بحاجة لاعتمادك</span>
-          </div>
-        )}
-
-        {isWaitingBuyer && isBuyer && (
-          <div className="flex items-center gap-2 justify-center py-2 rounded-xl bg-blue-50 border border-blue-200 mt-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-            <span className="text-[11px] font-bold text-blue-700">بحاجة لتأكيدك وتحديد المهلة</span>
-          </div>
-        )}
-
-        {isExecution && (
-          <div className="flex items-center gap-2 justify-center py-2 rounded-xl mt-1"
-            style={{ background: '#E0F2FE', border: '1px solid #BAE6FD' }}
+        {isWaitingSupplier && !isBuyer && onSupplierConfirm && (
+          <button
+            onClick={handleSupplierConfirm}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-60"
+            style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 3px 10px rgba(5,150,105,0.25)' }}
           >
-            <MessageCircle className="w-3.5 h-3.5 text-[#0369A1]" />
-            <span className="text-[11px] font-bold text-[#0369A1]">
-              تواصلوا عبر واتساب لتنسيق التسليم
-            </span>
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Handshake className="w-4 h-4" /> اعتماد الصفقة</>}
+          </button>
+        )}
+
+        {isWaitingSupplier && !isBuyer && !onSupplierConfirm && (
+          <button
+            onClick={() => onViewDetail(deal)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold text-amber-800 border border-amber-200 bg-amber-50"
+          >
+            <Handshake className="w-3.5 h-3.5" />
+            افتح الصفقة للاعتماد
+          </button>
+        )}
+
+        {isWaitingBuyer && isBuyer && onBuyerConfirmAction && (
+          <button
+            onClick={handleBuyerAction}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-black text-white transition-transform active:scale-[0.97]"
+            style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', boxShadow: '0 3px 10px rgba(37,99,235,0.25)' }}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            تأكيد الشراء وتحديد المهلة
+          </button>
+        )}
+
+        {isWaitingBuyer && !isBuyer && (
+          <div className="flex items-center gap-2 justify-center py-2 rounded-xl border" style={{ background: '#EFF6FF', borderColor: '#BFDBFE' }}>
+            <Loader2 className="w-3.5 h-3.5 text-blue-600 animate-spin" />
+            <span className="text-[11px] font-bold text-blue-700">في انتظار تأكيد المشتري</span>
           </div>
+        )}
+
+        {isReserved && !isBuyer && onStartDelivery && (
+          <button
+            onClick={handleStartDelivery}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-60"
+            style={{ background: 'linear-gradient(135deg, #0369A1, #0284C7)', boxShadow: '0 3px 10px rgba(3,105,161,0.3)' }}
+          >
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Play className="w-4 h-4" /> بدء التسليم</>}
+          </button>
         )}
 
         {isReserved && isBuyer && (
-          <div className="flex items-center gap-2 justify-center py-2 rounded-xl mt-1"
-            style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}
-          >
+          <div className="flex items-center gap-2 justify-center py-2 rounded-xl" style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
             <Package className="w-3.5 h-3.5 text-[#059669]" />
             <span className="text-[11px] font-bold text-[#059669]">الكمية محجوزة — انتظر تواصل المورد</span>
           </div>
         )}
 
-        {isReserved && !isBuyer && (
-          <div className="flex items-center gap-2 justify-center py-2 rounded-xl mt-1"
-            style={{ background: '#0369A1', border: '1px solid #0284C7' }}
-          >
-            <Play className="w-3.5 h-3.5 text-white" />
-            <span className="text-[11px] font-black text-white">اضغط لبدء التسليم</span>
+        {isExecution && (
+          <div className="flex items-center gap-2 justify-center py-2 rounded-xl" style={{ background: '#E0F2FE', border: '1px solid #BAE6FD' }}>
+            <MessageCircle className="w-3.5 h-3.5 text-[#0369A1]" />
+            <span className="text-[11px] font-bold text-[#0369A1]">جارٍ التنفيذ — تواصلوا عبر واتساب</span>
           </div>
         )}
       </div>
-    </button>
+    </div>
   );
 }
 
