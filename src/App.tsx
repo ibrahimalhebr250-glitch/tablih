@@ -121,26 +121,39 @@ function App() {
     };
 
     buildDeviceFingerprint().then((visitorId) => {
-      const storageKey = '_psid_' + visitorId.slice(0, 8);
+      const storageKey = '_psid_' + visitorId.replace(/-/g, '').slice(0, 12);
       let sessionId = sessionStorage.getItem(storageKey);
       if (!sessionId) {
         sessionId = crypto.randomUUID();
         sessionStorage.setItem(storageKey, sessionId);
       }
 
-      supabase.rpc('log_platform_visit', {
-        p_visitor_id: visitorId,
-        p_session_id: sessionId,
-        p_phone: null,
-        p_user_agent: navigator.userAgent.slice(0, 200),
-      }).catch(() => {});
+      const ua = navigator.userAgent.slice(0, 300);
 
       supabase.rpc('log_visitor_session', {
         p_visitor_id: visitorId,
         p_session_id: sessionId,
-        p_user_agent: navigator.userAgent.slice(0, 200),
+        p_user_agent: ua,
         p_referrer: document.referrer ? document.referrer.slice(0, 500) : null,
         p_phone: null,
+      }).then(({ error }) => {
+        if (error) {
+          const fallbackSessionId = crypto.randomUUID();
+          supabase.rpc('log_visitor_session', {
+            p_visitor_id: visitorId,
+            p_session_id: fallbackSessionId,
+            p_user_agent: ua,
+            p_referrer: document.referrer ? document.referrer.slice(0, 500) : null,
+            p_phone: null,
+          }).catch(() => {});
+        }
+      });
+
+      supabase.rpc('log_platform_visit', {
+        p_visitor_id: visitorId,
+        p_session_id: sessionId,
+        p_phone: null,
+        p_user_agent: ua,
       }).catch(() => {});
     });
 

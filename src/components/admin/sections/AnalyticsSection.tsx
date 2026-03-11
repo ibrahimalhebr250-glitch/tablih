@@ -36,6 +36,7 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
     visitor_id: string;
     phone: string | null;
     user_agent: string | null;
+    device_type: string | null;
     last_seen_at: string;
     created_at: string;
     page_count: number;
@@ -71,16 +72,26 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
 
     sessionChannelRef.current = supabase
       .channel('analytics_sessions_rt')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'visitor_sessions' }, () => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'visitor_sessions' }, (payload) => {
+        const newRow = payload.new as any;
+        setLiveSessions(prev => {
+          const exists = prev.some(s => s.session_id === newRow.session_id);
+          if (exists) return prev;
+          return [newRow, ...prev].slice(0, 100);
+        });
         loadLiveVisitors();
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'visitor_sessions' }, () => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'visitor_sessions' }, (payload) => {
+        const updated = payload.new as any;
+        setLiveSessions(prev =>
+          prev.map(s => s.session_id === updated.session_id ? { ...s, ...updated } : s)
+        );
         loadLiveVisitors();
       })
       .subscribe();
 
     loadLiveVisitors();
-    const liveInterval = setInterval(loadLiveVisitors, 15000);
+    const liveInterval = setInterval(loadLiveVisitors, 10000);
 
     return () => {
       if (behaviorChannelRef.current) supabase.removeChannel(behaviorChannelRef.current);
@@ -608,7 +619,9 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
               <div className="bg-white divide-y divide-[#f0f6fa]">
                 {liveSessions.map((s) => {
                   const ua = (s.user_agent ?? '').toLowerCase();
-                  const isPhone = ua.includes('mobile') || ua.includes('android') || ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod') || ua.includes('blackberry') || ua.includes('windows phone');
+                  const isPhone = s.device_type === 'mobile' ||
+                    ua.includes('mobile') || ua.includes('android') || ua.includes('iphone') ||
+                    ua.includes('ipad') || ua.includes('ipod') || ua.includes('blackberry') || ua.includes('windows phone');
                   const minutesAgo = Math.floor((Date.now() - new Date(s.last_seen_at).getTime()) / 60000);
                   const isActive = minutesAgo <= 5;
 
