@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Handshake, RefreshCw, Bell, Package, CheckCircle, MapPin, Layers, Hash, Banknote, CheckSquare, Square, Receipt, MessageCircle, Truck, XCircle, AlertTriangle, Star, ShieldAlert, Sparkles, UserCheck } from 'lucide-react';
+import { ArrowRight, Handshake, RefreshCw, Bell, Package, CheckCircle, MapPin, Layers, Hash, Banknote, CheckSquare, Square, Receipt, MessageCircle, MessageSquare, Truck, XCircle, AlertTriangle, Star, ShieldAlert, Sparkles, UserCheck } from 'lucide-react';
 import { useSupplierDeals } from '../../../hooks/useSupplierDeals';
 import { DEAL_STATUS_CONFIG } from '../../../types/deal';
 import type { Deal } from '../../../types/deal';
@@ -530,6 +530,103 @@ function SupplyCardInDeliveryCard({ deal, onConfirmDelivery, onFailDelivery, loa
   );
 }
 
+function DemandCardPendingDeal({ deal, onConfirmDelivery, onFailDelivery, loading }: {
+  deal: Deal;
+  onConfirmDelivery: () => void;
+  onFailDelivery: () => void;
+  loading: boolean;
+}) {
+  const feePerPallet = deal.platform_fee_per_pallet ?? 0.25;
+  const totalFee = feePerPallet * deal.quantity;
+
+  const waLink = deal.buyer_phone
+    ? `https://wa.me/${deal.buyer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`السلام عليكم، أنا المورد في صفقة رقم ${deal.deal_ref}. وافقتَ على عرض التوريد الخاص بي. هل يمكننا تنسيق موعد التسليم؟`)}`
+    : null;
+
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: 'white', border: '2px solid #fed7aa' }}>
+      <div className="flex items-center justify-between px-4 py-2.5" style={{ background: 'linear-gradient(135deg, #b45309, #d97706)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <span className="text-[10px] font-mono text-white/60">{deal.deal_ref}</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-yellow-200 animate-pulse" />
+          <span className="text-[10px] font-bold text-white">المشتري وافق — جاري التسليم</span>
+        </div>
+      </div>
+
+      <div className="mx-4 mt-3.5 flex items-start gap-2.5 rounded-xl px-3 py-2.5" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }} dir="rtl">
+        <Truck className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-[12px] font-black text-amber-800">المشتري وافق على عرض توريدك</p>
+          <p className="text-[11px] text-amber-600 mt-0.5">تواصل معه عبر واتساب لتنسيق التسليم</p>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-2" dir="rtl">
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{deal.pallet_type}</span>
+          <span className="text-[11px] text-gray-500">نوع الطبلية</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{deal.size}</span>
+          <span className="text-[11px] text-gray-500">المقاس</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{deal.quality}</span>
+          <span className="text-[11px] text-gray-500">الجودة</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{deal.city}</span>
+          <span className="text-[11px] text-gray-500">المدينة</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-amber-700">{deal.quantity.toLocaleString()} طبلية</span>
+          <span className="text-[11px] text-gray-500">الكمية المعروضة</span>
+        </div>
+        <div className="flex items-center justify-between border-t border-amber-100 pt-2 mt-1">
+          <span className="text-[12px] font-bold text-amber-700">{totalFee.toLocaleString()} ر.س</span>
+          <span className="text-[11px] text-gray-500">عمولة المنصة ({feePerPallet} ر.س × طبلية)</span>
+        </div>
+      </div>
+
+      {waLink && (
+        <div className="px-4 pb-3">
+          <a
+            href={waLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-bold text-white"
+            style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', boxShadow: '0 4px 14px rgba(21,128,61,0.25)' }}
+          >
+            <MessageSquare className="w-4 h-4" />
+            تواصل مع المشتري عبر واتساب
+          </a>
+        </div>
+      )}
+
+      <div className="px-4 pb-4 grid grid-cols-2 gap-2">
+        <button
+          disabled={loading}
+          onClick={onFailDelivery}
+          className="py-3 rounded-xl text-[12px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
+          style={{ background: '#FEF2F2', color: '#dc2626', border: '1.5px solid #FECACA' }}
+        >
+          <XCircle className="w-3.5 h-3.5" />
+          فشل التسليم
+        </button>
+        <button
+          disabled={loading}
+          onClick={onConfirmDelivery}
+          className="py-3 rounded-xl text-[12px] font-bold text-white flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
+          style={{ background: 'linear-gradient(135deg, #b45309, #d97706)', boxShadow: '0 4px 14px rgba(180,83,9,0.25)' }}
+        >
+          <CheckCircle className="w-3.5 h-3.5" />
+          تم التسليم
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function NewRequestCard({ deal, onConfirm }: { deal: Deal; onConfirm: (d: Deal) => void }) {
   const supplierPrice = deal.supplier_price ?? deal.final_price;
   const feePerPallet = deal.platform_fee_per_pallet ?? 0.25;
@@ -948,6 +1045,7 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
     newRequests, platformDeals, reservedDeals, inDelivery, endedDeals,
     confirmDeal, startDeliveryWithPledge, confirmDelivery, failDelivery,
     acceptSupplyCardDeal, rejectSupplyCardDeal, confirmSupplyCardDelivery, failSupplyCardDelivery,
+    confirmDemandCardDelivery, failDemandCardDelivery,
     refresh,
   } = useSupplierDeals(phone);
 
@@ -962,7 +1060,8 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
   const supplyCardPending = newRequests.filter(d => d.source === 'supply_card' && d.status === 'pending_supplier');
   const otherNewRequests  = newRequests.filter(d => !(d.source === 'supply_card' && d.status === 'pending_supplier'));
   const supplyCardInDelivery = inDelivery.filter(d => d.source === 'supply_card');
-  const otherInDelivery = inDelivery.filter(d => d.source !== 'supply_card');
+  const demandCardInDelivery = inDelivery.filter(d => d.source === 'demand_card');
+  const otherInDelivery = inDelivery.filter(d => d.source !== 'supply_card' && d.source !== 'demand_card');
 
   const counts = {
     new: newRequests.length,
@@ -1249,6 +1348,29 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
                     }}
                     onFailDelivery={async () => {
                       const r = await failSupplyCardDelivery(deal.id);
+                      if (r.success) {
+                        setToast({ title: 'تم تسجيل فشل التسليم', message: 'تم إلغاء الصفقة', variant: 'info' });
+                        setActiveTab('ended');
+                      }
+                    }}
+                    loading={actionLoading === deal.id}
+                  />
+                ))}
+                {demandCardInDelivery.map(deal => (
+                  <DemandCardPendingDeal
+                    key={deal.id}
+                    deal={deal}
+                    onConfirmDelivery={async () => {
+                      const r = await confirmDemandCardDelivery(deal.id);
+                      if (r.success) {
+                        setToast({ title: 'تم التسليم بنجاح', message: 'تم خصم المخزون ونقله للمشتري وتسجيل العمولة', variant: 'success' });
+                        setActiveTab('ended');
+                      } else {
+                        setToast({ title: 'خطأ', message: r.error ?? 'حدث خطأ', variant: 'error' });
+                      }
+                    }}
+                    onFailDelivery={async () => {
+                      const r = await failDemandCardDelivery(deal.id);
                       if (r.success) {
                         setToast({ title: 'تم تسجيل فشل التسليم', message: 'تم إلغاء الصفقة', variant: 'info' });
                         setActiveTab('ended');

@@ -438,6 +438,150 @@ function SupplyCardBuyerNegotiationCard({ deal, supplierInfo }: { deal: Deal; su
   );
 }
 
+function DemandCardBuyerOfferCard({ deal, supplierInfo, onAccept, onReject, loading }: {
+  deal: Deal;
+  supplierInfo: SupplierInfo | null;
+  onAccept: () => void;
+  onReject: () => void;
+  loading: boolean;
+}) {
+  const supplierName = supplierInfo?.company_name || supplierInfo?.display_name || 'مورد';
+  const feePerPallet = deal.platform_fee_per_pallet ?? 0.25;
+  const totalFee = feePerPallet * deal.quantity;
+
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: 'white', border: '2px solid #fed7aa' }}>
+      <div className="flex items-center justify-between px-4 py-2.5" style={{ background: 'linear-gradient(135deg, #b45309, #d97706)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <span className="text-[10px] font-mono text-white/60">{deal.deal_ref}</span>
+        <div className="flex items-center gap-1.5">
+          <Bell className="w-3 h-3 text-yellow-200 animate-pulse" />
+          <span className="text-[10px] font-bold text-white">عرض توريد جديد</span>
+        </div>
+      </div>
+
+      <div className="mx-4 mt-3.5 flex items-start gap-2.5 rounded-xl px-3 py-2.5" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }} dir="rtl">
+        <Truck className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-[12px] font-black text-amber-800">مورد قدّم لك عرض توريد</p>
+          <p className="text-[11px] text-amber-700 mt-0.5">راجع التفاصيل واقبل أو ارفض العرض</p>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-2" dir="rtl">
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{supplierName}</span>
+          <span className="text-[11px] text-gray-500">المورد</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{deal.pallet_type}</span>
+          <span className="text-[11px] text-gray-500">نوع الطبلية</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{deal.size}</span>
+          <span className="text-[11px] text-gray-500">المقاس</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{deal.quality}</span>
+          <span className="text-[11px] text-gray-500">الجودة</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{deal.city}</span>
+          <span className="text-[11px] text-gray-500">المدينة</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-amber-700">{deal.quantity.toLocaleString()} طبلية</span>
+          <span className="text-[11px] text-gray-500">الكمية المعروضة</span>
+        </div>
+        <div className="flex items-center justify-between border-t border-amber-100 pt-2 mt-1">
+          <span className="text-[12px] font-bold text-amber-700">{totalFee.toLocaleString()} ر.س</span>
+          <span className="text-[11px] text-gray-500">عمولة المنصة</span>
+        </div>
+      </div>
+
+      <div className="px-4 pb-4 grid grid-cols-2 gap-2">
+        <button
+          disabled={loading}
+          onClick={onReject}
+          className="py-3 rounded-xl text-[12px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
+          style={{ background: '#FEF2F2', color: '#dc2626', border: '1.5px solid #FECACA' }}
+        >
+          رفض العرض
+        </button>
+        <button
+          disabled={loading}
+          onClick={onAccept}
+          className="py-3 rounded-xl text-[12px] font-bold text-white flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
+          style={{ background: 'linear-gradient(135deg, #b45309, #d97706)', boxShadow: '0 4px 14px rgba(180,83,9,0.25)' }}
+        >
+          <CheckCircle className="w-3.5 h-3.5" />
+          قبول العرض
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DemandCardBuyerNegotiationCard({ deal, supplierInfo }: { deal: Deal; supplierInfo: SupplierInfo | null }) {
+  const supplierName = supplierInfo?.company_name || supplierInfo?.display_name || 'المورد';
+  const waLink = deal.supplier_phone
+    ? `https://wa.me/${deal.supplier_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`السلام عليكم، أنا المشتري في صفقة رقم ${deal.deal_ref}. قبلتُ عرض التوريد الخاص بك. هل يمكننا تنسيق موعد الاستلام؟`)}`
+    : null;
+
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: 'white', border: '2px solid rgba(180,83,9,0.3)' }}>
+      <div className="flex items-center justify-between px-4 py-2.5" style={{ background: 'linear-gradient(135deg, #b45309, #d97706)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <span className="text-[10px] font-mono text-white/60">{deal.deal_ref}</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-yellow-200 animate-pulse" />
+          <span className="text-[10px] font-bold text-white">قبلتَ العرض — جاري التنسيق</span>
+        </div>
+      </div>
+
+      <div className="mx-4 mt-3.5 flex items-start gap-2.5 rounded-xl px-3 py-2.5" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }} dir="rtl">
+        <Truck className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-[12px] font-black text-amber-800">قبلتَ عرض المورد — في انتظار التسليم</p>
+          <p className="text-[11px] text-amber-700 mt-0.5">تواصل مع المورد لتنسيق موعد الاستلام</p>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-2" dir="rtl">
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{supplierName}</span>
+          <span className="text-[11px] text-gray-500">المورد</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{deal.pallet_type}</span>
+          <span className="text-[11px] text-gray-500">نوع الطبلية</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-amber-700">{deal.quantity.toLocaleString()} طبلية</span>
+          <span className="text-[11px] text-gray-500">الكمية</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{deal.city}</span>
+          <span className="text-[11px] text-gray-500">المدينة</span>
+        </div>
+      </div>
+
+      {waLink && (
+        <div className="px-4 pb-4">
+          <a
+            href={waLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-bold text-white"
+            style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 4px 14px rgba(37,211,102,0.3)' }}
+          >
+            <MessageCircle className="w-4 h-4" />
+            تواصل مع المورد عبر واتساب
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PendingSupplierDealCard({ deal, supplierInfo }: { deal: Deal; supplierInfo: SupplierInfo | null }) {
   const supplierName = supplierInfo?.company_name || supplierInfo?.display_name || 'مورد';
   const totalAmount = deal.final_price;
@@ -506,7 +650,7 @@ export default function BuyerDealsPage({ phone, onClose, onNavigateToWarehouse }
   const {
     loading, actionLoading,
     awaitingDeals, activeDeals, endedDeals,
-    confirmPurchase, getSupplierInfo,
+    confirmPurchase, acceptDemandCardDeal, rejectDemandCardDeal, getSupplierInfo,
     refresh,
   } = useBuyerDeals(phone);
 
@@ -639,6 +783,34 @@ export default function BuyerDealsPage({ phone, onClose, onNavigateToWarehouse }
                   if (deal.source === 'supply_card' && deal.status === 'in_delivery') {
                     return <SupplyCardBuyerNegotiationCard key={deal.id} deal={deal} supplierInfo={getSupplierInfo(deal.supplier_phone)} />;
                   }
+                  if (deal.source === 'demand_card' && deal.status === 'pending_buyer') {
+                    return (
+                      <DemandCardBuyerOfferCard
+                        key={deal.id}
+                        deal={deal}
+                        supplierInfo={getSupplierInfo(deal.supplier_phone)}
+                        onAccept={async () => {
+                          const r = await acceptDemandCardDeal(deal.id);
+                          if (r.success) {
+                            setToast({ title: 'تم قبول عرض المورد', message: 'تواصل مع المورد لتنسيق موعد الاستلام', variant: 'success' });
+                            setActiveTab('active');
+                          } else {
+                            setToast({ title: 'خطأ', message: r.error ?? 'حدث خطأ', variant: 'error' });
+                          }
+                        }}
+                        onReject={async () => {
+                          const r = await rejectDemandCardDeal(deal.id);
+                          if (r.success) {
+                            setToast({ title: 'تم رفض العرض', message: 'تم إلغاء عرض التوريد', variant: 'info' });
+                          }
+                        }}
+                        loading={actionLoading === deal.id}
+                      />
+                    );
+                  }
+                  if (deal.source === 'demand_card' && deal.status === 'in_delivery') {
+                    return <DemandCardBuyerNegotiationCard key={deal.id} deal={deal} supplierInfo={getSupplierInfo(deal.supplier_phone)} />;
+                  }
                   if (deal.status === 'pending_supplier' || deal.status === 'matched' || deal.status === 'supplier_confirmed') {
                     return <PendingSupplierDealCard key={deal.id} deal={deal} supplierInfo={getSupplierInfo(deal.supplier_phone)} />;
                   }
@@ -657,21 +829,15 @@ export default function BuyerDealsPage({ phone, onClose, onNavigateToWarehouse }
           ) : activeTab === 'active' ? (
             activeDeals.length === 0 ? <EmptyState tab="active" /> : (
               <div className="space-y-3">
-                {activeDeals.map(deal => (
-                  deal.source === 'supply_card' ? (
-                    <SupplyCardBuyerNegotiationCard
-                      key={deal.id}
-                      deal={deal}
-                      supplierInfo={getSupplierInfo(deal.supplier_phone)}
-                    />
-                  ) : (
-                    <ActiveDealCard
-                      key={deal.id}
-                      deal={deal}
-                      supplierInfo={getSupplierInfo(deal.supplier_phone)}
-                    />
-                  )
-                ))}
+                {activeDeals.map(deal => {
+                  if (deal.source === 'supply_card') {
+                    return <SupplyCardBuyerNegotiationCard key={deal.id} deal={deal} supplierInfo={getSupplierInfo(deal.supplier_phone)} />;
+                  }
+                  if (deal.source === 'demand_card') {
+                    return <DemandCardBuyerNegotiationCard key={deal.id} deal={deal} supplierInfo={getSupplierInfo(deal.supplier_phone)} />;
+                  }
+                  return <ActiveDealCard key={deal.id} deal={deal} supplierInfo={getSupplierInfo(deal.supplier_phone)} />;
+                })}
               </div>
             )
           ) : (

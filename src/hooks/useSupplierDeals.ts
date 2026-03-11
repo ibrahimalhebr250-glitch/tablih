@@ -211,6 +211,32 @@ export function useSupplierDeals(phone: string) {
     return { success: true };
   }, [phone, fetchDeals]);
 
+  const confirmDemandCardDelivery = useCallback(async (dealId: string) => {
+    setActionLoading(dealId);
+    const { data, error } = await supabase.rpc('supplier_confirm_delivery_demand_card', {
+      p_deal_id: dealId,
+      p_supplier_phone: phone,
+    });
+    setActionLoading(null);
+    if (error) return { success: false, error: error.message };
+    if (!data?.success) return { success: false, error: data?.error ?? 'فشلت العملية' };
+    await fetchDeals();
+    return { success: true };
+  }, [phone, fetchDeals]);
+
+  const failDemandCardDelivery = useCallback(async (dealId: string) => {
+    setActionLoading(dealId);
+    const { data, error } = await supabase.rpc('supplier_fail_delivery_demand_card', {
+      p_deal_id: dealId,
+      p_supplier_phone: phone,
+    });
+    setActionLoading(null);
+    if (error) return { success: false, error: error.message };
+    if (!data?.success) return { success: false, error: data?.error ?? 'فشلت العملية' };
+    await fetchDeals();
+    return { success: true };
+  }, [phone, fetchDeals]);
+
   return {
     deals,
     newRequests,
@@ -231,6 +257,8 @@ export function useSupplierDeals(phone: string) {
     rejectSupplyCardDeal,
     confirmSupplyCardDelivery,
     failSupplyCardDelivery,
+    confirmDemandCardDelivery,
+    failDemandCardDelivery,
     refresh: fetchDeals,
   };
 }

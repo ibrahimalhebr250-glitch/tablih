@@ -71,7 +71,7 @@ export function useBuyerDeals(phone: string) {
   const now = Date.now();
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
-  const awaitingDeals = deals.filter(d => d.status === 'awaiting_buyer' || d.status === 'pending_supplier' || d.status === 'matched' || d.status === 'supplier_confirmed');
+  const awaitingDeals = deals.filter(d => d.status === 'awaiting_buyer' || d.status === 'pending_supplier' || d.status === 'pending_buyer' || d.status === 'matched' || d.status === 'supplier_confirmed');
   const activeDeals = deals.filter(d => d.status === 'inventory_reserved' || d.status === 'in_delivery' || d.status === 'execution_in_progress');
   const endedDeals = deals.filter(d => {
     if (d.status === 'cancelled') return true;
@@ -99,6 +99,32 @@ export function useBuyerDeals(phone: string) {
     return supplierInfo[supplierPhone] ?? null;
   }, [supplierInfo]);
 
+  const acceptDemandCardDeal = useCallback(async (dealId: string) => {
+    setActionLoading(dealId);
+    const { data, error } = await supabase.rpc('buyer_accept_demand_deal', {
+      p_deal_id: dealId,
+      p_buyer_phone: phone,
+    });
+    setActionLoading(null);
+    if (error) return { success: false, error: error.message };
+    if (!data?.success) return { success: false, error: data?.error ?? 'فشلت العملية' };
+    await fetchDeals();
+    return { success: true };
+  }, [phone, fetchDeals]);
+
+  const rejectDemandCardDeal = useCallback(async (dealId: string) => {
+    setActionLoading(dealId);
+    const { data, error } = await supabase.rpc('buyer_reject_demand_deal', {
+      p_deal_id: dealId,
+      p_buyer_phone: phone,
+    });
+    setActionLoading(null);
+    if (error) return { success: false, error: error.message };
+    if (!data?.success) return { success: false, error: data?.error ?? 'فشلت العملية' };
+    await fetchDeals();
+    return { success: true };
+  }, [phone, fetchDeals]);
+
   return {
     deals,
     awaitingDeals,
@@ -107,6 +133,8 @@ export function useBuyerDeals(phone: string) {
     loading,
     actionLoading,
     confirmPurchase,
+    acceptDemandCardDeal,
+    rejectDemandCardDeal,
     getSupplierInfo,
     refresh: fetchDeals,
   };
