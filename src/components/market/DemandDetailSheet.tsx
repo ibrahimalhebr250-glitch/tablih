@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Package, Star, ShoppingBag, Heart, Home, X, Handshake, LogIn, CheckCircle, Send, Clock, CheckCircle2, XCircle, MessageSquare, Warehouse, AlertTriangle, Info, Truck, TrendingUp } from 'lucide-react';
+import { MapPin, Package, Star, ShoppingBag, Heart, Home, X, Handshake, LogIn, CheckCircle, Clock, CheckCircle2, XCircle, Warehouse, AlertTriangle, Info, Truck } from 'lucide-react';
 import TrustRatingBadge from '../shared/TrustRatingBadge';
 import VisitorRatingDialog from './VisitorRatingDialog';
 import { CommentsSection } from '../shared/CommentsSection';
@@ -103,61 +103,6 @@ function SupplierLoginPromptDialog({ card, onClose, onLogin }: {
   );
 }
 
-function SupplierNegotiationLoginPromptDialog({ card, onClose, onLogin }: {
-  card: DemandCard;
-  onClose: () => void;
-  onLogin: () => void;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8"
-      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full rounded-3xl overflow-hidden"
-        style={{ maxWidth: 480, background: 'white' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="px-5 pt-5 pb-6 space-y-4" dir="rtl">
-          <div className="flex items-start justify-between">
-            <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-              <X className="w-3.5 h-3.5 text-gray-500" />
-            </button>
-            <div className="flex items-center gap-2">
-              <div>
-                <p className="text-[15px] font-black text-[#1a3a4a]">بدء التفاوض مع المشتري</p>
-                <p className="text-[11px] text-[#7a9aab]">{card.pallet_type} — {card.city}</p>
-              </div>
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #0369a1, #0284c7)' }}>
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-          <div className="rounded-2xl p-4" style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe' }}>
-            <div className="flex items-start gap-3">
-              <MessageSquare className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-[13px] font-black text-blue-800">أرسل عرضك بالسعر والكمية</p>
-                <p className="text-[11px] text-blue-700 mt-0.5 leading-relaxed">
-                  سجّل دخولك لإرسال عرض تفاوض بالسعر الذي تريده — المشتري سيرد مباشرة.
-                </p>
-              </div>
-            </div>
-          </div>
-          <button onClick={onLogin} className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97]" style={{ background: 'linear-gradient(135deg, #0369a1, #0284c7)', boxShadow: '0 6px 20px rgba(3,105,161,0.3)' }}>
-            <TrendingUp className="w-5 h-5" />
-            تسجيل الدخول وبدء التفاوض
-          </button>
-          <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
-            ليس الآن
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 interface InventoryBatch {
   id: string;
   batch_id: string;
@@ -170,322 +115,6 @@ interface InventoryBatch {
   price_per_pallet: number;
   description: string;
   created_at: string;
-}
-
-function SupplierOfferDialog({ card, supplierPhone, existingOffer: rawExisting, onClose, onSent }: {
-  card: DemandCard;
-  supplierPhone: string;
-  existingOffer: { id: string; status: string; created_at: string; quantity: number; price_per_pallet: number } | null;
-  onClose: () => void;
-  onSent: () => void;
-}) {
-  const existingOffer = rawExisting?.status === 'rejected' ? null : rawExisting;
-  const [quantity, setQuantity] = useState(card.quantity);
-  const [price, setPrice] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [batches, setBatches] = useState<InventoryBatch[]>([]);
-  const [loadingBatches, setLoadingBatches] = useState(true);
-  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!existingOffer) {
-      loadInventory();
-    } else {
-      setLoadingBatches(false);
-    }
-  }, []);
-
-  const loadInventory = async () => {
-    setLoadingBatches(true);
-    try {
-      const { data } = await supabase.rpc('get_supplier_matching_inventory', {
-        p_supplier_phone: supplierPhone,
-        p_order_id: card.id,
-      });
-      if (data?.success && data.batches) {
-        setBatches(data.batches);
-        if (data.batches.length === 1) {
-          setSelectedBatchId(data.batches[0].id);
-          setQuantity(Math.min(card.quantity, data.batches[0].available_quantity));
-          if (data.batches[0].price_per_pallet > 0) setPrice(data.batches[0].price_per_pallet);
-        }
-      }
-    } catch { /* ignore */ }
-    setLoadingBatches(false);
-  };
-
-  const selectedBatch = batches.find(b => b.id === selectedBatchId);
-
-  const handleSelectBatch = (batch: InventoryBatch) => {
-    setSelectedBatchId(batch.id);
-    setQuantity(Math.min(card.quantity, batch.available_quantity));
-    if (batch.price_per_pallet > 0) setPrice(batch.price_per_pallet);
-    setError('');
-  };
-
-  const handleSend = async () => {
-    if (loading) return;
-    if (!selectedBatchId) { setError('اختر دفعة من مخزونك أولاً'); return; }
-    if (quantity < 1) { setError('الكمية يجب أن تكون 1 على الأقل'); return; }
-    if (selectedBatch && quantity > selectedBatch.available_quantity) {
-      setError('الكمية المتوفرة في هذه الدفعة ' + selectedBatch.available_quantity + ' فقط');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      const { data, error: err } = await supabase.rpc('create_supplier_offer_for_demand', {
-        p_supplier_phone: supplierPhone,
-        p_order_id: card.id,
-        p_quantity: quantity,
-        p_price_per_pallet: price,
-        p_supplier_message: null,
-        p_inventory_batch_id: selectedBatchId,
-      });
-      if (err) throw err;
-      if (data && !data.success) { setError(data.error || 'حدث خطأ'); return; }
-      onSent();
-    } catch {
-      setError('حدث خطأ أثناء إرسال العرض. حاول مرة أخرى.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const statusConfig = {
-    pending: { label: 'قيد الانتظار', color: '#b45309', bg: '#FFFBEB', icon: <Clock className="w-4 h-4" /> },
-    accepted: { label: 'تم القبول', color: '#059669', bg: '#ECFDF5', icon: <CheckCircle2 className="w-4 h-4" /> },
-    rejected: { label: 'تم الرفض', color: '#dc2626', bg: '#FEF2F2', icon: <XCircle className="w-4 h-4" /> },
-    deal_created: { label: 'تم إنشاء الصفقة', color: '#1d4ed8', bg: '#EFF6FF', icon: <Handshake className="w-4 h-4" /> },
-    cancelled: { label: 'ملغي', color: '#6b7280', bg: '#f3f4f6', icon: <XCircle className="w-4 h-4" /> },
-  };
-
-  const isExactMatch = (batch: InventoryBatch) =>
-    batch.quality === card.quality && batch.city === card.city;
-
-  return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8"
-      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full rounded-3xl overflow-hidden flex flex-col"
-        style={{ maxWidth: 480, maxHeight: '90vh', background: 'white' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="px-5 pt-5 pb-2 flex-shrink-0" dir="rtl">
-          <div className="flex items-start justify-between">
-            <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-              <X className="w-3.5 h-3.5 text-gray-500" />
-            </button>
-            <div className="flex items-center gap-2">
-              <div>
-                <p className="text-[15px] font-black text-[#1a3a4a]">تقديم عرض للمشتري</p>
-                <p className="text-[11px] text-[#7a9aab]">{card.pallet_type} — {card.city}</p>
-              </div>
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #b45309, #d97706)' }}>
-                <Handshake className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="overflow-y-auto flex-1 px-5 pb-6 pt-2 space-y-4" dir="rtl">
-          {existingOffer ? (
-            <div className="space-y-3">
-              <div className="rounded-2xl p-4" style={{ background: statusConfig[existingOffer.status as keyof typeof statusConfig]?.bg || '#f3f4f6', border: '1px solid rgba(0,0,0,0.06)' }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span style={{ color: statusConfig[existingOffer.status as keyof typeof statusConfig]?.color || '#6b7280' }}>
-                    {statusConfig[existingOffer.status as keyof typeof statusConfig]?.icon}
-                  </span>
-                  <span className="text-[13px] font-black" style={{ color: statusConfig[existingOffer.status as keyof typeof statusConfig]?.color || '#6b7280' }}>
-                    {statusConfig[existingOffer.status as keyof typeof statusConfig]?.label}
-                  </span>
-                </div>
-                <p className="text-[11px] text-[#7a9aab]">أُرسل {timeAgo(existingOffer.created_at)}</p>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-[12px] font-bold text-[#1a3a4a]">{existingOffer.quantity} طبلية</span>
-                  <span className="text-[11px] text-[#7a9aab]">الكمية المعروضة</span>
-                </div>
-              </div>
-              {existingOffer.status === 'pending' && (
-                <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
-                  <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-[#92400E] leading-relaxed">عرضك قيد الانتظار. ستصلك إشعار عند رد المشتري. يمكنك متابعته في <span className="font-black">حسابي ← طلباتي</span></p>
-                </div>
-              )}
-              {(existingOffer.status === 'accepted' || existingOffer.status === 'deal_created') && (
-                <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
-                  <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-[#065F46] leading-relaxed">وافق المشتري على عرضك! توجّه إلى <span className="font-black">حسابي ← صفقاتي</span> لمتابعة الصفقة.</p>
-                </div>
-              )}
-              <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
-                إغلاق
-              </button>
-            </div>
-          ) : loadingBatches ? (
-            <div className="flex flex-col items-center justify-center py-10 gap-3">
-              <div className="w-8 h-8 rounded-full border-2 border-amber-200 border-t-amber-600 animate-spin" />
-              <p className="text-[13px] text-[#7a9aab]">جاري تحميل مخزونك...</p>
-            </div>
-          ) : batches.length === 0 ? (
-            <div className="space-y-4">
-              <div className="rounded-2xl p-5 text-center" style={{ background: '#FEF2F2', border: '1.5px solid #FECACA' }}>
-                <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.1)' }}>
-                  <AlertTriangle className="w-7 h-7 text-red-500" />
-                </div>
-                <p className="text-[14px] font-black text-[#991B1B] mb-2">لا يوجد مخزون {card.pallet_type} مسجّل</p>
-                <p className="text-[12px] text-[#B91C1C] leading-relaxed">
-                  المشتري يطلب <span className="font-black">{card.pallet_type}</span>. يجب أن يكون لديك مخزون من نفس النوع في مستودعك السحابي لتقديم عرض.
-                </p>
-              </div>
-              <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
-                <Warehouse className="w-4 h-4 text-[#b45309] flex-shrink-0 mt-0.5" />
-                <p className="text-[11px] text-[#92400E] leading-relaxed">
-                  سجّل مخزونك من <span className="font-black">{card.pallet_type}</span> أولاً من خلال <span className="font-black">صفحة إيداع المخزون</span> ثم عُد لتقديم عرضك.
-                </p>
-              </div>
-              <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
-                إغلاق
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="rounded-2xl p-3.5 space-y-2" style={{ background: '#f8fbfd', border: '1px solid #e2edf5' }}>
-                <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-bold text-[#b45309]">{card.quantity.toLocaleString()} طبلية {card.pallet_type}</span>
-                  <span className="text-[11px] text-[#7a9aab]">الكمية المطلوبة</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-bold text-[#1a3a4a]">{card.city}</span>
-                  <span className="text-[11px] text-[#7a9aab]">المدينة</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-bold text-[#1a3a4a]">{card.quality}</span>
-                  <span className="text-[11px] text-[#7a9aab]">الجودة المطلوبة</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">
-                  <Warehouse className="w-3.5 h-3.5 inline-block ml-1" />
-                  اختر من مخزونك السحابي ({card.pallet_type})
-                </label>
-                <div className="space-y-2 max-h-[180px] overflow-y-auto rounded-2xl">
-                  {batches.map((batch) => {
-                    const match = isExactMatch(batch);
-                    const selected = selectedBatchId === batch.id;
-                    return (
-                      <button
-                        key={batch.id}
-                        onClick={() => handleSelectBatch(batch)}
-                        className="w-full rounded-2xl p-3 text-right transition-all"
-                        style={{
-                          background: selected ? '#FFF7ED' : '#f8fbfd',
-                          border: selected ? '2px solid #d97706' : '1.5px solid #e2edf5',
-                          boxShadow: selected ? '0 2px 12px rgba(217,119,6,0.15)' : 'none',
-                        }}
-                      >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <div className="flex items-center gap-1.5">
-                            {match && (
-                              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-lg" style={{ background: '#dcfce7', color: '#15803d' }}>
-                                تطابق تام
-                              </span>
-                            )}
-                            <span className="text-[10px] text-[#a0b5c0]">{batch.batch_id}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[13px] font-black text-[#1a3a4a]">{batch.pallet_type}</span>
-                            {selected && (
-                              <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#d97706' }}>
-                                <CheckCircle2 className="w-3 h-3 text-white" />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="text-[11px] text-[#7a9aab]">{batch.city}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-bold text-[#1a3a4a]">{batch.quality}</span>
-                            <span className="text-[10px] text-[#a0b5c0]">|</span>
-                            <span className="text-[11px] font-bold" style={{ color: '#0d7c66' }}>{batch.available_quantity} متوفرة</span>
-                            {batch.price_per_pallet > 0 && (
-                              <>
-                                <span className="text-[10px] text-[#a0b5c0]">|</span>
-                                <span className="text-[11px] font-bold text-[#b45309]">{batch.price_per_pallet} ر.س</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {selectedBatch && (
-                <>
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">الكمية التي يمكنك توريدها</label>
-                    <div className="flex items-center gap-2" dir="rtl">
-                      <button onClick={() => setQuantity(q => Math.max(1, q - 10))} className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90" style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', color: '#b45309' }}>-</button>
-                      <input type="number" value={quantity} onChange={(e) => { const v = parseInt(e.target.value) || 0; setQuantity(Math.max(1, Math.min(v, selectedBatch.available_quantity))); }} className="flex-1 text-center text-[16px] font-black text-[#1a3a4a] rounded-xl py-2.5 outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} min={1} max={selectedBatch.available_quantity} />
-                      <button onClick={() => setQuantity(q => Math.min(q + 10, selectedBatch.available_quantity))} className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90" style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', color: '#b45309' }}>+</button>
-                    </div>
-                    <p className="text-[10px] text-[#a0b5c0] text-center mt-1">الحد الأقصى: {selectedBatch.available_quantity} طبلية</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">السعر المقترح للطبلية (ريال) — اختياري</label>
-                    <input
-                      type="number"
-                      value={price || ''}
-                      onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-                      placeholder="0 — اتركه فارغاً للتفاوض"
-                      dir="rtl"
-                      className="w-full rounded-2xl px-4 py-3 text-[13px] text-[#1a3a4a] outline-none"
-                      style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
-                    />
-                  </div>
-
-                  <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
-                    <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                    <p className="text-[11px] text-[#1e40af] leading-relaxed">
-                      يتم التفاوض ومتابعة الصفقة <span className="font-black">داخل المنصة فقط</span>. بعد قبول العرض وتثبيت العمولة ستظهر معلومات التواصل بين الطرفين.
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {error && <p className="text-[12px] text-red-600 text-center font-semibold">{error}</p>}
-
-              <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
-                <CheckCircle className="w-4 h-4 text-[#b45309] flex-shrink-0 mt-0.5" />
-                <p className="text-[11px] text-[#92400E] leading-relaxed">سيتم حجز الكمية من مخزونك عند إرسال العرض. عند قبوله تُنشأ الصفقة وتُخصم الكمية نهائياً.</p>
-              </div>
-
-              <button
-                onClick={handleSend}
-                disabled={loading || !selectedBatchId}
-                className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-60"
-                style={{ background: 'linear-gradient(135deg, #b45309, #d97706)', boxShadow: '0 6px 20px rgba(180,83,9,0.3)' }}
-              >
-                {loading ? <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Send className="w-5 h-5" />}
-                {loading ? 'جاري إرسال العرض...' : !selectedBatchId ? 'اختر من مخزونك أولاً' : 'تقديم العرض للمشتري'}
-              </button>
-              <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
-                إلغاء
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function SupplierDealRequestDialog({ card, supplierPhone, existingDeal, onClose, onCreated }: {
@@ -810,21 +439,16 @@ interface Props {
   sessionPhone?: string | null;
   onLoginRequired?: () => void;
   autoOpenOffer?: boolean;
-  autoOpenNegotiation?: boolean;
 }
 
-export default function DemandDetailSheet({ card, onClose, sessionPhone, onLoginRequired, autoOpenOffer, autoOpenNegotiation }: Props) {
+export default function DemandDetailSheet({ card, onClose, sessionPhone, onLoginRequired, autoOpenOffer }: Props) {
   const isAuthenticated = !!sessionPhone;
   const supplierPhone = sessionPhone ?? undefined;
   const [isFavorited, setIsFavorited] = useState(false);
   const [showRatingDialog, setShowRatingDialog] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [showNegotiationLoginPrompt, setShowNegotiationLoginPrompt] = useState(false);
-  const [showOfferDialog, setShowOfferDialog] = useState(false);
   const [ratingSummary, setRatingSummary] = useState<{ average_rating: number; total_ratings: number } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [existingOffer, setExistingOffer] = useState<{ id: string; status: string; created_at: string; quantity: number; price_per_pallet: number } | null>(null);
-  const [offerSent, setOfferSent] = useState(false);
   const [showDealRequestDialog, setShowDealRequestDialog] = useState(false);
   const [existingDemandDeal, setExistingDemandDeal] = useState<{ id: string; status: string; deal_ref: string; created_at: string; quantity: number } | null>(null);
   const [dealCreated, setDealCreated] = useState(false);
@@ -834,7 +458,6 @@ export default function DemandDetailSheet({ card, onClose, sessionPhone, onLogin
   useEffect(() => { loadRatingSummary(); }, [card.phone]);
   useEffect(() => {
     if (isAuthenticated && supplierPhone && !isSelf) {
-      loadExistingOffer();
       loadExistingDemandDeal();
     }
   }, [isAuthenticated, supplierPhone, card.id]);
@@ -846,28 +469,10 @@ export default function DemandDetailSheet({ card, onClose, sessionPhone, onLogin
     }
   }, [autoOpenOffer, isAuthenticated, isSelf]);
 
-  useEffect(() => {
-    if (autoOpenNegotiation && isAuthenticated && !isSelf) {
-      const t = setTimeout(() => setShowOfferDialog(true), 300);
-      return () => clearTimeout(t);
-    }
-  }, [autoOpenNegotiation, isAuthenticated, isSelf]);
-
   const loadRatingSummary = async () => {
     try {
       const { data } = await supabase.rpc('get_visitor_ratings_summary', { p_user_phone: card.phone });
       setRatingSummary(data);
-    } catch {}
-  };
-
-  const loadExistingOffer = async () => {
-    if (!supplierPhone) return;
-    try {
-      const { data } = await supabase.rpc('get_supplier_offer_for_demand', {
-        p_supplier_phone: supplierPhone,
-        p_order_id: card.id,
-      });
-      setExistingOffer(data);
     } catch {}
   };
 
@@ -913,31 +518,6 @@ export default function DemandDetailSheet({ card, onClose, sessionPhone, onLogin
     setShowLoginPrompt(false);
     onClose();
     onLoginRequired?.();
-  };
-
-  const handleStartNegotiation = () => {
-    if (!isAuthenticated) {
-      setShowNegotiationLoginPrompt(true);
-    } else if (isSelf) {
-      return;
-    } else {
-      setShowOfferDialog(true);
-    }
-  };
-
-  const handleNegotiationLoginFromPrompt = () => {
-    sessionStorage.setItem('pending_demand_negotiation', JSON.stringify({
-      order_id: card.id,
-    }));
-    setShowNegotiationLoginPrompt(false);
-    onClose();
-    onLoginRequired?.();
-  };
-
-  const handleOfferSent = () => {
-    setOfferSent(true);
-    setShowOfferDialog(false);
-    loadExistingOffer();
   };
 
   const handleDealCreated = () => {
@@ -1138,23 +718,11 @@ export default function DemandDetailSheet({ card, onClose, sessionPhone, onLogin
             <div className="relative flex items-center justify-center gap-2.5 py-3.5">
               <Handshake className="w-5 h-5" style={{ color: btnState.color }} strokeWidth={2.5} />
               <span className="text-[15px] font-black" style={{ color: btnState.color }}>{btnState.label}</span>
-              {!btnState.disabled && !existingOffer && !offerSent && (
+              {!btnState.disabled && !dealCreated && (
                 <div className="absolute left-3 w-2 h-2 rounded-full animate-pulse" style={{ background: '#fde68a', boxShadow: '0 0 8px #f59e0b' }} />
               )}
             </div>
           </button>
-          {!isSelf && !offerSent && !(existingOffer && existingOffer.status !== 'rejected') && (
-            <button
-              onClick={handleStartNegotiation}
-              className="w-full relative overflow-hidden group mb-2.5 rounded-2xl"
-            >
-              <div className="absolute inset-0 rounded-2xl" style={{ background: 'linear-gradient(135deg, #0369a1, #0284c7)', boxShadow: '0 4px 14px rgba(3,105,161,0.25)' }} />
-              <div className="relative flex items-center justify-center gap-2.5 py-3">
-                <TrendingUp className="w-4 h-4 text-white" strokeWidth={2.5} />
-                <span className="text-[13px] font-black text-white">بدء التفاوض</span>
-              </div>
-            </button>
-          )}
           <div className="grid grid-cols-3 gap-2">
             <button onClick={onClose} className="flex flex-col items-center justify-center py-3.5 rounded-2xl transition-all active:scale-95" style={{ background: 'linear-gradient(135deg, #1a4a5e, #2c5f73)', boxShadow: '0 4px 12px rgba(26,74,94,0.25)' }}>
               <Home className="w-5 h-5 text-white mb-1" />
@@ -1189,12 +757,6 @@ export default function DemandDetailSheet({ card, onClose, sessionPhone, onLogin
       )}
       {showLoginPrompt && (
         <SupplierLoginPromptDialog card={card} onClose={() => setShowLoginPrompt(false)} onLogin={handleLoginFromPrompt} />
-      )}
-      {showNegotiationLoginPrompt && (
-        <SupplierNegotiationLoginPromptDialog card={card} onClose={() => setShowNegotiationLoginPrompt(false)} onLogin={handleNegotiationLoginFromPrompt} />
-      )}
-      {showOfferDialog && (
-        <SupplierOfferDialog card={card} supplierPhone={supplierPhone!} existingOffer={existingOffer} onClose={() => setShowOfferDialog(false)} onSent={handleOfferSent} />
       )}
       {showDealRequestDialog && (
         <SupplierDealRequestDialog card={card} supplierPhone={supplierPhone!} existingDeal={existingDemandDeal} onClose={() => setShowDealRequestDialog(false)} onCreated={handleDealCreated} />
