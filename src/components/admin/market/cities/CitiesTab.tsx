@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, X, MapPin, Check } from 'lucide-react';
+import { Plus, X, MapPin, Check, Trash2 } from 'lucide-react';
 import { useCities } from '../../../../hooks/useMarket';
 import type { City } from '../../../../hooks/useMarket';
 import TableControls from '../shared/TableControls';
@@ -159,14 +159,17 @@ function AddCityDialog({ onAdd, onClose }: {
 }
 
 export default function CitiesTab() {
-  const { cities, loading, addCity, updateCity, deleteCity, freezeCity, activateCity, getCityStats } = useCities();
+  const { cities, loading, addCity, updateCity, deleteCity, deleteCities, freezeCity, activateCity, getCityStats } = useCities();
   const [view, setView] = useState<View>({ mode: 'list' });
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<City | null>(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const filtered = useMemo(() => {
     return cities.filter(c => {
@@ -177,6 +180,47 @@ export default function CitiesTab() {
   }, [cities, search, statusFilter]);
 
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  const allPageSelected = paginated.length > 0 && paginated.every(c => selected.has(c.id));
+  const somePageSelected = paginated.some(c => selected.has(c.id));
+  const selectedCount = selected.size;
+
+  const toggleAll = () => {
+    if (allPageSelected) {
+      setSelected(prev => {
+        const next = new Set(prev);
+        paginated.forEach(c => next.delete(c.id));
+        return next;
+      });
+    } else {
+      setSelected(prev => {
+        const next = new Set(prev);
+        paginated.forEach(c => next.add(c.id));
+        return next;
+      });
+    }
+  };
+
+  const toggleOne = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkLoading(true);
+    const err = await deleteCities(Array.from(selected));
+    setBulkLoading(false);
+    setConfirmBulkDelete(false);
+    if (err) {
+      setDeleteError(err.message);
+    } else {
+      setSelected(new Set());
+    }
+  };
 
   if (view.mode === 'view') {
     return (
@@ -218,10 +262,22 @@ export default function CitiesTab() {
             if (error) {
               setDeleteError(error.message || 'فشل حذف المدينة');
             } else {
+              setSelected(prev => { const n = new Set(prev); n.delete(confirmDelete.id); return n; });
               setConfirmDelete(null);
             }
           }}
           onCancel={() => setConfirmDelete(null)}
+        />
+      )}
+
+      {confirmBulkDelete && (
+        <ConfirmDialog
+          title="حذف المدن المحددة"
+          message={`هل أنت متأكد من حذف ${selectedCount} ${selectedCount === 1 ? 'مدينة' : 'مدن'}؟ لا يمكن التراجع عن هذا الإجراء.`}
+          confirmLabel={bulkLoading ? 'جاري الحذف...' : `حذف ${selectedCount} مدن`}
+          danger
+          onConfirm={handleBulkDelete}
+          onCancel={() => setConfirmBulkDelete(false)}
         />
       )}
 
@@ -234,21 +290,33 @@ export default function CitiesTab() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="rounded-xl px-4 py-2.5 flex items-center gap-2.5" style={{ background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', border: '1px solid #BFDBFE' }}>
           <MapPin className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
           <p className="text-[11px] text-blue-700 leading-relaxed">
             إضافة أو حذف مدينة يُحدّث <span className="font-black">إضافة مخزون</span> و<span className="font-black">إنشاء طلب</span> فوراً
           </p>
         </div>
-        <button
-          onClick={() => setShowAddDialog(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-black text-white transition-all hover:opacity-90 active:scale-95"
-          style={{ background: 'linear-gradient(135deg, #1a3a4a, #2c5f7c)', boxShadow: '0 4px 12px rgba(26,58,74,0.25)' }}
-        >
-          <Plus className="w-4 h-4" />
-          إضافة مدينة
-        </button>
+        <div className="flex items-center gap-2">
+          {selectedCount > 0 && (
+            <button
+              onClick={() => setConfirmBulkDelete(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-black text-white transition-all hover:opacity-90 active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #dc2626, #b91c1c)', boxShadow: '0 4px 12px rgba(220,38,38,0.3)' }}
+            >
+              <Trash2 className="w-4 h-4" />
+              حذف المحدد ({selectedCount})
+            </button>
+          )}
+          <button
+            onClick={() => setShowAddDialog(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-black text-white transition-all hover:opacity-90 active:scale-95"
+            style={{ background: 'linear-gradient(135deg, #1a3a4a, #2c5f7c)', boxShadow: '0 4px 12px rgba(26,58,74,0.25)' }}
+          >
+            <Plus className="w-4 h-4" />
+            إضافة مدينة
+          </button>
+        </div>
       </div>
 
       <TableControls
@@ -275,10 +343,45 @@ export default function CitiesTab() {
       />
 
       <div className="bg-white rounded-2xl border border-[#e2edf5] overflow-hidden">
+        {selectedCount > 0 && (
+          <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: '#FEF2F2', borderBottom: '1px solid #FECACA' }}>
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#dc2626' }}>
+                <Check className="w-3 h-3 text-white" />
+              </div>
+              <span className="text-[12px] font-bold text-[#dc2626]">
+                تم تحديد {selectedCount} {selectedCount === 1 ? 'مدينة' : 'مدن'}
+              </span>
+            </div>
+            <button
+              onClick={() => setSelected(new Set())}
+              className="text-[11px] font-semibold text-[#dc2626] hover:text-[#991b1b] transition-colors"
+            >
+              إلغاء التحديد
+            </button>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
               <tr className="border-b border-[#f0f6fa] bg-[#f7fbfd]">
+                <th className="px-4 py-3 w-10">
+                  <button
+                    onClick={toggleAll}
+                    className="w-5 h-5 rounded flex items-center justify-center transition-all border-2"
+                    style={{
+                      background: allPageSelected ? '#1a3a4a' : somePageSelected ? '#e2edf5' : 'white',
+                      borderColor: allPageSelected ? '#1a3a4a' : somePageSelected ? '#1a3a4a' : '#c8d9e5',
+                    }}
+                    title="تحديد الكل"
+                  >
+                    {allPageSelected && <Check className="w-3 h-3 text-white" />}
+                    {!allPageSelected && somePageSelected && (
+                      <div className="w-2 h-0.5 rounded-full" style={{ background: '#1a3a4a' }} />
+                    )}
+                  </button>
+                </th>
                 <th className="px-4 py-3 text-right font-bold text-[#4a7a94]">المدينة</th>
                 <th className="px-4 py-3 text-right font-bold text-[#4a7a94]">الحالة</th>
                 <th className="px-4 py-3 text-right font-bold text-[#4a7a94]">الرسوم</th>
@@ -292,16 +395,16 @@ export default function CitiesTab() {
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
-                    {Array.from({ length: 7 }).map((__, j) => (
+                    {Array.from({ length: 8 }).map((__, j) => (
                       <td key={j} className="px-4 py-3">
-                        <div className="h-4 bg-gray-100 rounded animate-pulse" style={{ width: j === 0 ? '80px' : '60px' }} />
+                        <div className="h-4 bg-gray-100 rounded animate-pulse" style={{ width: j === 0 ? '20px' : j === 1 ? '80px' : '60px' }} />
                       </td>
                     ))}
                   </tr>
                 ))
               ) : paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center">
+                  <td colSpan={8} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: '#f0f6fa' }}>
                         <MapPin className="w-6 h-6 text-[#b0c8d8]" />
@@ -321,8 +424,25 @@ export default function CitiesTab() {
               ) : (
                 paginated.map(city => {
                   const badge = STATUS_BADGE[city.status] ?? STATUS_BADGE.monitoring;
+                  const isSelected = selected.has(city.id);
                   return (
-                    <tr key={city.id} className="hover:bg-[#f7fbfd] transition-colors">
+                    <tr
+                      key={city.id}
+                      className="transition-colors"
+                      style={{ background: isSelected ? '#fef9f9' : undefined }}
+                    >
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => toggleOne(city.id)}
+                          className="w-5 h-5 rounded flex items-center justify-center transition-all border-2"
+                          style={{
+                            background: isSelected ? '#dc2626' : 'white',
+                            borderColor: isSelected ? '#dc2626' : '#c8d9e5',
+                          }}
+                        >
+                          {isSelected && <Check className="w-3 h-3 text-white" />}
+                        </button>
+                      </td>
                       <td className="px-4 py-3 font-bold text-[#1a2f3e]">{city.name}</td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold" style={{ background: badge.bg, color: badge.color }}>

@@ -145,7 +145,23 @@ export function useCities() {
     };
   };
 
-  return { cities, loading, error, refetch: fetch, addCity, updateCity, deleteCity, freezeCity, activateCity, getCityStats };
+  const deleteCities = async (ids: string[]) => {
+    const adminEmail = getAdminEmail();
+    if (!adminEmail) return { message: 'غير مصرح لك بهذا الإجراء' };
+    const errors: string[] = [];
+    for (const id of ids) {
+      const { data, error: err } = await supabase.rpc('admin_delete_city', {
+        p_admin_email: adminEmail,
+        p_city_id: id
+      });
+      if (err) errors.push(err.message);
+      else if (data && !data.success) errors.push(data.error || 'فشل حذف المدينة');
+    }
+    await fetch();
+    return errors.length > 0 ? { message: errors[0] } : null;
+  };
+
+  return { cities, loading, error, refetch: fetch, addCity, updateCity, deleteCity, deleteCities, freezeCity, activateCity, getCityStats };
 }
 
 export function useInventory() {
