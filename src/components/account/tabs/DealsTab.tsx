@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import {
   Handshake,
   CheckCircle2,
@@ -12,8 +12,9 @@ import {
   Send,
   ShoppingBag,
   MapPin,
+  AlertTriangle,
+  Warehouse,
 } from 'lucide-react';
-import { useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAccountDeals } from '../../../hooks/useAccountDeals';
 import { ActiveDealCard, CompletedDealCard, CancelledDealCard } from '../deals/DealCards';
@@ -429,6 +430,17 @@ function SupplierNegotiationRequests({ phone }: { phone: string }) {
   );
 }
 
+interface InventoryBatch {
+  id: string;
+  batch_id: string;
+  pallet_type: string;
+  size: string;
+  quality: string;
+  city: string;
+  available_quantity: number;
+  price_per_pallet: number;
+}
+
 function InlinePendingOfferCard({ offer, supplierPhone, onClose, onSent }: {
   offer: PendingDemandOffer;
   supplierPhone: string;
@@ -441,10 +453,50 @@ function InlinePendingOfferCard({ offer, supplierPhone, onClose, onSent }: {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  const [batches, setBatches] = useState<InventoryBatch[]>([]);
+  const [loadingBatches, setLoadingBatches] = useState(true);
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadInventory();
+  }, []);
+
+  const loadInventory = async () => {
+    setLoadingBatches(true);
+    try {
+      const { data } = await supabase.rpc('get_supplier_matching_inventory', {
+        p_supplier_phone: supplierPhone,
+        p_order_id: offer.order_id,
+      });
+      if (data?.success && data.batches) {
+        setBatches(data.batches);
+        if (data.batches.length === 1) {
+          setSelectedBatchId(data.batches[0].id);
+          setQuantity(Math.min(offer.quantity, data.batches[0].available_quantity));
+          if (data.batches[0].price_per_pallet > 0) setPrice(data.batches[0].price_per_pallet);
+        }
+      }
+    } catch { /* ignore */ }
+    setLoadingBatches(false);
+  };
+
+  const selectedBatch = batches.find(b => b.id === selectedBatchId);
+
+  const handleSelectBatch = (batch: InventoryBatch) => {
+    setSelectedBatchId(batch.id);
+    setQuantity(Math.min(offer.quantity, batch.available_quantity));
+    if (batch.price_per_pallet > 0) setPrice(batch.price_per_pallet);
+    setError('');
+  };
 
   const handleSend = async () => {
     if (loading) return;
+    if (!selectedBatchId) { setError('اختر دفعة من مخزونك أولاً'); return; }
     if (quantity < 1) { setError('الكمية يجب أن تكون 1 على الأقل'); return; }
+    if (selectedBatch && quantity > selectedBatch.available_quantity) {
+      setError('الكمية المتوفرة في هذه الدفعة ' + selectedBatch.available_quantity + ' فقط');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -454,6 +506,7 @@ function InlinePendingOfferCard({ offer, supplierPhone, onClose, onSent }: {
         p_quantity: quantity,
         p_price_per_pallet: price,
         p_supplier_message: message.trim() || null,
+        p_inventory_batch_id: selectedBatchId,
       });
       if (err) throw err;
       if (data && !data.success) { setError(data.error || 'حدث خطأ'); return; }
@@ -469,7 +522,7 @@ function InlinePendingOfferCard({ offer, supplierPhone, onClose, onSent }: {
   if (sent) {
     return (
       <div
-        className="rounded-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300"
+        className="rounded-2xl overflow-hidden"
         style={{ background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)', border: '2px solid #A7F3D0', boxShadow: '0 4px 16px rgba(5,150,105,0.15)' }}
         dir="rtl"
       >
@@ -488,11 +541,11 @@ function InlinePendingOfferCard({ offer, supplierPhone, onClose, onSent }: {
 
   return (
     <div
-      className="rounded-2xl overflow-hidden animate-in fade-in slide-in-from-top-3 duration-400"
-      style={{ background: 'white', border: '2px solid #059669', boxShadow: '0 4px 20px rgba(5,150,105,0.12), 0 1px 4px rgba(0,0,0,0.06)' }}
+      className="rounded-2xl overflow-hidden"
+      style={{ background: 'white', border: '2px solid #b45309', boxShadow: '0 4px 20px rgba(180,83,9,0.12), 0 1px 4px rgba(0,0,0,0.06)' }}
       dir="rtl"
     >
-      <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #059669, #10b981)' }}>
+      <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #b45309, #d97706)' }}>
         <button
           onClick={onClose}
           className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/20 hover:bg-white/30 transition-colors"
@@ -511,65 +564,153 @@ function InlinePendingOfferCard({ offer, supplierPhone, onClose, onSent }: {
       </div>
 
       <div className="px-4 pt-4 pb-5 space-y-3.5">
-        <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl p-2.5 text-center" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-            <p className="text-[9px] text-green-600 mb-0.5">النوع</p>
-            <p className="text-[12px] font-black text-[#1a3a4a]">{offer.pallet_type}</p>
+        {loadingBatches ? (
+          <div className="flex flex-col items-center justify-center py-8 gap-3">
+            <div className="w-7 h-7 rounded-full border-2 border-amber-200 border-t-amber-600 animate-spin" />
+            <p className="text-[12px] text-[#7a9aab]">جاري تحميل مخزونك...</p>
           </div>
-          <div className="rounded-xl p-2.5 text-center" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-            <div className="flex items-center justify-center gap-1">
-              <MapPin className="w-3 h-3 text-green-600" />
-              <p className="text-[12px] font-black text-[#1a3a4a]">{offer.city}</p>
+        ) : batches.length === 0 ? (
+          <div className="space-y-3">
+            <div className="rounded-2xl p-4 text-center" style={{ background: '#FEF2F2', border: '1.5px solid #FECACA' }}>
+              <div className="w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.1)' }}>
+                <AlertTriangle className="w-6 h-6 text-red-500" />
+              </div>
+              <p className="text-[13px] font-black text-[#991B1B] mb-1.5">لا يوجد مخزون {offer.pallet_type} مسجّل</p>
+              <p className="text-[11px] text-[#B91C1C] leading-relaxed">
+                المشتري يطلب <span className="font-black">{offer.pallet_type}</span>. يجب أن يكون لديك مخزون من نفس النوع لتقديم عرض.
+              </p>
             </div>
-          </div>
-          <div className="rounded-xl p-2.5 text-center" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-            <div className="flex items-center justify-center gap-1">
-              <ShoppingBag className="w-3 h-3 text-green-600" />
-              <p className="text-[12px] font-black text-[#1a3a4a]">{offer.quantity}</p>
+            <div className="rounded-xl p-3 flex items-start gap-2.5" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
+              <Warehouse className="w-3.5 h-3.5 text-[#b45309] flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] text-[#92400E] leading-relaxed">
+                سجّل مخزون <span className="font-black">{offer.pallet_type}</span> في مستودعك السحابي أولاً ثم عُد لتقديم عرضك.
+              </p>
             </div>
+            <button onClick={onClose} className="w-full py-2.5 rounded-xl text-[12px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
+              إغلاق
+            </button>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-xl p-2.5 text-center" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
+                <p className="text-[9px] text-amber-600 mb-0.5">النوع</p>
+                <p className="text-[11px] font-black text-[#1a3a4a]">{offer.pallet_type}</p>
+              </div>
+              <div className="rounded-xl p-2.5 text-center" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
+                <div className="flex items-center justify-center gap-1">
+                  <MapPin className="w-3 h-3 text-amber-600" />
+                  <p className="text-[11px] font-black text-[#1a3a4a]">{offer.city}</p>
+                </div>
+              </div>
+              <div className="rounded-xl p-2.5 text-center" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
+                <div className="flex items-center justify-center gap-1">
+                  <ShoppingBag className="w-3 h-3 text-amber-600" />
+                  <p className="text-[11px] font-black text-[#1a3a4a]">{offer.quantity}</p>
+                </div>
+              </div>
+            </div>
 
-        <div>
-          <label className="block text-[12px] font-bold text-[#1a3a4a] mb-1.5">الكمية التي يمكنك توريدها</label>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setQuantity(q => Math.max(1, q - 10))} className="w-9 h-9 rounded-xl flex items-center justify-center text-[15px] font-black transition-all active:scale-90" style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', color: '#059669' }}>-</button>
-            <input type="number" value={quantity} onChange={(e) => { const v = parseInt(e.target.value) || 0; setQuantity(Math.max(1, v)); }} className="flex-1 text-center text-[15px] font-black text-[#1a3a4a] rounded-xl py-2 outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} min={1} />
-            <button onClick={() => setQuantity(q => q + 10)} className="w-9 h-9 rounded-xl flex items-center justify-center text-[15px] font-black transition-all active:scale-90" style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', color: '#059669' }}>+</button>
-          </div>
-        </div>
+            <div>
+              <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2">
+                <Warehouse className="w-3.5 h-3.5 inline-block ml-1" />
+                اختر من مخزونك ({offer.pallet_type})
+              </label>
+              <div className="space-y-2 max-h-[160px] overflow-y-auto">
+                {batches.map((batch) => {
+                  const isExact = batch.quality === offer.quality && batch.city === offer.city;
+                  const selected = selectedBatchId === batch.id;
+                  return (
+                    <button
+                      key={batch.id}
+                      onClick={() => handleSelectBatch(batch)}
+                      className="w-full rounded-xl p-2.5 text-right transition-all"
+                      style={{
+                        background: selected ? '#FFF7ED' : '#f8fbfd',
+                        border: selected ? '2px solid #d97706' : '1.5px solid #e2edf5',
+                        boxShadow: selected ? '0 2px 8px rgba(217,119,6,0.15)' : 'none',
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                          {isExact && (
+                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-lg" style={{ background: '#dcfce7', color: '#15803d' }}>
+                              تطابق تام
+                            </span>
+                          )}
+                          <span className="text-[10px] text-[#a0b5c0]">{batch.batch_id}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[12px] font-black text-[#1a3a4a]">{batch.pallet_type}</span>
+                          {selected && (
+                            <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#d97706' }}>
+                              <Check className="w-2.5 h-2.5 text-white" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between flex-wrap gap-1">
+                        <span className="text-[10px] text-[#7a9aab]">{batch.city} — {batch.quality}</span>
+                        <span className="text-[11px] font-bold" style={{ color: '#0d7c66' }}>{batch.available_quantity} متوفرة</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-        <div>
-          <label className="block text-[12px] font-bold text-[#1a3a4a] mb-1.5">السعر المقترح للطبلية (ريال) — اختياري</label>
-          <input
-            type="number"
-            value={price || ''}
-            onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-            placeholder="0 — اتركه فارغاً للتفاوض"
-            className="w-full rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a3a4a] outline-none"
-            style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
-          />
-        </div>
+            {selectedBatch && (
+              <>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#1a3a4a] mb-1.5">الكمية التي يمكنك توريدها</label>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setQuantity(q => Math.max(1, q - 10))} className="w-9 h-9 rounded-xl flex items-center justify-center text-[15px] font-black transition-all active:scale-90" style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', color: '#b45309' }}>-</button>
+                    <input type="number" value={quantity} onChange={(e) => { const v = parseInt(e.target.value) || 0; setQuantity(Math.max(1, Math.min(v, selectedBatch.available_quantity))); }} className="flex-1 text-center text-[15px] font-black text-[#1a3a4a] rounded-xl py-2 outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} min={1} max={selectedBatch.available_quantity} />
+                    <button onClick={() => setQuantity(q => Math.min(q + 10, selectedBatch.available_quantity))} className="w-9 h-9 rounded-xl flex items-center justify-center text-[15px] font-black transition-all active:scale-90" style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', color: '#b45309' }}>+</button>
+                  </div>
+                  <p className="text-[10px] text-[#a0b5c0] text-center mt-1">الحد الأقصى: {selectedBatch.available_quantity} طبلية</p>
+                </div>
 
-        <div>
-          <label className="block text-[12px] font-bold text-[#1a3a4a] mb-1.5">رسالة للمشتري (اختياري)</label>
-          <div className="relative">
-            <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="أضف تفاصيل عرضك أو ملاحظاتك..." rows={2} maxLength={300} className="w-full rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a3a4a] resize-none outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} />
-            <span className="absolute bottom-2 left-3 text-[10px] text-[#a0b5c0]">{message.length}/300</span>
-          </div>
-        </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#1a3a4a] mb-1.5">السعر المقترح للطبلية (ريال) — اختياري</label>
+                  <input
+                    type="number"
+                    value={price || ''}
+                    onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+                    placeholder="0 — اتركه فارغاً للتفاوض"
+                    className="w-full rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a3a4a] outline-none"
+                    style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
+                  />
+                </div>
 
-        {error && <p className="text-[12px] text-red-600 text-center font-semibold">{error}</p>}
+                <div>
+                  <label className="block text-[12px] font-bold text-[#1a3a4a] mb-1.5">رسالة للمشتري (اختياري)</label>
+                  <div className="relative">
+                    <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="أضف تفاصيل عرضك أو ملاحظاتك..." rows={2} maxLength={300} className="w-full rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a3a4a] resize-none outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} />
+                    <span className="absolute bottom-2 left-3 text-[10px] text-[#a0b5c0]">{message.length}/300</span>
+                  </div>
+                </div>
+              </>
+            )}
 
-        <div className="flex gap-2">
-          <button onClick={onClose} className="px-4 py-3 rounded-xl text-[12px] font-bold text-[#4a6a7e] flex-shrink-0" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
-            لاحقاً
-          </button>
-          <button onClick={handleSend} disabled={loading} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-70" style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 4px 14px rgba(5,150,105,0.3)' }}>
-            {loading ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Send className="w-4 h-4" />}
-            {loading ? 'جاري الإرسال...' : 'إرسال العرض'}
-          </button>
-        </div>
+            {error && <p className="text-[12px] text-red-600 text-center font-semibold">{error}</p>}
+
+            <div className="flex gap-2">
+              <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-[12px] font-bold text-[#4a6a7e] flex-shrink-0" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
+                لاحقاً
+              </button>
+              <button
+                onClick={handleSend}
+                disabled={loading || !selectedBatchId}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-60"
+                style={{ background: 'linear-gradient(135deg, #b45309, #d97706)', boxShadow: '0 4px 14px rgba(180,83,9,0.3)' }}
+              >
+                {loading ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Send className="w-4 h-4" />}
+                {loading ? 'جاري الإرسال...' : !selectedBatchId ? 'اختر من مخزونك أولاً' : 'إرسال العرض'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
