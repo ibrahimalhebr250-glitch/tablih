@@ -245,8 +245,9 @@ export default function DealDetailSheet({
 
   const canSupplierConfirm = !isBuyer && isWaitingSupplier;
   const canBuyerConfirmDeadline = isBuyer && isWaitingBuyer;
+  const canStartDelivery = !isBuyer && isReserved;
   const canConfirmDelivery = !isBuyer && (isExecution || isInDelivery);
-  const canCancel = isActive && !isExecution && !isInDelivery;
+  const canCancel = isActive && !isExecution && !isInDelivery && !isReserved;
   const canRate = isCompleted;
 
   const handleAction = async (action: (id: string) => Promise<{ success: boolean; error?: string }>) => {
@@ -465,6 +466,30 @@ export default function DealDetailSheet({
                     <ShieldCheck className="w-4 h-4" />
                     تأكيد الشراء
                   </span>
+                )}
+              </button>
+            </div>
+          )}
+
+          {canStartDelivery && (
+            <div className="space-y-3">
+              <div className="rounded-xl p-3 text-right space-y-1" style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
+                <p className="text-[11px] font-black text-[#065F46]">المشتري اعتمد الصفقة</p>
+                <p className="text-[10px] text-[#059669] leading-relaxed">
+                  الكمية محجوزة — اضغط "بدء التسليم" لتنسيق موعد الاستلام مع المشتري
+                </p>
+              </div>
+              <button
+                disabled={isLoading}
+                onClick={() => handleAction(onStartDelivery)}
+                className="w-full py-3.5 rounded-2xl text-[13px] font-bold text-white flex items-center justify-center gap-2 active:scale-[0.97] transition-transform disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #0369A1, #0284C7)', boxShadow: '0 4px 16px rgba(3,105,161,0.3)' }}
+              >
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                  <>
+                    <Play className="w-4 h-4" />
+                    بدء التسليم
+                  </>
                 )}
               </button>
             </div>

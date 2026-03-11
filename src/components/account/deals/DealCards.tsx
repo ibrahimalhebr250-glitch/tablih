@@ -246,12 +246,21 @@ export function ActiveDealCard({ deal, isBuyer, counterparty, onViewDetail }: Ac
           </div>
         )}
 
-        {isReserved && (
+        {isReserved && isBuyer && (
           <div className="flex items-center gap-2 justify-center py-2 rounded-xl mt-1"
             style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}
           >
             <Package className="w-3.5 h-3.5 text-[#059669]" />
-            <span className="text-[11px] font-bold text-[#059669]">الكمية محجوزة</span>
+            <span className="text-[11px] font-bold text-[#059669]">الكمية محجوزة — انتظر تواصل المورد</span>
+          </div>
+        )}
+
+        {isReserved && !isBuyer && (
+          <div className="flex items-center gap-2 justify-center py-2 rounded-xl mt-1"
+            style={{ background: '#0369A1', border: '1px solid #0284C7' }}
+          >
+            <Play className="w-3.5 h-3.5 text-white" />
+            <span className="text-[11px] font-black text-white">اضغط لبدء التسليم</span>
           </div>
         )}
       </div>
