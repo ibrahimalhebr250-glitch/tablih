@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Package, Star, ShoppingBag, Heart, Home, X, Handshake, LogIn, CheckCircle, Send, Clock, CheckCircle2, XCircle, MessageSquare, Warehouse, AlertTriangle, Info, Truck } from 'lucide-react';
+import { MapPin, Package, Star, ShoppingBag, Heart, Home, X, Handshake, LogIn, CheckCircle, Send, Clock, CheckCircle2, XCircle, MessageSquare, Warehouse, AlertTriangle, Info, Truck, TrendingUp } from 'lucide-react';
 import TrustRatingBadge from '../shared/TrustRatingBadge';
 import VisitorRatingDialog from './VisitorRatingDialog';
 import { CommentsSection } from '../shared/CommentsSection';
@@ -93,6 +93,61 @@ function SupplierLoginPromptDialog({ card, onClose, onLogin }: {
           <button onClick={onLogin} className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97]" style={{ background: 'linear-gradient(135deg, #b45309, #d97706)', boxShadow: '0 6px 20px rgba(180,83,9,0.3)' }}>
             <LogIn className="w-5 h-5" />
             تسجيل الدخول وتقديم العرض
+          </button>
+          <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
+            ليس الآن
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SupplierNegotiationLoginPromptDialog({ card, onClose, onLogin }: {
+  card: DemandCard;
+  onClose: () => void;
+  onLogin: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8"
+      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full rounded-3xl overflow-hidden"
+        style={{ maxWidth: 480, background: 'white' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 pt-5 pb-6 space-y-4" dir="rtl">
+          <div className="flex items-start justify-between">
+            <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
+              <X className="w-3.5 h-3.5 text-gray-500" />
+            </button>
+            <div className="flex items-center gap-2">
+              <div>
+                <p className="text-[15px] font-black text-[#1a3a4a]">بدء التفاوض مع المشتري</p>
+                <p className="text-[11px] text-[#7a9aab]">{card.pallet_type} — {card.city}</p>
+              </div>
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #0369a1, #0284c7)' }}>
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+            </div>
+          </div>
+          <div className="rounded-2xl p-4" style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe' }}>
+            <div className="flex items-start gap-3">
+              <MessageSquare className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[13px] font-black text-blue-800">أرسل عرضك بالسعر والكمية</p>
+                <p className="text-[11px] text-blue-700 mt-0.5 leading-relaxed">
+                  سجّل دخولك لإرسال عرض تفاوض بالسعر الذي تريده — المشتري سيرد مباشرة.
+                </p>
+              </div>
+            </div>
+          </div>
+          <button onClick={onLogin} className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97]" style={{ background: 'linear-gradient(135deg, #0369a1, #0284c7)', boxShadow: '0 6px 20px rgba(3,105,161,0.3)' }}>
+            <TrendingUp className="w-5 h-5" />
+            تسجيل الدخول وبدء التفاوض
           </button>
           <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
             ليس الآن
@@ -755,14 +810,16 @@ interface Props {
   sessionPhone?: string | null;
   onLoginRequired?: () => void;
   autoOpenOffer?: boolean;
+  autoOpenNegotiation?: boolean;
 }
 
-export default function DemandDetailSheet({ card, onClose, sessionPhone, onLoginRequired, autoOpenOffer }: Props) {
+export default function DemandDetailSheet({ card, onClose, sessionPhone, onLoginRequired, autoOpenOffer, autoOpenNegotiation }: Props) {
   const isAuthenticated = !!sessionPhone;
   const supplierPhone = sessionPhone ?? undefined;
   const [isFavorited, setIsFavorited] = useState(false);
   const [showRatingDialog, setShowRatingDialog] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [showNegotiationLoginPrompt, setShowNegotiationLoginPrompt] = useState(false);
   const [showOfferDialog, setShowOfferDialog] = useState(false);
   const [ratingSummary, setRatingSummary] = useState<{ average_rating: number; total_ratings: number } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -788,6 +845,13 @@ export default function DemandDetailSheet({ card, onClose, sessionPhone, onLogin
       return () => clearTimeout(t);
     }
   }, [autoOpenOffer, isAuthenticated, isSelf]);
+
+  useEffect(() => {
+    if (autoOpenNegotiation && isAuthenticated && !isSelf) {
+      const t = setTimeout(() => setShowOfferDialog(true), 300);
+      return () => clearTimeout(t);
+    }
+  }, [autoOpenNegotiation, isAuthenticated, isSelf]);
 
   const loadRatingSummary = async () => {
     try {
@@ -847,6 +911,25 @@ export default function DemandDetailSheet({ card, onClose, sessionPhone, onLogin
       quantity: card.quantity,
     }));
     setShowLoginPrompt(false);
+    onClose();
+    onLoginRequired?.();
+  };
+
+  const handleStartNegotiation = () => {
+    if (!isAuthenticated) {
+      setShowNegotiationLoginPrompt(true);
+    } else if (isSelf) {
+      return;
+    } else {
+      setShowOfferDialog(true);
+    }
+  };
+
+  const handleNegotiationLoginFromPrompt = () => {
+    sessionStorage.setItem('pending_demand_negotiation', JSON.stringify({
+      order_id: card.id,
+    }));
+    setShowNegotiationLoginPrompt(false);
     onClose();
     onLoginRequired?.();
   };
@@ -1049,10 +1132,10 @@ export default function DemandDetailSheet({ card, onClose, sessionPhone, onLogin
           <button
             onClick={btnState.disabled ? undefined : handleStartDeal}
             disabled={btnState.disabled}
-            className="w-full relative overflow-hidden group mb-3 rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full relative overflow-hidden group mb-2 rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <div className="absolute inset-0 rounded-2xl transition-transform duration-300 group-active:scale-95" style={{ background: btnState.bg, boxShadow: '0 6px 20px rgba(180,83,9,0.25)' }} />
-            <div className="relative flex items-center justify-center gap-2.5 py-4">
+            <div className="relative flex items-center justify-center gap-2.5 py-3.5">
               <Handshake className="w-5 h-5" style={{ color: btnState.color }} strokeWidth={2.5} />
               <span className="text-[15px] font-black" style={{ color: btnState.color }}>{btnState.label}</span>
               {!btnState.disabled && !existingOffer && !offerSent && (
@@ -1060,6 +1143,18 @@ export default function DemandDetailSheet({ card, onClose, sessionPhone, onLogin
               )}
             </div>
           </button>
+          {!isSelf && !offerSent && !(existingOffer && existingOffer.status !== 'rejected') && (
+            <button
+              onClick={handleStartNegotiation}
+              className="w-full relative overflow-hidden group mb-2.5 rounded-2xl"
+            >
+              <div className="absolute inset-0 rounded-2xl" style={{ background: 'linear-gradient(135deg, #0369a1, #0284c7)', boxShadow: '0 4px 14px rgba(3,105,161,0.25)' }} />
+              <div className="relative flex items-center justify-center gap-2.5 py-3">
+                <TrendingUp className="w-4 h-4 text-white" strokeWidth={2.5} />
+                <span className="text-[13px] font-black text-white">بدء التفاوض</span>
+              </div>
+            </button>
+          )}
           <div className="grid grid-cols-3 gap-2">
             <button onClick={onClose} className="flex flex-col items-center justify-center py-3.5 rounded-2xl transition-all active:scale-95" style={{ background: 'linear-gradient(135deg, #1a4a5e, #2c5f73)', boxShadow: '0 4px 12px rgba(26,74,94,0.25)' }}>
               <Home className="w-5 h-5 text-white mb-1" />
@@ -1094,6 +1189,9 @@ export default function DemandDetailSheet({ card, onClose, sessionPhone, onLogin
       )}
       {showLoginPrompt && (
         <SupplierLoginPromptDialog card={card} onClose={() => setShowLoginPrompt(false)} onLogin={handleLoginFromPrompt} />
+      )}
+      {showNegotiationLoginPrompt && (
+        <SupplierNegotiationLoginPromptDialog card={card} onClose={() => setShowNegotiationLoginPrompt(false)} onLogin={handleNegotiationLoginFromPrompt} />
       )}
       {showOfferDialog && (
         <SupplierOfferDialog card={card} supplierPhone={supplierPhone!} existingOffer={existingOffer} onClose={() => setShowOfferDialog(false)} onSent={handleOfferSent} />
