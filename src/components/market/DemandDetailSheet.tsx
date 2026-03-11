@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Package, Star, ShoppingBag, Heart, Home, X, Handshake, LogIn, CheckCircle, Send, Clock, CheckCircle2, XCircle, MessageSquare } from 'lucide-react';
+import { MapPin, Package, Star, ShoppingBag, Heart, Home, X, Handshake, LogIn, CheckCircle, Send, Clock, CheckCircle2, XCircle, MessageSquare, Warehouse, AlertTriangle } from 'lucide-react';
 import TrustRatingBadge from '../shared/TrustRatingBadge';
 import VisitorRatingDialog from './VisitorRatingDialog';
 import { CommentsSection } from '../shared/CommentsSection';
@@ -103,6 +103,20 @@ function SupplierLoginPromptDialog({ card, onClose, onLogin }: {
   );
 }
 
+interface InventoryBatch {
+  id: string;
+  batch_id: string;
+  pallet_type: string;
+  size: string;
+  quality: string;
+  pallet_condition: string;
+  city: string;
+  available_quantity: number;
+  price_per_pallet: number;
+  description: string;
+  created_at: string;
+}
+
 function SupplierOfferDialog({ card, supplierPhone, existingOffer: rawExisting, onClose, onSent }: {
   card: DemandCard;
   supplierPhone: string;
@@ -116,10 +130,54 @@ function SupplierOfferDialog({ card, supplierPhone, existingOffer: rawExisting, 
   const [price, setPrice] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [batches, setBatches] = useState<InventoryBatch[]>([]);
+  const [loadingBatches, setLoadingBatches] = useState(true);
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!existingOffer) {
+      loadInventory();
+    } else {
+      setLoadingBatches(false);
+    }
+  }, []);
+
+  const loadInventory = async () => {
+    setLoadingBatches(true);
+    try {
+      const { data } = await supabase.rpc('get_supplier_matching_inventory', {
+        p_supplier_phone: supplierPhone,
+        p_order_id: card.id,
+      });
+      if (data?.success && data.batches) {
+        setBatches(data.batches);
+        if (data.batches.length === 1) {
+          setSelectedBatchId(data.batches[0].id);
+          setQuantity(Math.min(card.quantity, data.batches[0].available_quantity));
+          if (data.batches[0].price_per_pallet > 0) setPrice(data.batches[0].price_per_pallet);
+        }
+      }
+    } catch { /* ignore */ }
+    setLoadingBatches(false);
+  };
+
+  const selectedBatch = batches.find(b => b.id === selectedBatchId);
+
+  const handleSelectBatch = (batch: InventoryBatch) => {
+    setSelectedBatchId(batch.id);
+    setQuantity(Math.min(card.quantity, batch.available_quantity));
+    if (batch.price_per_pallet > 0) setPrice(batch.price_per_pallet);
+    setError('');
+  };
 
   const handleSend = async () => {
     if (loading) return;
+    if (!selectedBatchId) { setError('اختر دفعة من مخزونك أولاً'); return; }
     if (quantity < 1) { setError('الكمية يجب أن تكون 1 على الأقل'); return; }
+    if (selectedBatch && quantity > selectedBatch.available_quantity) {
+      setError('الكمية المتوفرة في هذه الدفعة ' + selectedBatch.available_quantity + ' فقط');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -129,6 +187,7 @@ function SupplierOfferDialog({ card, supplierPhone, existingOffer: rawExisting, 
         p_quantity: quantity,
         p_price_per_pallet: price,
         p_supplier_message: message.trim() || null,
+        p_inventory_batch_id: selectedBatchId,
       });
       if (err) throw err;
       if (data && !data.success) { setError(data.error || 'حدث خطأ'); return; }
@@ -148,6 +207,9 @@ function SupplierOfferDialog({ card, supplierPhone, existingOffer: rawExisting, 
     cancelled: { label: 'ملغي', color: '#6b7280', bg: '#f3f4f6', icon: <XCircle className="w-4 h-4" /> },
   };
 
+  const isExactMatch = (batch: InventoryBatch) =>
+    batch.quality === card.quality && batch.city === card.city;
+
   return (
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8"
@@ -155,11 +217,11 @@ function SupplierOfferDialog({ card, supplierPhone, existingOffer: rawExisting, 
       onClick={onClose}
     >
       <div
-        className="w-full rounded-3xl overflow-hidden"
-        style={{ maxWidth: 480, background: 'white' }}
+        className="w-full rounded-3xl overflow-hidden flex flex-col"
+        style={{ maxWidth: 480, maxHeight: '90vh', background: 'white' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-5 pt-5 pb-6 space-y-4" dir="rtl">
+        <div className="px-5 pt-5 pb-2 flex-shrink-0" dir="rtl">
           <div className="flex items-start justify-between">
             <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
               <X className="w-3.5 h-3.5 text-gray-500" />
@@ -174,7 +236,9 @@ function SupplierOfferDialog({ card, supplierPhone, existingOffer: rawExisting, 
               </div>
             </div>
           </div>
+        </div>
 
+        <div className="overflow-y-auto flex-1 px-5 pb-6 pt-2 space-y-4" dir="rtl">
           {existingOffer ? (
             <div className="space-y-3">
               <div className="rounded-2xl p-4" style={{ background: statusConfig[existingOffer.status as keyof typeof statusConfig]?.bg || '#f3f4f6', border: '1px solid rgba(0,0,0,0.06)' }}>
@@ -208,11 +272,37 @@ function SupplierOfferDialog({ card, supplierPhone, existingOffer: rawExisting, 
                 إغلاق
               </button>
             </div>
+          ) : loadingBatches ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-3">
+              <div className="w-8 h-8 rounded-full border-2 border-amber-200 border-t-amber-600 animate-spin" />
+              <p className="text-[13px] text-[#7a9aab]">جاري تحميل مخزونك...</p>
+            </div>
+          ) : batches.length === 0 ? (
+            <div className="space-y-4">
+              <div className="rounded-2xl p-5 text-center" style={{ background: '#FEF2F2', border: '1.5px solid #FECACA' }}>
+                <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.1)' }}>
+                  <AlertTriangle className="w-7 h-7 text-red-500" />
+                </div>
+                <p className="text-[14px] font-black text-[#991B1B] mb-2">لا يوجد مخزون {card.pallet_type} مسجّل</p>
+                <p className="text-[12px] text-[#B91C1C] leading-relaxed">
+                  المشتري يطلب <span className="font-black">{card.pallet_type}</span>. يجب أن يكون لديك مخزون من نفس النوع في مستودعك السحابي لتقديم عرض.
+                </p>
+              </div>
+              <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
+                <Warehouse className="w-4 h-4 text-[#b45309] flex-shrink-0 mt-0.5" />
+                <p className="text-[11px] text-[#92400E] leading-relaxed">
+                  سجّل مخزونك من <span className="font-black">{card.pallet_type}</span> أولاً من خلال <span className="font-black">صفحة إيداع المخزون</span> ثم عُد لتقديم عرضك.
+                </p>
+              </div>
+              <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
+                إغلاق
+              </button>
+            </div>
           ) : (
             <div className="space-y-4">
               <div className="rounded-2xl p-3.5 space-y-2" style={{ background: '#f8fbfd', border: '1px solid #e2edf5' }}>
                 <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-bold text-[#b45309]">{card.quantity.toLocaleString()} طبلية</span>
+                  <span className="text-[12px] font-bold text-[#b45309]">{card.quantity.toLocaleString()} طبلية {card.pallet_type}</span>
                   <span className="text-[11px] text-[#7a9aab]">الكمية المطلوبة</span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -226,45 +316,113 @@ function SupplierOfferDialog({ card, supplierPhone, existingOffer: rawExisting, 
               </div>
 
               <div>
-                <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">الكمية التي يمكنك توريدها</label>
-                <div className="flex items-center gap-2" dir="rtl">
-                  <button onClick={() => setQuantity(q => Math.max(1, q - 10))} className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90" style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', color: '#b45309' }}>-</button>
-                  <input type="number" value={quantity} onChange={(e) => { const v = parseInt(e.target.value) || 0; setQuantity(Math.max(1, v)); }} className="flex-1 text-center text-[16px] font-black text-[#1a3a4a] rounded-xl py-2.5 outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} min={1} />
-                  <button onClick={() => setQuantity(q => q + 10)} className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90" style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', color: '#b45309' }}>+</button>
+                <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">
+                  <Warehouse className="w-3.5 h-3.5 inline-block ml-1" />
+                  اختر من مخزونك السحابي ({card.pallet_type})
+                </label>
+                <div className="space-y-2 max-h-[180px] overflow-y-auto rounded-2xl">
+                  {batches.map((batch) => {
+                    const match = isExactMatch(batch);
+                    const selected = selectedBatchId === batch.id;
+                    return (
+                      <button
+                        key={batch.id}
+                        onClick={() => handleSelectBatch(batch)}
+                        className="w-full rounded-2xl p-3 text-right transition-all"
+                        style={{
+                          background: selected ? '#FFF7ED' : '#f8fbfd',
+                          border: selected ? '2px solid #d97706' : '1.5px solid #e2edf5',
+                          boxShadow: selected ? '0 2px 12px rgba(217,119,6,0.15)' : 'none',
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-1.5">
+                            {match && (
+                              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-lg" style={{ background: '#dcfce7', color: '#15803d' }}>
+                                تطابق تام
+                              </span>
+                            )}
+                            <span className="text-[10px] text-[#a0b5c0]">{batch.batch_id}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[13px] font-black text-[#1a3a4a]">{batch.pallet_type}</span>
+                            {selected && (
+                              <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#d97706' }}>
+                                <CheckCircle2 className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <span className="text-[11px] text-[#7a9aab]">{batch.city}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-[#1a3a4a]">{batch.quality}</span>
+                            <span className="text-[10px] text-[#a0b5c0]">|</span>
+                            <span className="text-[11px] font-bold" style={{ color: '#0d7c66' }}>{batch.available_quantity} متوفرة</span>
+                            {batch.price_per_pallet > 0 && (
+                              <>
+                                <span className="text-[10px] text-[#a0b5c0]">|</span>
+                                <span className="text-[11px] font-bold text-[#b45309]">{batch.price_per_pallet} ر.س</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">السعر المقترح للطبلية (ريال) — اختياري</label>
-                <input
-                  type="number"
-                  value={price || ''}
-                  onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-                  placeholder="0 — اتركه فارغاً للتفاوض"
-                  dir="rtl"
-                  className="w-full rounded-2xl px-4 py-3 text-[13px] text-[#1a3a4a] outline-none"
-                  style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
-                />
-              </div>
+              {selectedBatch && (
+                <>
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">الكمية التي يمكنك توريدها</label>
+                    <div className="flex items-center gap-2" dir="rtl">
+                      <button onClick={() => setQuantity(q => Math.max(1, q - 10))} className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90" style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', color: '#b45309' }}>-</button>
+                      <input type="number" value={quantity} onChange={(e) => { const v = parseInt(e.target.value) || 0; setQuantity(Math.max(1, Math.min(v, selectedBatch.available_quantity))); }} className="flex-1 text-center text-[16px] font-black text-[#1a3a4a] rounded-xl py-2.5 outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} min={1} max={selectedBatch.available_quantity} />
+                      <button onClick={() => setQuantity(q => Math.min(q + 10, selectedBatch.available_quantity))} className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90" style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', color: '#b45309' }}>+</button>
+                    </div>
+                    <p className="text-[10px] text-[#a0b5c0] text-center mt-1">الحد الأقصى: {selectedBatch.available_quantity} طبلية</p>
+                  </div>
 
-              <div>
-                <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">رسالة للمشتري (اختياري)</label>
-                <div className="relative">
-                  <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="أضف تفاصيل عرضك أو ملاحظاتك..." rows={3} maxLength={300} dir="rtl" className="w-full rounded-2xl px-4 py-3 text-[13px] text-[#1a3a4a] resize-none outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} />
-                  <span className="absolute bottom-2 left-3 text-[10px] text-[#a0b5c0]">{message.length}/300</span>
-                </div>
-              </div>
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">السعر المقترح للطبلية (ريال) — اختياري</label>
+                    <input
+                      type="number"
+                      value={price || ''}
+                      onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+                      placeholder="0 — اتركه فارغاً للتفاوض"
+                      dir="rtl"
+                      className="w-full rounded-2xl px-4 py-3 text-[13px] text-[#1a3a4a] outline-none"
+                      style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2 text-right">رسالة للمشتري (اختياري)</label>
+                    <div className="relative">
+                      <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="أضف تفاصيل عرضك أو ملاحظاتك..." rows={3} maxLength={300} dir="rtl" className="w-full rounded-2xl px-4 py-3 text-[13px] text-[#1a3a4a] resize-none outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} />
+                      <span className="absolute bottom-2 left-3 text-[10px] text-[#a0b5c0]">{message.length}/300</span>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {error && <p className="text-[12px] text-red-600 text-center font-semibold">{error}</p>}
 
               <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
                 <CheckCircle className="w-4 h-4 text-[#b45309] flex-shrink-0 mt-0.5" />
-                <p className="text-[11px] text-[#92400E] leading-relaxed">سيتم إرسال عرضك للمشتري. عند قبوله تُنشأ الصفقة تلقائياً وتظهر في <span className="font-black">حسابي ← صفقاتي</span>.</p>
+                <p className="text-[11px] text-[#92400E] leading-relaxed">سيتم حجز الكمية من مخزونك عند إرسال العرض. عند قبوله تُنشأ الصفقة وتُخصم الكمية نهائياً.</p>
               </div>
 
-              <button onClick={handleSend} disabled={loading} className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-70" style={{ background: 'linear-gradient(135deg, #b45309, #d97706)', boxShadow: '0 6px 20px rgba(180,83,9,0.3)' }}>
+              <button
+                onClick={handleSend}
+                disabled={loading || !selectedBatchId}
+                className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-60"
+                style={{ background: 'linear-gradient(135deg, #b45309, #d97706)', boxShadow: '0 6px 20px rgba(180,83,9,0.3)' }}
+              >
                 {loading ? <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Send className="w-5 h-5" />}
-                {loading ? 'جاري إرسال العرض...' : 'تقديم العرض للمشتري'}
+                {loading ? 'جاري إرسال العرض...' : !selectedBatchId ? 'اختر من مخزونك أولاً' : 'تقديم العرض للمشتري'}
               </button>
               <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
                 إلغاء
