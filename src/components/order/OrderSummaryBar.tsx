@@ -1,5 +1,5 @@
 import type { OrderFormData } from '../../types/order';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import type { ComponentType } from 'react';
 
 interface RequestTypeConfig {
@@ -16,9 +16,10 @@ interface Props {
   onSubmit: () => void;
   requestType?: 'standard' | 'urgent' | 'recurring';
   requestTypeConfig?: Record<string, RequestTypeConfig>;
+  submitting?: boolean;
 }
 
-export default function OrderSummaryBar({ form, isComplete, onSubmit, requestType, requestTypeConfig }: Props) {
+export default function OrderSummaryBar({ form, isComplete, onSubmit, requestType, requestTypeConfig, submitting }: Props) {
   const fields = [
     form.palletType,
     form.size,
@@ -62,7 +63,7 @@ export default function OrderSummaryBar({ form, isComplete, onSubmit, requestTyp
 
         <button
           onClick={onSubmit}
-          disabled={!isComplete}
+          disabled={!isComplete || submitting}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-[15px] font-bold transition-all duration-300"
           style={isComplete && typeConfig ? {
             background: `linear-gradient(135deg, ${typeConfig.color}, ${typeConfig.color}cc)`,
@@ -74,8 +75,12 @@ export default function OrderSummaryBar({ form, isComplete, onSubmit, requestTyp
             cursor: isComplete ? 'pointer' : 'not-allowed',
           }}
         >
-          <ArrowLeft className="w-5 h-5" />
-          {typeConfig && isComplete ? `إكمال ${typeConfig.label}` : 'إكمال الطلب'}
+          {submitting ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <ArrowLeft className="w-5 h-5" />
+          )}
+          {submitting ? 'جاري النشر في السوق...' : typeConfig && isComplete ? `إكمال ${typeConfig.label}` : 'إكمال الطلب'}
         </button>
       </div>
     </div>

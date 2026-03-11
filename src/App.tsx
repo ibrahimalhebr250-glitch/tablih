@@ -63,6 +63,7 @@ function App() {
   const [inventoryPrefill, setInventoryPrefill] = useState<{ pallet_type?: string; size?: string; quality?: string; quantity?: number; city?: string } | undefined>();
   const [inventorySource, setInventorySource] = useState<'supplier_added' | 'purchase_transfer'>('supplier_added');
   const [pendingDemandOrderId, setPendingDemandOrderId] = useState<string | null>(null);
+  const [accountInitialTab, setAccountInitialTab] = useState<'warehouse' | 'deals' | 'negotiations' | 'commissions' | 'settings' | undefined>(undefined);
 
   const hasPendingAfterLogin = useCallback(() => {
     return !!(sessionStorage.getItem('pending_market_request') || sessionStorage.getItem('pending_demand_offer'));
@@ -503,6 +504,7 @@ function App() {
             onLoginComplete={async (phone, pin) => { await handleInlineLogin(phone, pin); await activateRole('buyer'); }}
             onOpenDeals={() => { setModal('buyerDeals'); dashboardRefresh.current?.(); }}
             onOpenAccount={() => {
+              setAccountInitialTab('negotiations');
               setModal('account');
               dashboardRefresh.current?.();
             }}
@@ -596,8 +598,9 @@ function App() {
         {modal === 'account' && session && (
           <AccountPage
             session={session}
-            onClose={() => { setModal('none'); }}
+            onClose={() => { setModal('none'); setAccountInitialTab(undefined); }}
             onLogout={handleLogout}
+            initialTab={accountInitialTab}
           />
         )}
 

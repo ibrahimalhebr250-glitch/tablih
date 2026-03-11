@@ -3,13 +3,17 @@ import type { OrderFormData, PalletType, PalletSize, PalletQuality, BuilderStep 
 import type { RequestFieldsConfig } from './usePlatformSettings';
 import { supabase } from '../lib/supabase';
 
-
 interface PrefillData {
   palletType?: string | null;
   size?: string | null;
   quality?: string | null;
   quantity?: number;
   city?: string;
+}
+
+interface SavedOrderResult {
+  id: string;
+  request_id: string;
 }
 
 const initialFormData: OrderFormData = {
@@ -39,9 +43,18 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
   const [phone, setPhone] = useState(prefilledPhone ?? '');
   const [isAuthenticated, setIsAuthenticated] = useState(!!prefilledPhone);
   const [savedOrderId, setSavedOrderId] = useState<string | null>(null);
+  const [savedRequestId, setSavedRequestId] = useState<string | null>(null);
+  const [requestType, setRequestType] = useState<'standard' | 'urgent' | 'recurring'>('standard');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const phoneRef = useRef(phone);
+  const formRef = useRef(form);
+  const requestTypeRef = useRef(requestType);
+
   useEffect(() => { phoneRef.current = phone; }, [phone]);
+  useEffect(() => { formRef.current = form; }, [form]);
+  useEffect(() => { requestTypeRef.current = requestType; }, [requestType]);
 
   const logOperation = useCallback(async (action: string, details?: Record<string, unknown>) => {
     const currentPhone = phoneRef.current;
@@ -53,6 +66,53 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
     } catch {
     }
   }, []);
+
+  const saveOrderToDB = useCallback(async (userPhone: string): Promise<SavedOrderResult | null> => {
+    const f = formRef.current;
+    const rt = requestTypeRef.current;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .insert({
+          phone: userPhone,
+          pallet_type: f.palletType,
+          size: f.size,
+          quality: f.quality,
+          quantity: f.quantity,
+          city: f.city,
+          pallet_condition: f.condition || 'new',
+          accept_close_quality: f.acceptCloseQuality,
+          accept_close_city: f.acceptCloseCity,
+          accept_partial_delivery: true,
+          status: 'pending',
+          order_type_code: rt,
+          request_type: rt,
+          order_source: 'market_demand_card',
+          flexibility_options: {
+            accept_close_quality: f.acceptCloseQuality,
+            accept_close_city: f.acceptCloseCity,
+            accept_partial_delivery: true,
+          },
+        })
+        .select('id, request_id')
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) throw new Error('فشل في حفظ الطلب');
+
+      setSavedOrderId(data.id);
+      setSavedRequestId(data.request_id);
+      logOperation('order_saved', { order_id: data.id, request_id: data.request_id });
+      return data;
+    } catch (err: any) {
+      setSubmitError(err?.message || 'حدث خطأ أثناء حفظ الطلب');
+      return null;
+    } finally {
+      setSubmitting(false);
+    }
+  }, [logOperation]);
 
   const setPalletType = useCallback((type: PalletType) => {
     setForm((prev) => ({ ...prev, palletType: type }));
@@ -107,26 +167,36 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
     isFieldOk('city', form.city)
   );
 
-  const handleCompleteOrder = useCallback(() => {
+  const handleCompleteOrder = useCallback(async () => {
     if (!isAuthenticated) {
       setStep('auth');
       logOperation('start_auth', {});
     } else {
-      logOperation('submit_order', {});
+      const currentPhone = phoneRef.current;
+      const result = await saveOrderToDB(currentPhone);
+      if (result) {
+        setStep('result');
+      }
     }
-  }, [isAuthenticated, logOperation]);
+  }, [isAuthenticated, logOperation, saveOrderToDB]);
 
-  const handleAuthComplete = useCallback((userPhone: string) => {
+  const handleAuthComplete = useCallback(async (userPhone: string) => {
     setPhone(userPhone);
     setIsAuthenticated(true);
     logOperation('auth_complete', { phone: userPhone });
-  }, [logOperation]);
+    const result = await saveOrderToDB(userPhone);
+    if (result) {
+      setStep('result');
+    }
+  }, [logOperation, saveOrderToDB]);
 
   const reset = useCallback(() => {
     setStep('form');
     setForm(startForm);
     setPhone(prefilledPhone ?? '');
     setSavedOrderId(null);
+    setSavedRequestId(null);
+    setSubmitError(null);
   }, [prefilledPhone]);
 
   return {
@@ -135,7 +205,12 @@ export function useOrderBuilder(prefilledPhone?: string, prefill?: PrefillData, 
     phone,
     isAuthenticated,
     savedOrderId,
+    savedRequestId,
     isFormComplete,
+    submitting,
+    submitError,
+    requestType,
+    setRequestType,
     setPalletType,
     setSize,
     setQuality,

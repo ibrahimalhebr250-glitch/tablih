@@ -31,11 +31,12 @@ interface Props {
   session: AppSession;
   onClose: () => void;
   onLogout: () => void;
+  initialTab?: AccountTab;
 }
 
-export default function AccountPage({ session, onClose, onLogout }: Props) {
+export default function AccountPage({ session, onClose, onLogout, initialTab }: Props) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<AccountTab>('warehouse');
+  const [activeTab, setActiveTab] = useState<AccountTab>(initialTab ?? 'warehouse');
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [showEditSheet, setShowEditSheet] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);

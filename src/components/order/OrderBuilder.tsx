@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Zap, RefreshCw, ShoppingBag } from 'lucide-react';
+import { X, Zap, RefreshCw, ShoppingBag, Loader2 } from 'lucide-react';
 import { useOrderBuilder } from '../../hooks/useOrderBuilder';
 import { usePlatformSettings } from '../../hooks/usePlatformSettings';
 import { useDynamicOrderBuilder } from '../../hooks/useDynamicOrderBuilder';
@@ -12,6 +12,7 @@ import CitySelector from './CitySelector';
 import ConditionSelector from './ConditionSelector';
 import FlexibilityToggle from './FlexibilityToggle';
 import OrderSummaryBar from './OrderSummaryBar';
+import OrderResultScreen from './OrderResultScreen';
 import AuthSheet from '../account/AuthSheet';
 
 interface PrefillOpportunity {
@@ -35,23 +36,34 @@ interface Props {
 }
 
 const REQUEST_TYPE_CONFIG = {
-  standard: { label: 'طلب عادي', icon: ShoppingBag, color: '#1565C0', bg: '#E3F2FD', border: '#BBDEFB' },
-  urgent:   { label: 'طلب عاجل', icon: Zap,        color: '#C2410C', bg: '#FFF7ED', border: '#FED7AA' },
-  recurring:{ label: 'توريد دوري', icon: RefreshCw, color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' },
+  standard: { label: 'طلب عادي',  icon: ShoppingBag, color: '#1565C0', bg: '#E3F2FD', border: '#BBDEFB' },
+  urgent:   { label: 'طلب عاجل', icon: Zap,          color: '#C2410C', bg: '#FFF7ED', border: '#FED7AA' },
+  recurring:{ label: 'توريد دوري',icon: RefreshCw,   color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' },
 };
 
-export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegisterComplete, onLoginComplete, authError, onOpenDeals, onOpenAccount, prefillOpportunity }: Props) {
+export default function OrderBuilder({
+  onClose,
+  phone: prefilledPhone,
+  onRegisterComplete,
+  onLoginComplete,
+  authError,
+  onOpenDeals,
+  onOpenAccount,
+  prefillOpportunity,
+}: Props) {
   const { settings } = usePlatformSettings();
   const dynamicData = useDynamicOrderBuilder();
-  const builder = useOrderBuilder(prefilledPhone, prefillOpportunity ? {
-    palletType: prefillOpportunity.pallet_type,
-    size: prefillOpportunity.size,
-    quality: prefillOpportunity.quality,
-    quantity: prefillOpportunity.available_quantity,
-    city: prefillOpportunity.city,
-  } : undefined, settings.request_creation.fields_config);
-  const [requestType, setRequestType] = useState<'standard' | 'urgent' | 'recurring'>('standard');
-  const [flexibilitySelections, setFlexibilitySelections] = useState<Record<string, boolean>>({});
+  const builder = useOrderBuilder(
+    prefilledPhone,
+    prefillOpportunity ? {
+      palletType: prefillOpportunity.pallet_type,
+      size: prefillOpportunity.size,
+      quality: prefillOpportunity.quality,
+      quantity: prefillOpportunity.available_quantity,
+      city: prefillOpportunity.city,
+    } : undefined,
+    settings.request_creation.fields_config
+  );
 
   const rc = settings.request_creation;
   const allowedTypes = rc.allowed_types;
@@ -62,7 +74,23 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
   }, [builder.form.palletType, dynamicData]);
 
   const handleFlexibilityChange = (code: string, value: boolean) => {
-    setFlexibilitySelections(prev => ({ ...prev, [code]: value }));
+    const keyMap: Record<string, 'acceptCloseQuality' | 'acceptCloseCity' | 'acceptPartialDelivery'> = {
+      accept_close_quality: 'acceptCloseQuality',
+      accept_close_city: 'acceptCloseCity',
+      accept_partial_delivery: 'acceptPartialDelivery',
+    };
+    const key = keyMap[code];
+    if (key) builder.setFlexibility(key, value);
+  };
+
+  const flexibilitySelections: Record<string, boolean> = {
+    accept_close_quality: builder.form.acceptCloseQuality,
+    accept_close_city: builder.form.acceptCloseCity,
+    accept_partial_delivery: builder.form.acceptPartialDelivery,
+  };
+
+  const handleNewOrder = () => {
+    builder.reset();
   };
 
   if (dynamicData.loading) {
@@ -79,7 +107,7 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
 
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center" style={{ touchAction: 'none' }}>
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-md" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-md" onClick={builder.step === 'result' ? undefined : onClose} />
 
       <div
         className="relative w-full lg:w-[720px] xl:w-[820px] lg:max-h-[88vh] flex flex-col slide-up lg:rounded-3xl"
@@ -109,10 +137,10 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
           <div className="text-center flex-1 px-4">
             <div className="flex items-center justify-center gap-2">
               <h2 className="text-[15px] lg:text-[17px] font-bold text-white leading-tight">
-                إنشاء طلب جديد
+                {builder.step === 'result' ? 'تم إنشاء الطلب' : 'إنشاء طلب جديد'}
               </h2>
-              {allowedTypes.length > 1 && (() => {
-                const cfg = REQUEST_TYPE_CONFIG[requestType];
+              {builder.step !== 'result' && allowedTypes.length > 1 && (() => {
+                const cfg = REQUEST_TYPE_CONFIG[builder.requestType];
                 const Icon = cfg.icon;
                 return (
                   <span
@@ -126,7 +154,9 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
               })()}
             </div>
             <p className="text-[11px] text-white/50 mt-0.5 leading-snug">
-              حدّد مواصفات طلبك وأضفه إلى السوق
+              {builder.step === 'result'
+                ? 'طلبك منشور في السوق وينتظر عروض الموردين'
+                : 'حدّد مواصفات طلبك وأضفه إلى السوق'}
             </p>
           </div>
           <div className="w-9" />
@@ -151,11 +181,11 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
                     {allowedTypes.map(type => {
                       const cfg = REQUEST_TYPE_CONFIG[type];
                       const Icon = cfg.icon;
-                      const sel = requestType === type;
+                      const sel = builder.requestType === type;
                       return (
                         <button
                           key={type}
-                          onClick={() => setRequestType(type)}
+                          onClick={() => builder.setRequestType(type)}
                           className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 transition-all text-[12px] font-semibold"
                           style={{
                             borderColor: sel ? cfg.color : '#e5e7eb',
@@ -215,7 +245,23 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
                 selectedOptions={flexibilitySelections}
                 onChange={handleFlexibilityChange}
               />
+
+              {builder.submitError && (
+                <div className="lg:col-span-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-[12px] text-red-700 text-right">
+                  {builder.submitError}
+                </div>
+              )}
             </div>
+          )}
+
+          {builder.step === 'result' && (
+            <OrderResultScreen
+              requestId={builder.savedRequestId}
+              form={builder.form}
+              onClose={onClose}
+              onGoToAccount={onOpenAccount}
+              onNewOrder={handleNewOrder}
+            />
           )}
         </div>
 
@@ -224,8 +270,9 @@ export default function OrderBuilder({ onClose, phone: prefilledPhone, onRegiste
             form={builder.form}
             isComplete={builder.isFormComplete}
             onSubmit={builder.handleCompleteOrder}
-            requestType={requestType}
+            requestType={builder.requestType}
             requestTypeConfig={REQUEST_TYPE_CONFIG}
+            submitting={builder.submitting}
           />
         )}
 
