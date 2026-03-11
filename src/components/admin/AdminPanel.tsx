@@ -7,6 +7,7 @@ import MarketSection from './sections/MarketSection';
 import OrdersSection from './sections/OrdersSection';
 import DealsSection from './sections/DealsSection';
 import FinanceSection from './sections/FinanceSection';
+import CommissionsSection from './sections/CommissionsSection';
 import UsersSection from './sections/UsersSection';
 import RatingsSection from './sections/RatingsSection';
 import { CommentsModeration } from './sections/CommentsModeration';
@@ -34,6 +35,7 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
     if (perms.market?.can_view) sections.push('orders');
     if (perms.deals?.can_view) sections.push('deals');
     if (perms.finance?.can_view) sections.push('finance');
+    if (perms.finance?.can_view) sections.push('commissions');
     if (perms.users?.can_view) sections.push('users');
     if (perms.ratings?.can_view) sections.push('ratings');
     if (perms.comments?.can_view) sections.push('comments');
@@ -90,6 +92,7 @@ export default function AdminPanel({ adminStaff, onClose }: Props) {
         )}
         {section === 'deals' && canViewSection('deals') && <DealsSection />}
         {section === 'finance' && canViewSection('finance') && <FinanceSection />}
+        {section === 'commissions' && canViewSection('commissions') && <CommissionsSection />}
         {section === 'users' && canViewSection('users') && <UsersSection />}
         {section === 'ratings' && canViewSection('ratings') && (
           <div className="p-6 max-w-7xl mx-auto">

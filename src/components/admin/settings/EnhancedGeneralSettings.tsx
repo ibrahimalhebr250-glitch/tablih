@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
   Loader2, Check, Info, AlertTriangle, Settings as SettingsIcon,
-  Clock, Users, Shield, Bell, DollarSign, Activity
+  Clock, Shield, Bell
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { getPlatformFee, updatePlatformFee } from '../../../hooks/useFinance';
 import { getAdminEmail } from '../../../utils/adminAuth';
 
 interface GeneralSettings {
@@ -108,7 +107,6 @@ export default function EnhancedGeneralSettings() {
   const [saved, setSaved] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [fee, setFee] = useState<number>(1);
   const [general, setGeneral] = useState<GeneralSettings>({
     platform_name: 'منصة الطبليات',
     maintenance_mode: false,
@@ -136,9 +134,6 @@ export default function EnhancedGeneralSettings() {
 
   const loadSettings = async () => {
     setLoading(true);
-
-    const feeValue = await getPlatformFee();
-    setFee(feeValue);
 
     const { data } = await supabase
       .from('platform_settings')
@@ -186,26 +181,6 @@ export default function EnhancedGeneralSettings() {
     }
   };
 
-  const handleSaveFee = async () => {
-    const adminEmail = getAdminEmail();
-    if (!adminEmail) {
-      setError('غير مصرح لك بهذا الإجراء');
-      return;
-    }
-
-    setSaving('fee');
-    setError(null);
-    const result = await updatePlatformFee(fee, adminEmail);
-    setSaving(null);
-
-    if (result.success) {
-      setSaved('fee');
-      setTimeout(() => setSaved(null), 2000);
-    } else {
-      setError(result.error || 'فشل حفظ العمولة');
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -213,8 +188,6 @@ export default function EnhancedGeneralSettings() {
       </div>
     );
   }
-
-  const feePresets = [0, 0.25, 0.50, 1.00, 1.50, 2.00];
 
   return (
     <div className="space-y-5">
@@ -230,49 +203,12 @@ export default function EnhancedGeneralSettings() {
         </div>
       )}
 
-      <Card title="عمولة المنصة" icon={DollarSign} hint="المبلغ المقتطع عن كل طبلية">
-        <div className="space-y-4">
-          <p className="text-[11px] text-[#7a9aab] leading-relaxed">
-            العمولة المحددة هنا تطبق على الصفقات الجديدة فقط. الصفقات القائمة تحتفظ بالعمولة المسجلة وقت إنشائها.
-          </p>
-
-          <div className="flex flex-wrap gap-2">
-            {feePresets.map(p => (
-              <button
-                key={p}
-                onClick={() => setFee(p)}
-                className={`px-4 py-2 rounded-xl text-[12px] font-semibold border-2 transition-all ${
-                  fee === p
-                    ? 'border-[#1a4a5e] bg-[#1a4a5e] text-white'
-                    : 'border-[#e2edf5] text-[#4a7a94] hover:border-[#c5d8e4]'
-                }`}
-              >
-                {p === 0 ? 'مجاناً' : `${p} ريال`}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={fee}
-              onChange={e => setFee(Math.max(0, Number(e.target.value)))}
-              className="w-32 px-3 py-2 rounded-lg border border-[#d0e5f2] text-[13px] text-[#1a2f3e] focus:outline-none focus:border-[#1a4a5e] bg-white"
-            />
-            <span className="text-[12px] text-[#7a9aab]">ريال / طبلية</span>
-            <button
-              onClick={handleSaveFee}
-              disabled={saving === 'fee'}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#1a4a5e] text-white text-[12px] font-semibold rounded-lg hover:bg-[#153d50] transition-colors disabled:opacity-50"
-            >
-              {saving === 'fee' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saved === 'fee' ? <Check className="w-3.5 h-3.5" /> : null}
-              {saved === 'fee' ? 'تم الحفظ' : 'حفظ'}
-            </button>
-          </div>
-        </div>
-      </Card>
+      <div className="bg-[#EBF5FF] border border-[#c5d8e4] rounded-xl p-4 flex items-start gap-3">
+        <svg className="w-4 h-4 text-[#1a4a5e] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <p className="text-[12px] text-[#4a7a94]">
+          إعداد عمولة المنصة انتقل إلى قسم <span className="font-bold text-[#1a2f3e]">عمولات الموقع</span> في القائمة الجانبية.
+        </p>
+      </div>
 
       <Card title="الإعدادات العامة" icon={SettingsIcon}>
         <SettingRow
