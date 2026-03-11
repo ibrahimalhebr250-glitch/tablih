@@ -351,6 +351,93 @@ function EndedDealCard({ deal, supplierInfo, onRate, onGoToWarehouse }: { deal: 
   );
 }
 
+function SupplyCardBuyerPendingCard({ deal }: { deal: Deal }) {
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: 'white', border: '2px solid #bbf7d0' }}>
+      <div className="flex items-center justify-between px-4 py-2.5" style={{ background: 'linear-gradient(135deg, #15803d, #16a34a)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <span className="text-[10px] font-mono text-white/60">{deal.deal_ref}</span>
+        <div className="flex items-center gap-1.5">
+          <Loader2 className="w-3 h-3 text-yellow-300 animate-spin" />
+          <span className="text-[10px] font-bold text-white">بانتظار موافقة المورد</span>
+        </div>
+      </div>
+
+      <div className="mx-4 mt-3.5 flex items-start gap-2.5 rounded-xl px-3 py-2.5" style={{ background: '#fffbeb', border: '1px solid #fde68a' }} dir="rtl">
+        <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-[12px] font-black text-amber-800">طلبك وصل للمورد</p>
+          <p className="text-[11px] text-amber-700 mt-0.5">سيرد عليك المورد بالقبول أو الرفض قريباً</p>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-2" dir="rtl">
+        <DealInfoRow label="نوع الطبلية" value={deal.pallet_type} />
+        <DealInfoRow label="المقاس" value={deal.size} />
+        <DealInfoRow label="الجودة" value={`درجة ${deal.quality}`} />
+        <DealInfoRow label="الكمية" value={`${deal.quantity.toLocaleString('ar-SA')} طبلية`} />
+        <DealInfoRow label="المدينة" value={deal.city} />
+      </div>
+    </div>
+  );
+}
+
+function SupplyCardBuyerNegotiationCard({ deal, supplierInfo }: { deal: Deal; supplierInfo: SupplierInfo | null }) {
+  const supplierName = supplierInfo?.company_name || supplierInfo?.display_name || 'المورد';
+
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: 'white', border: '2px solid rgba(21,128,61,0.3)' }}>
+      <div className="flex items-center justify-between px-4 py-2.5" style={{ background: 'linear-gradient(135deg, #15803d, #16a34a)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <span className="text-[10px] font-mono text-white/60">{deal.deal_ref}</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse" />
+          <span className="text-[10px] font-bold text-white">قبل المورد — جاري التفاوض</span>
+        </div>
+      </div>
+
+      <div className="mx-4 mt-3.5 flex items-start gap-2.5 rounded-xl px-3 py-2.5" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }} dir="rtl">
+        <MessageCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-[12px] font-black text-green-800">المورد وافق على طلبك</p>
+          <p className="text-[11px] text-green-600 mt-0.5">تواصل مع المورد عبر واتساب لإتمام التفاوض والتسليم</p>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-2" dir="rtl">
+        <DealInfoRow label="المورد" value={supplierName} />
+        <DealInfoRow label="نوع الطبلية" value={deal.pallet_type} />
+        <DealInfoRow label="الكمية" value={`${deal.quantity.toLocaleString('ar-SA')} طبلية`} />
+        <DealInfoRow label="المدينة" value={deal.city} />
+
+        <div className="border-t border-gray-100 pt-2.5">
+          <a
+            href={buildWhatsAppLink(deal.supplier_phone, 'buyer', deal)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => {
+              getDefaultTemplate('buyer').then(tpl => {
+                logWhatsAppContact({
+                  deal_id: deal.id,
+                  deal_ref: deal.deal_ref,
+                  sender_phone: deal.buyer_phone ?? '',
+                  sender_role: 'buyer',
+                  recipient_phone: deal.supplier_phone ?? '',
+                  template_id: tpl?.id,
+                  context_data: { pallet_type: deal.pallet_type, quantity: deal.quantity, city: deal.city },
+                });
+              });
+            }}
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-[13px] font-bold text-white active:scale-[0.97] transition-transform"
+            style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 4px 14px rgba(37,211,102,0.3)' }}
+          >
+            <MessageCircle className="w-4 h-4" />
+            تواصل مع المورد عبر واتساب
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PendingSupplierDealCard({ deal, supplierInfo }: { deal: Deal; supplierInfo: SupplierInfo | null }) {
   const supplierName = supplierInfo?.company_name || supplierInfo?.display_name || 'مورد';
   const totalAmount = deal.final_price;
@@ -545,14 +632,17 @@ export default function BuyerDealsPage({ phone, onClose, onNavigateToWarehouse }
           ) : activeTab === 'awaiting' ? (
             awaitingDeals.length === 0 ? <EmptyState tab="awaiting" /> : (
               <div className="space-y-4">
-                {awaitingDeals.map(deal => (
-                  deal.status === 'pending_supplier' || deal.status === 'matched' || deal.status === 'supplier_confirmed' ? (
-                    <PendingSupplierDealCard
-                      key={deal.id}
-                      deal={deal}
-                      supplierInfo={getSupplierInfo(deal.supplier_phone)}
-                    />
-                  ) : (
+                {awaitingDeals.map(deal => {
+                  if (deal.source === 'supply_card' && deal.status === 'pending_supplier') {
+                    return <SupplyCardBuyerPendingCard key={deal.id} deal={deal} />;
+                  }
+                  if (deal.source === 'supply_card' && deal.status === 'in_delivery') {
+                    return <SupplyCardBuyerNegotiationCard key={deal.id} deal={deal} supplierInfo={getSupplierInfo(deal.supplier_phone)} />;
+                  }
+                  if (deal.status === 'pending_supplier' || deal.status === 'matched' || deal.status === 'supplier_confirmed') {
+                    return <PendingSupplierDealCard key={deal.id} deal={deal} supplierInfo={getSupplierInfo(deal.supplier_phone)} />;
+                  }
+                  return (
                     <AwaitingDealCard
                       key={deal.id}
                       deal={deal}
@@ -560,19 +650,27 @@ export default function BuyerDealsPage({ phone, onClose, onNavigateToWarehouse }
                       onConfirm={() => handleConfirmPurchase(deal.id)}
                       loading={actionLoading === deal.id}
                     />
-                  )
-                ))}
+                  );
+                })}
               </div>
             )
           ) : activeTab === 'active' ? (
             activeDeals.length === 0 ? <EmptyState tab="active" /> : (
               <div className="space-y-3">
                 {activeDeals.map(deal => (
-                  <ActiveDealCard
-                    key={deal.id}
-                    deal={deal}
-                    supplierInfo={getSupplierInfo(deal.supplier_phone)}
-                  />
+                  deal.source === 'supply_card' ? (
+                    <SupplyCardBuyerNegotiationCard
+                      key={deal.id}
+                      deal={deal}
+                      supplierInfo={getSupplierInfo(deal.supplier_phone)}
+                    />
+                  ) : (
+                    <ActiveDealCard
+                      key={deal.id}
+                      deal={deal}
+                      supplierInfo={getSupplierInfo(deal.supplier_phone)}
+                    />
+                  )
                 ))}
               </div>
             )

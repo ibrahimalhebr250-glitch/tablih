@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Handshake, RefreshCw, Bell, Package, CheckCircle, MapPin, Layers, Hash, Banknote, CheckSquare, Square, Receipt, MessageCircle, Truck, XCircle, AlertTriangle, Star, ShieldAlert, Sparkles } from 'lucide-react';
+import { ArrowRight, Handshake, RefreshCw, Bell, Package, CheckCircle, MapPin, Layers, Hash, Banknote, CheckSquare, Square, Receipt, MessageCircle, Truck, XCircle, AlertTriangle, Star, ShieldAlert, Sparkles, UserCheck } from 'lucide-react';
 import { useSupplierDeals } from '../../../hooks/useSupplierDeals';
 import { DEAL_STATUS_CONFIG } from '../../../types/deal';
 import type { Deal } from '../../../types/deal';
@@ -297,6 +297,234 @@ function FailDeliveryDialog({ deal, onConfirm, onCancel, loading }: {
             {loading ? 'جارٍ الإلغاء...' : 'فشل التسليم'}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SupplyCardPendingDeal({ deal, onAccept, onReject, loading }: {
+  deal: Deal;
+  onAccept: () => void;
+  onReject: () => void;
+  loading: boolean;
+}) {
+  const [pledged, setPledged] = useState(false);
+  const [showPledge, setShowPledge] = useState(false);
+  const feePerPallet = deal.platform_fee_per_pallet ?? 0.25;
+  const totalFee = feePerPallet * deal.quantity;
+
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: 'white', border: '2px solid #bbf7d0' }}>
+      <div className="flex items-center justify-between px-4 py-2.5" style={{ background: 'linear-gradient(135deg, #15803d, #16a34a)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <span className="text-[10px] font-mono text-white/60">{deal.deal_ref}</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse" />
+          <span className="text-[10px] font-bold text-white">طلب صفقة من بطاقة العرض</span>
+        </div>
+      </div>
+
+      <div className="mx-4 mt-3.5 flex items-start gap-2.5 rounded-xl px-3 py-2.5" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }} dir="rtl">
+        <Package className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-[12px] font-black text-green-800">مشتري طلب صفقة من عرضك</p>
+          <p className="text-[11px] text-green-600 mt-0.5">راجع التفاصيل واختر القبول أو الرفض</p>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-2" dir="rtl">
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{deal.pallet_type}</span>
+          <span className="text-[11px] text-gray-500">نوع الطبلية</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{deal.size}</span>
+          <span className="text-[11px] text-gray-500">المقاس</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">درجة {deal.quality}</span>
+          <span className="text-[11px] text-gray-500">الجودة</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-green-700">{deal.quantity.toLocaleString('ar-SA')} طبلية</span>
+          <span className="text-[11px] text-gray-500">الكمية المطلوبة</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <MapPin className="w-3 h-3 text-green-500" />
+            <span className="text-[12px] font-bold text-gray-800">{deal.city}</span>
+          </div>
+          <span className="text-[11px] text-gray-500">المدينة</span>
+        </div>
+        <div className="flex items-center justify-between border-t border-gray-100 pt-2">
+          <span className="text-[12px] font-bold text-amber-700">{totalFee.toLocaleString('ar-SA')} ريال</span>
+          <span className="text-[11px] text-gray-500">عمولة المنصة ({feePerPallet} × {deal.quantity})</span>
+        </div>
+      </div>
+
+      {!showPledge ? (
+        <div className="px-4 pb-4 flex gap-2">
+          <button
+            disabled={loading}
+            onClick={() => setShowPledge(true)}
+            className="flex-1 py-3 rounded-xl text-[13px] font-bold text-white flex items-center justify-center gap-2 active:scale-[0.97] transition-transform disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #15803d, #16a34a)', boxShadow: '0 4px 14px rgba(21,128,61,0.25)' }}
+          >
+            <UserCheck className="w-4 h-4" />
+            قبول الصفقة
+          </button>
+          <button
+            disabled={loading}
+            onClick={onReject}
+            className="px-4 py-3 rounded-xl border border-red-200 bg-red-50 text-[12px] font-bold text-red-600 flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
+          >
+            <XCircle className="w-3.5 h-3.5" />
+            رفض
+          </button>
+        </div>
+      ) : (
+        <div className="px-4 pb-4 space-y-3">
+          <div className="rounded-xl p-3" style={{ background: '#fffbeb', border: '1px solid #fde68a' }} dir="rtl">
+            <div className="flex items-start gap-2 mb-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] font-black text-amber-800">تعهد قبل قبول الصفقة</p>
+            </div>
+            <p className="text-[11px] text-amber-700 leading-relaxed">
+              بقبولك لهذه الصفقة أنت تتعهد بتحصيل عمولة المنصة البالغة{' '}
+              <span className="font-black">{totalFee.toLocaleString('ar-SA')} ريال</span>{' '}
+              ({feePerPallet} ر.س × {deal.quantity} طبلية) من المشتري وتسليمها للمنصة.
+            </p>
+          </div>
+          <button
+            onClick={() => setPledged(!pledged)}
+            className="w-full flex items-center gap-3 p-3 rounded-xl transition-colors"
+            style={{ background: pledged ? '#f0fdf4' : '#f8fafc', border: `1.5px solid ${pledged ? '#86efac' : '#e2e8f0'}` }}
+            dir="rtl"
+          >
+            {pledged
+              ? <CheckSquare className="w-5 h-5 text-green-600 flex-shrink-0" />
+              : <Square className="w-5 h-5 text-gray-400 flex-shrink-0" />
+            }
+            <span className="text-[11px] font-bold text-right" style={{ color: pledged ? '#166534' : '#6b7280' }}>
+              أوافق على تحصيل عمولة المنصة من المشتري
+            </span>
+          </button>
+          {pledged && (
+            <div className="rounded-xl p-3 flex items-start gap-2" style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }} dir="rtl">
+              <MessageCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] text-blue-700 leading-relaxed">
+                بعد القبول ستظهر بيانات واتساب المشتري لبدء التفاوض وتنسيق التسليم.
+              </p>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button onClick={() => setShowPledge(false)} className="w-[80px] py-3 rounded-xl border border-gray-200 text-[12px] font-bold text-gray-500 active:scale-[0.97]">
+              تراجع
+            </button>
+            <button
+              disabled={!pledged || loading}
+              onClick={onAccept}
+              className="flex-1 py-3 rounded-xl text-[13px] font-bold text-white flex items-center justify-center gap-2 active:scale-[0.97] disabled:opacity-50 transition-transform"
+              style={{ background: 'linear-gradient(135deg, #15803d, #16a34a)', boxShadow: '0 4px 14px rgba(21,128,61,0.25)' }}
+            >
+              {loading
+                ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                : <UserCheck className="w-4 h-4" />
+              }
+              {loading ? 'جارٍ القبول...' : 'بدء التفاوض'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SupplyCardInDeliveryCard({ deal, onConfirmDelivery, onFailDelivery, loading }: {
+  deal: Deal;
+  onConfirmDelivery: () => void;
+  onFailDelivery: () => void;
+  loading: boolean;
+}) {
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden shadow-sm" style={{ border: '2px solid rgba(21,128,61,0.25)' }}>
+      <div className="flex items-center justify-between px-4 py-2.5" style={{ background: 'linear-gradient(135deg, #15803d, #16a34a)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <span className="text-[10px] font-mono text-white/60">{deal.deal_ref}</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse" />
+          <span className="text-[10px] font-bold text-white">جاري التفاوض والتسليم</span>
+        </div>
+      </div>
+
+      <div className="mx-4 mt-3.5 flex items-start gap-2.5 rounded-xl px-3 py-2.5" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }} dir="rtl">
+        <MessageCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-[12px] font-black text-green-800">تواصل مع المشتري لإتمام الصفقة</p>
+          <p className="text-[11px] text-green-600 mt-0.5">تفاوضا على السعر وتنسيق التسليم خارج المنصة</p>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-2" dir="rtl">
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-gray-800">{deal.pallet_type} · {deal.size} · درجة {deal.quality}</span>
+          <span className="text-[11px] text-gray-500">النوع</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold text-green-700">{deal.quantity.toLocaleString('ar-SA')} طبلية</span>
+          <span className="text-[11px] text-gray-500">الكمية</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <MapPin className="w-3 h-3 text-green-500" />
+            <span className="text-[12px] font-bold text-gray-800">{deal.city}</span>
+          </div>
+          <span className="text-[11px] text-gray-500">المدينة</span>
+        </div>
+
+        <div className="border-t border-gray-100 pt-2">
+          <a
+            href={buildWhatsAppLink(deal.buyer_phone, 'supplier', deal)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => {
+              getDefaultTemplate('supplier').then(tpl => {
+                logWhatsAppContact({
+                  deal_id: deal.id,
+                  deal_ref: deal.deal_ref,
+                  sender_phone: deal.supplier_phone ?? '',
+                  sender_role: 'supplier',
+                  recipient_phone: deal.buyer_phone ?? '',
+                  template_id: tpl?.id,
+                  context_data: { pallet_type: deal.pallet_type, quantity: deal.quantity, city: deal.city },
+                });
+              });
+            }}
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-[13px] font-bold text-white active:scale-[0.97] transition-transform"
+            style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 4px 14px rgba(37,211,102,0.3)' }}
+          >
+            <MessageCircle className="w-4 h-4" />
+            تواصل مع المشتري عبر واتساب
+          </a>
+        </div>
+      </div>
+
+      <div className="px-4 pb-4 flex gap-2">
+        <button
+          disabled={loading}
+          onClick={onFailDelivery}
+          className="flex-1 py-3 rounded-xl border border-red-200 bg-red-50 text-[12px] font-bold text-red-600 flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
+        >
+          <XCircle className="w-3.5 h-3.5" />
+          فشل التسليم
+        </button>
+        <button
+          disabled={loading}
+          onClick={onConfirmDelivery}
+          className="flex-1 py-3 rounded-xl text-[12px] font-bold text-white flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
+          style={{ background: 'linear-gradient(135deg, #15803d, #16a34a)', boxShadow: '0 4px 14px rgba(21,128,61,0.25)' }}
+        >
+          <CheckCircle className="w-3.5 h-3.5" />
+          تم التسليم
+        </button>
       </div>
     </div>
   );
@@ -719,6 +947,7 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
     loading, actionLoading,
     newRequests, platformDeals, reservedDeals, inDelivery, endedDeals,
     confirmDeal, startDeliveryWithPledge, confirmDelivery, failDelivery,
+    acceptSupplyCardDeal, rejectSupplyCardDeal, confirmSupplyCardDelivery, failSupplyCardDelivery,
     refresh,
   } = useSupplierDeals(phone);
 
@@ -729,6 +958,11 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
   const [pledgingDeal, setPledgingDeal] = useState<Deal | null>(null);
   const [toast, setToast] = useState<ToastConfig | null>(null);
   const [ratingDialog, setRatingDialog] = useState<{ dealId: string; buyerPhone: string; buyerName: string } | null>(null);
+
+  const supplyCardPending = newRequests.filter(d => d.source === 'supply_card' && d.status === 'pending_supplier');
+  const otherNewRequests  = newRequests.filter(d => !(d.source === 'supply_card' && d.status === 'pending_supplier'));
+  const supplyCardInDelivery = inDelivery.filter(d => d.source === 'supply_card');
+  const otherInDelivery = inDelivery.filter(d => d.source !== 'supply_card');
 
   const counts = {
     new: newRequests.length,
@@ -944,7 +1178,29 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
           ) : activeTab === 'new' ? (
             newRequests.length === 0 ? <EmptyState tab="new" /> : (
               <div className="space-y-3">
-                {newRequests.map(deal => (
+                {supplyCardPending.map(deal => (
+                  <SupplyCardPendingDeal
+                    key={deal.id}
+                    deal={deal}
+                    onAccept={async () => {
+                      const r = await acceptSupplyCardDeal(deal.id);
+                      if (r.success) {
+                        setToast({ title: 'تم قبول الصفقة', message: 'تواصل مع المشتري عبر واتساب لبدء التفاوض', variant: 'success' });
+                        setActiveTab('delivery');
+                      } else {
+                        setToast({ title: 'خطأ', message: r.error ?? 'حدث خطأ', variant: 'error' });
+                      }
+                    }}
+                    onReject={async () => {
+                      const r = await rejectSupplyCardDeal(deal.id);
+                      if (r.success) {
+                        setToast({ title: 'تم رفض الصفقة', message: 'تم إلغاء طلب المشتري', variant: 'info' });
+                      }
+                    }}
+                    loading={actionLoading === deal.id}
+                  />
+                ))}
+                {otherNewRequests.map(deal => (
                   <NewRequestCard key={deal.id} deal={deal} onConfirm={d => setConfirmingDeal(d)} />
                 ))}
               </div>
@@ -978,7 +1234,30 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
           ) : activeTab === 'delivery' ? (
             inDelivery.length === 0 ? <EmptyState tab="delivery" /> : (
               <div className="space-y-3">
-                {inDelivery.map(deal => (
+                {supplyCardInDelivery.map(deal => (
+                  <SupplyCardInDeliveryCard
+                    key={deal.id}
+                    deal={deal}
+                    onConfirmDelivery={async () => {
+                      const r = await confirmSupplyCardDelivery(deal.id);
+                      if (r.success) {
+                        setToast({ title: 'تم التسليم بنجاح', message: 'تم خصم المخزون ونقله للمشتري وتسجيل العمولة', variant: 'success' });
+                        setActiveTab('ended');
+                      } else {
+                        setToast({ title: 'خطأ', message: r.error ?? 'حدث خطأ', variant: 'error' });
+                      }
+                    }}
+                    onFailDelivery={async () => {
+                      const r = await failSupplyCardDelivery(deal.id);
+                      if (r.success) {
+                        setToast({ title: 'تم تسجيل فشل التسليم', message: 'تم إلغاء الصفقة', variant: 'info' });
+                        setActiveTab('ended');
+                      }
+                    }}
+                    loading={actionLoading === deal.id}
+                  />
+                ))}
+                {otherInDelivery.map(deal => (
                   <InDeliveryCard
                     key={deal.id}
                     deal={deal}

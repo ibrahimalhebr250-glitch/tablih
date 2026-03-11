@@ -159,6 +159,58 @@ export function useSupplierDeals(phone: string) {
     return data;
   }, []);
 
+  const acceptSupplyCardDeal = useCallback(async (dealId: string) => {
+    setActionLoading(dealId);
+    const { data, error } = await supabase.rpc('supplier_accept_deal_with_pledge', {
+      p_deal_id: dealId,
+      p_supplier_phone: phone,
+    });
+    setActionLoading(null);
+    if (error) return { success: false, error: error.message };
+    if (!data?.success) return { success: false, error: data?.error ?? 'فشلت العملية' };
+    await fetchDeals();
+    return { success: true };
+  }, [phone, fetchDeals]);
+
+  const rejectSupplyCardDeal = useCallback(async (dealId: string) => {
+    setActionLoading(dealId);
+    const { data, error } = await supabase.rpc('supplier_reject_deal_from_card', {
+      p_deal_id: dealId,
+      p_supplier_phone: phone,
+    });
+    setActionLoading(null);
+    if (error) return { success: false, error: error.message };
+    if (!data?.success) return { success: false, error: data?.error ?? 'فشلت العملية' };
+    await fetchDeals();
+    return { success: true };
+  }, [phone, fetchDeals]);
+
+  const confirmSupplyCardDelivery = useCallback(async (dealId: string) => {
+    setActionLoading(dealId);
+    const { data, error } = await supabase.rpc('supplier_confirm_delivery_supply_card', {
+      p_deal_id: dealId,
+      p_supplier_phone: phone,
+    });
+    setActionLoading(null);
+    if (error) return { success: false, error: error.message };
+    if (!data?.success) return { success: false, error: data?.error ?? 'فشلت العملية' };
+    await fetchDeals();
+    return { success: true };
+  }, [phone, fetchDeals]);
+
+  const failSupplyCardDelivery = useCallback(async (dealId: string) => {
+    setActionLoading(dealId);
+    const { data, error } = await supabase.rpc('supplier_fail_delivery_supply_card', {
+      p_deal_id: dealId,
+      p_supplier_phone: phone,
+    });
+    setActionLoading(null);
+    if (error) return { success: false, error: error.message };
+    if (!data?.success) return { success: false, error: data?.error ?? 'فشلت العملية' };
+    await fetchDeals();
+    return { success: true };
+  }, [phone, fetchDeals]);
+
   return {
     deals,
     newRequests,
@@ -175,6 +227,10 @@ export function useSupplierDeals(phone: string) {
     failDelivery,
     markNotSold,
     getBuyerInfo,
+    acceptSupplyCardDeal,
+    rejectSupplyCardDeal,
+    confirmSupplyCardDelivery,
+    failSupplyCardDelivery,
     refresh: fetchDeals,
   };
 }

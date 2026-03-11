@@ -86,13 +86,13 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
   return (
     <button
       onClick={onClick}
-      className="w-full text-right transition-all active:scale-[0.98] hover:shadow-md"
+      className="w-full text-right transition-all active:scale-[0.98] hover:shadow-lg"
       style={{
         background: 'white',
         borderRadius: 20,
-        border: '1.5px solid rgba(0,0,0,0.07)',
+        border: '1.5px solid rgba(21,128,61,0.15)',
         overflow: 'hidden',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+        boxShadow: '0 2px 12px rgba(21,128,61,0.08)',
       }}
     >
       {img ? (
@@ -100,10 +100,17 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
           <img src={img} alt="" className="w-full h-full object-cover" />
           <div
             className="absolute inset-0"
-            style={{ background: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.35) 100%)' }}
+            style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, transparent 40%, rgba(0,0,0,0.45) 100%)' }}
           />
           <div
-            className="absolute top-2 right-2 px-2.5 py-1 rounded-full text-[10px] font-black"
+            className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black"
+            style={{ background: 'rgba(21,128,61,0.88)', color: 'white', backdropFilter: 'blur(4px)' }}
+          >
+            <Package className="w-2.5 h-2.5" />
+            عرض مورّد
+          </div>
+          <div
+            className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
             style={{ background: 'rgba(255,255,255,0.92)', color: qc.text, backdropFilter: 'blur(4px)' }}
           >
             {qc.label}
@@ -111,31 +118,44 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
           {card.price_per_pallet > 0 && (
             <div
               className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
-              style={{ background: 'rgba(0,0,0,0.55)', color: 'white', backdropFilter: 'blur(4px)' }}
+              style={{ background: 'rgba(0,0,0,0.6)', color: 'white', backdropFilter: 'blur(4px)' }}
             >
               {card.price_per_pallet} ر.س
             </div>
           )}
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center"
+          >
+            <span className="text-[20px] font-black text-white leading-none" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+              {card.available_quantity.toLocaleString()}
+            </span>
+            <span className="text-[9px] font-semibold text-white/80">{t('market.pallets')}</span>
+          </div>
         </div>
       ) : (
         <div
           className="w-full relative flex items-center justify-center overflow-hidden"
-          style={{ aspectRatio: '16/9', background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' }}
+          style={{ aspectRatio: '16/9', background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' }}
         >
-          <div className="absolute inset-0 flex items-center justify-center opacity-[0.04]">
-            <Package className="w-24 h-24 text-gray-900" />
-          </div>
           <div className="flex flex-col items-center justify-center gap-1 z-10">
             <div
               className="w-10 h-10 rounded-2xl flex items-center justify-center"
-              style={{ background: qc.bg, border: `2px solid ${qc.accent}33` }}
+              style={{ background: 'rgba(21,128,61,0.12)', border: `2px solid rgba(21,128,61,0.2)` }}
             >
-              <Package className="w-5 h-5" style={{ color: qc.accent }} />
+              <Package className="w-5 h-5 text-green-700" />
             </div>
-            <span className="text-[11px] font-bold" style={{ color: qc.accent }}>{t('marketplace.supply')}</span>
+            <span className="text-[18px] font-black text-green-800">{card.available_quantity.toLocaleString()}</span>
+            <span className="text-[9px] text-green-600/70">{t('market.pallets')}</span>
           </div>
           <div
-            className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black"
+            className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black"
+            style={{ background: 'rgba(21,128,61,0.88)', color: 'white' }}
+          >
+            <Package className="w-2.5 h-2.5" />
+            عرض مورّد
+          </div>
+          <div
+            className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
             style={{ background: qc.bg, color: qc.text }}
           >
             {qc.label}
@@ -149,12 +169,21 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
             <MapPin className="w-2.5 h-2.5 flex-shrink-0 text-gray-400" />
             <span className="text-[11px] text-gray-500 truncate">{card.city}</span>
           </div>
-          <span
-            className="px-2 py-0.5 rounded-lg text-[10px] font-black flex-shrink-0"
-            style={{ background: '#f0fdf4', color: '#15803d' }}
-          >
-            {card.available_quantity.toLocaleString()} {t('market.pallets')}
-          </span>
+          {card.price_per_pallet > 0 ? (
+            <span
+              className="px-2 py-0.5 rounded-lg text-[10px] font-black flex-shrink-0"
+              style={{ background: '#f0fdf4', color: '#15803d' }}
+            >
+              {card.price_per_pallet} ر.س
+            </span>
+          ) : (
+            <span
+              className="px-2 py-0.5 rounded-lg text-[10px] font-semibold flex-shrink-0"
+              style={{ background: '#f3f4f6', color: '#6b7280' }}
+            >
+              سعر قابل للتفاوض
+            </span>
+          )}
         </div>
         {card.trust_rating != null && (
           <div className="flex items-center gap-0.5 mt-1.5">
