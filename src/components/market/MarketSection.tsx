@@ -328,14 +328,6 @@ interface MarketSectionProps {
   onDetailSheetChange?: (open: boolean) => void;
   onGoToDeals?: () => void;
   onLoginRequired?: () => void;
-  pendingDemandOrderId?: string | null;
-  onPendingDemandCleared?: () => void;
-  pendingSupplyBatchId?: string | null;
-  onPendingSupplyCleared?: () => void;
-  pendingSupplyNegotiationId?: string | null;
-  onPendingSupplyNegotiationCleared?: () => void;
-  pendingDemandNegotiationId?: string | null;
-  onPendingDemandNegotiationCleared?: () => void;
 }
 
 export default function MarketSection({
@@ -347,14 +339,6 @@ export default function MarketSection({
   onDetailSheetChange,
   onGoToDeals,
   onLoginRequired,
-  pendingDemandOrderId,
-  onPendingDemandCleared,
-  pendingSupplyBatchId,
-  onPendingSupplyCleared,
-  pendingSupplyNegotiationId,
-  onPendingSupplyNegotiationCleared,
-  pendingDemandNegotiationId,
-  onPendingDemandNegotiationCleared,
 }: MarketSectionProps) {
   const { t } = useTranslation();
   const resolvedPhone = sessionPhone ?? (isAuthenticated && userPhone ? userPhone : null);
@@ -369,10 +353,6 @@ export default function MarketSection({
   const [filterQuality, setFilterQuality] = useState('');
   const [selectedSupply, setSelectedSupply] = useState<SupplyCard | null>(null);
   const [selectedDemand, setSelectedDemand] = useState<DemandCard | null>(null);
-  const [autoOpenOfferForId, setAutoOpenOfferForId] = useState<string | null>(null);
-  const [autoOpenDealForId, setAutoOpenDealForId] = useState<string | null>(null);
-  const [autoOpenSupplyNegotiationForId, setAutoOpenSupplyNegotiationForId] = useState<string | null>(null);
-  const [autoOpenDemandNegotiationForId, setAutoOpenDemandNegotiationForId] = useState<string | null>(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const prevSheetOpen = useRef(false);
@@ -406,46 +386,6 @@ export default function MarketSection({
       sessionStorage.removeItem('pending_market_request');
     }
   }, [isAuthenticated, sessionPhone, userPhone]);
-
-  useEffect(() => {
-    if (!pendingDemandOrderId || loading) return;
-    const match = items.find(i => i.kind === 'demand' && i.id === pendingDemandOrderId) as DemandCard | undefined;
-    if (match) {
-      setAutoOpenOfferForId(pendingDemandOrderId);
-      setSelectedDemand(match);
-      onPendingDemandCleared?.();
-    }
-  }, [pendingDemandOrderId, items, loading, onPendingDemandCleared]);
-
-  useEffect(() => {
-    if (!pendingSupplyBatchId || loading) return;
-    const match = items.find(i => i.kind === 'supply' && i.id === pendingSupplyBatchId) as SupplyCard | undefined;
-    if (match) {
-      setAutoOpenDealForId(pendingSupplyBatchId);
-      setSelectedSupply(match);
-      onPendingSupplyCleared?.();
-    }
-  }, [pendingSupplyBatchId, items, loading, onPendingSupplyCleared]);
-
-  useEffect(() => {
-    if (!pendingSupplyNegotiationId || loading) return;
-    const match = items.find(i => i.kind === 'supply' && i.id === pendingSupplyNegotiationId) as SupplyCard | undefined;
-    if (match) {
-      setAutoOpenSupplyNegotiationForId(pendingSupplyNegotiationId);
-      setSelectedSupply(match);
-      onPendingSupplyNegotiationCleared?.();
-    }
-  }, [pendingSupplyNegotiationId, items, loading, onPendingSupplyNegotiationCleared]);
-
-  useEffect(() => {
-    if (!pendingDemandNegotiationId || loading) return;
-    const match = items.find(i => i.kind === 'demand' && i.id === pendingDemandNegotiationId) as DemandCard | undefined;
-    if (match) {
-      setAutoOpenDemandNegotiationForId(pendingDemandNegotiationId);
-      setSelectedDemand(match);
-      onPendingDemandNegotiationCleared?.();
-    }
-  }, [pendingDemandNegotiationId, items, loading, onPendingDemandNegotiationCleared]);
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -776,20 +716,16 @@ export default function MarketSection({
         <SupplyDetailSheet
           card={selectedSupply}
           sessionPhone={resolvedPhone}
-          onClose={() => { setSelectedSupply(null); setAutoOpenDealForId(null); setAutoOpenSupplyNegotiationForId(null); }}
+          onClose={() => setSelectedSupply(null)}
           onLoginRequired={onLoginRequired}
-          autoOpenDeal={selectedSupply.id === autoOpenDealForId}
-          autoOpenNegotiation={selectedSupply.id === autoOpenSupplyNegotiationForId}
         />
       )}
       {selectedDemand && (
         <DemandDetailSheet
           card={selectedDemand}
           sessionPhone={resolvedPhone}
-          onClose={() => { setSelectedDemand(null); setAutoOpenOfferForId(null); setAutoOpenDemandNegotiationForId(null); }}
+          onClose={() => setSelectedDemand(null)}
           onLoginRequired={onLoginRequired}
-          autoOpenOffer={selectedDemand.id === autoOpenOfferForId}
-          autoOpenNegotiation={selectedDemand.id === autoOpenDemandNegotiationForId}
         />
       )}
       {showAuthPrompt && (

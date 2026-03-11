@@ -63,71 +63,15 @@ function App() {
   const [adminStaff, setAdminStaff] = useState<AdminStaffData | null>(null);
   const [inventoryPrefill, setInventoryPrefill] = useState<{ pallet_type?: string; size?: string; quality?: string; quantity?: number; city?: string } | undefined>();
   const [inventorySource, setInventorySource] = useState<'supplier_added' | 'purchase_transfer'>('supplier_added');
-  const [pendingDemandOrderId, setPendingDemandOrderId] = useState<string | null>(null);
-  const [pendingSupplyBatchId, setPendingSupplyBatchId] = useState<string | null>(null);
-  const [pendingSupplyNegotiationId, setPendingSupplyNegotiationId] = useState<string | null>(null);
-  const [pendingDemandNegotiationId, setPendingDemandNegotiationId] = useState<string | null>(null);
-  const [accountInitialTab, setAccountInitialTab] = useState<'warehouse' | 'deals' | 'negotiations' | 'commissions' | 'settings' | undefined>(undefined);
+  const [accountInitialTab, setAccountInitialTab] = useState<'warehouse' | 'deals' | 'commissions' | 'settings' | undefined>(undefined);
 
   const hasPendingAfterLogin = useCallback(() => {
     return !!(
-      sessionStorage.getItem('pending_market_request') ||
-      sessionStorage.getItem('pending_demand_offer') ||
-      sessionStorage.getItem('pending_supply_card_deal') ||
-      sessionStorage.getItem('pending_supply_negotiation') ||
-      sessionStorage.getItem('pending_demand_negotiation')
+      sessionStorage.getItem('pending_market_request')
     );
   }, []);
 
   const consumePendingMarketActions = useCallback(() => {
-    const rawDemand = sessionStorage.getItem('pending_demand_offer');
-    if (rawDemand) {
-      try {
-        const pending = JSON.parse(rawDemand);
-        if (pending.order_id) {
-          sessionStorage.removeItem('pending_demand_offer');
-          setPendingDemandOrderId(pending.order_id);
-        }
-      } catch {
-        sessionStorage.removeItem('pending_demand_offer');
-      }
-    }
-    const rawSupply = sessionStorage.getItem('pending_supply_card_deal');
-    if (rawSupply) {
-      try {
-        const pending = JSON.parse(rawSupply);
-        if (pending.inventory_batch_id) {
-          sessionStorage.removeItem('pending_supply_card_deal');
-          setPendingSupplyBatchId(pending.inventory_batch_id);
-        }
-      } catch {
-        sessionStorage.removeItem('pending_supply_card_deal');
-      }
-    }
-    const rawSupplyNeg = sessionStorage.getItem('pending_supply_negotiation');
-    if (rawSupplyNeg) {
-      try {
-        const pending = JSON.parse(rawSupplyNeg);
-        if (pending.inventory_batch_id) {
-          sessionStorage.removeItem('pending_supply_negotiation');
-          setPendingSupplyNegotiationId(pending.inventory_batch_id);
-        }
-      } catch {
-        sessionStorage.removeItem('pending_supply_negotiation');
-      }
-    }
-    const rawDemandNeg = sessionStorage.getItem('pending_demand_negotiation');
-    if (rawDemandNeg) {
-      try {
-        const pending = JSON.parse(rawDemandNeg);
-        if (pending.order_id) {
-          sessionStorage.removeItem('pending_demand_negotiation');
-          setPendingDemandNegotiationId(pending.order_id);
-        }
-      } catch {
-        sessionStorage.removeItem('pending_demand_negotiation');
-      }
-    }
   }, []);
 
   useEffect(() => {
@@ -403,14 +347,6 @@ function App() {
                           onDetailSheetChange={setIsDetailSheetOpen}
                           onGoToDeals={() => setModal('buyerDeals')}
                           onLoginRequired={openAuthForDeal}
-                          pendingDemandOrderId={pendingDemandOrderId}
-                          onPendingDemandCleared={() => setPendingDemandOrderId(null)}
-                          pendingSupplyBatchId={pendingSupplyBatchId}
-                          onPendingSupplyCleared={() => setPendingSupplyBatchId(null)}
-                          pendingSupplyNegotiationId={pendingSupplyNegotiationId}
-                          onPendingSupplyNegotiationCleared={() => setPendingSupplyNegotiationId(null)}
-                          pendingDemandNegotiationId={pendingDemandNegotiationId}
-                          onPendingDemandNegotiationCleared={() => setPendingDemandNegotiationId(null)}
                         />
                       </div>
                     ) : (
@@ -509,14 +445,6 @@ function App() {
                         onDetailSheetChange={setIsDetailSheetOpen}
                         onGoToDeals={() => setModal('buyerDeals')}
                         onLoginRequired={openAuthForDeal}
-                        pendingDemandOrderId={pendingDemandOrderId}
-                        onPendingDemandCleared={() => setPendingDemandOrderId(null)}
-                        pendingSupplyBatchId={pendingSupplyBatchId}
-                        onPendingSupplyCleared={() => setPendingSupplyBatchId(null)}
-                        pendingSupplyNegotiationId={pendingSupplyNegotiationId}
-                        onPendingSupplyNegotiationCleared={() => setPendingSupplyNegotiationId(null)}
-                        pendingDemandNegotiationId={pendingDemandNegotiationId}
-                        onPendingDemandNegotiationCleared={() => setPendingDemandNegotiationId(null)}
                       />
                     </>
                   ) : (
@@ -588,7 +516,7 @@ function App() {
             onLoginComplete={async (phone, pin) => { await handleInlineLogin(phone, pin); await activateRole('buyer'); }}
             onOpenDeals={() => { setModal('buyerDeals'); dashboardRefresh.current?.(); }}
             onOpenAccount={() => {
-              setAccountInitialTab('negotiations');
+              setAccountInitialTab('deals');
               setModal('account');
               dashboardRefresh.current?.();
             }}
@@ -618,10 +546,6 @@ function App() {
               onLoginComplete={handleLoginComplete}
               onClose={() => {
                 sessionStorage.removeItem('pending_deal_flow');
-                sessionStorage.removeItem('pending_supply_card_deal');
-                sessionStorage.removeItem('pending_demand_offer');
-                sessionStorage.removeItem('pending_supply_negotiation');
-                sessionStorage.removeItem('pending_demand_negotiation');
                 setModal('none');
                 setAuthError('');
                 setLoginError('');

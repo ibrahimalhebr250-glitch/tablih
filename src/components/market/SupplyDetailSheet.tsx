@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff,
-  Star, Home, Handshake, X, CheckCircle, MessageSquare, Phone,
-  AlertCircle, TrendingDown, Award, ShieldCheck, TrendingUp, Send, Loader2
+  Star, Home, X, TrendingDown, Award
 } from 'lucide-react';
 import TrustRatingBadge from '../shared/TrustRatingBadge';
 import VisitorRatingDialog from './VisitorRatingDialog';
@@ -76,595 +75,21 @@ function GalleryImage({ url, onLoad, onError }: { url: string; onLoad: () => voi
   );
 }
 
-function LoginPromptDialog({ card, onClose, onLogin }: {
-  card: SupplyCard;
-  onClose: () => void;
-  onLogin: () => void;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full rounded-3xl overflow-hidden"
-        style={{ maxWidth: 420, background: 'white' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="px-5 pt-5 pb-6 space-y-4" dir="rtl">
-          <div className="flex items-start justify-between">
-            <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
-              <X className="w-3.5 h-3.5 text-gray-500" />
-            </button>
-            <div className="flex items-center gap-2">
-              <div>
-                <p className="text-[15px] font-black text-gray-900">سجّل دخولك لبدء الصفقة</p>
-                <p className="text-[11px] text-gray-500">{card.pallet_type} — {card.city}</p>
-              </div>
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #15803d, #16a34a)' }}>
-                <Handshake className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl p-4 space-y-3" style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0' }}>
-            <div className="flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-[13px] font-black text-green-800">شكراً لاهتمامك بهذا العرض</p>
-                <p className="text-[11px] text-green-700 mt-0.5 leading-relaxed">
-                  سجّل دخولك وحدد الكمية التي تريدها — سيصلك رد المورد خلال دقائق.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-right">
-            <div className="rounded-xl p-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <p className="text-[10px] text-gray-500 mb-0.5">الكمية المتاحة</p>
-              <p className="text-[14px] font-black text-green-700">{card.available_quantity.toLocaleString()} طبلية</p>
-            </div>
-            <div className="rounded-xl p-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <p className="text-[10px] text-gray-500 mb-0.5">السعر</p>
-              <p className="text-[14px] font-black text-gray-800">
-                {card.price_per_pallet > 0 ? `${card.price_per_pallet} ر.س` : 'قابل للتفاوض'}
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={onLogin}
-            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97]"
-            style={{ background: 'linear-gradient(135deg, #15803d, #16a34a)', boxShadow: '0 6px 20px rgba(21,128,61,0.3)' }}
-          >
-            <Handshake className="w-5 h-5" />
-            تسجيل الدخول وطلب الصفقة
-          </button>
-          <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-gray-500" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-            ليس الآن
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DealRequestDialog({ card, buyerPhone, existingDeal, onClose, onCreated, platformFee }: {
-  card: SupplyCard;
-  buyerPhone: string;
-  existingDeal: { id: string; status: string; quantity: number; deal_ref: string } | null;
-  platformFee: number;
-  onClose: () => void;
-  onCreated: () => void;
-}) {
-  const [quantity, setQuantity] = useState(Math.min(card.available_quantity, 100));
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const totalPrice = card.price_per_pallet > 0 ? card.price_per_pallet * quantity : 0;
-  const commission = platformFee * quantity;
-
-  const handleCreate = async () => {
-    if (loading) return;
-    if (quantity < 1) { setError('الكمية يجب أن تكون 1 على الأقل'); return; }
-    if (quantity > card.available_quantity) { setError('الكمية أكبر من المتاح'); return; }
-    setLoading(true);
-    setError('');
-    try {
-      const { data, error: err } = await supabase.rpc('create_deal_from_supply_card', {
-        p_buyer_phone: buyerPhone,
-        p_inventory_batch_id: card.id,
-        p_quantity: quantity,
-      });
-      if (err) throw err;
-      if (data && !data.success) { setError(data.error || 'حدث خطأ'); return; }
-      onCreated();
-    } catch {
-      setError('حدث خطأ أثناء إنشاء الصفقة. حاول مرة أخرى.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (existingDeal) {
-    const statusLabels: Record<string, { label: string; color: string; bg: string; desc: string }> = {
-      pending_supplier: { label: 'بانتظار موافقة المورد', color: '#b45309', bg: '#fffbeb', desc: 'تم إرسال طلبك للمورد. ستصلك إشعار عند الرد.' },
-      in_delivery:      { label: 'جاري التفاوض', color: '#0369a1', bg: '#eff6ff', desc: 'قبل المورد طلبك — تواصل معه عبر واتساب.' },
-      completed:        { label: 'مكتملة', color: '#059669', bg: '#ecfdf5', desc: 'تم إتمام الصفقة بنجاح.' },
-      cancelled:        { label: 'ملغاة', color: '#dc2626', bg: '#fef2f2', desc: 'تم إلغاء الصفقة.' },
-    };
-    const sc = statusLabels[existingDeal.status] || statusLabels['pending_supplier'];
-
-    return (
-      <div
-        className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-        style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
-        onClick={onClose}
-      >
-        <div
-          className="w-full rounded-3xl overflow-hidden"
-          style={{ maxWidth: 420, background: 'white' }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="px-5 pt-5 pb-6 space-y-4" dir="rtl">
-            <div className="flex items-start justify-between">
-              <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
-                <X className="w-3.5 h-3.5 text-gray-500" />
-              </button>
-              <p className="text-[15px] font-black text-gray-900">حالة الصفقة</p>
-            </div>
-            <div className="rounded-2xl p-4" style={{ background: sc.bg, border: `1px solid ${sc.color}30` }}>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[13px] font-black" style={{ color: sc.color }}>{sc.label}</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${sc.color}20`, color: sc.color }}>
-                  {existingDeal.deal_ref}
-                </span>
-              </div>
-              <p className="text-[11px] leading-relaxed" style={{ color: sc.color }}>{sc.desc}</p>
-            </div>
-            <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <span className="text-[13px] font-black text-gray-800">{existingDeal.quantity.toLocaleString()} طبلية</span>
-              <span className="text-[11px] text-gray-500">الكمية المطلوبة</span>
-            </div>
-            <div className="rounded-2xl p-3 flex items-start gap-2" style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-              <MessageSquare className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-              <p className="text-[11px] text-blue-700 leading-relaxed">
-                تابع تفاصيل الصفقة من: <span className="font-black">حسابي ← صفقاتي</span>
-              </p>
-            </div>
-            <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-gray-500" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              إغلاق
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full rounded-3xl overflow-hidden"
-        style={{ maxWidth: 420, background: 'white' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="px-5 pt-5 pb-6 space-y-4" dir="rtl">
-          <div className="flex items-start justify-between">
-            <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
-              <X className="w-3.5 h-3.5 text-gray-500" />
-            </button>
-            <div className="flex items-center gap-2">
-              <div>
-                <p className="text-[15px] font-black text-gray-900">طلب عقد صفقة</p>
-                <p className="text-[11px] text-gray-500">{card.pallet_type} — {card.city}</p>
-              </div>
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #15803d, #16a34a)' }}>
-                <Handshake className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl p-3 flex items-start gap-3" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-            <p className="text-[11px] text-green-700 leading-relaxed">
-              شكراً لتواصلك مع صاحب هذا العرض. سيتلقى المورد إشعاراً فورياً وسيرد عليك بالقبول أو الرفض.
-            </p>
-          </div>
-
-          <div className="rounded-2xl p-3 space-y-2.5" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-            <div className="flex items-center justify-between">
-              <span className="text-[12px] font-black text-green-700">{card.available_quantity.toLocaleString()} طبلية</span>
-              <span className="text-[11px] text-gray-500">الكمية المتاحة</span>
-            </div>
-            {card.price_per_pallet > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-[12px] font-black text-gray-800">{card.price_per_pallet} ريال/طبلية</span>
-                <span className="text-[11px] text-gray-500">السعر المعلن</span>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-              <span className="text-[12px] font-bold text-gray-700">{card.city}</span>
-              <span className="text-[11px] text-gray-500">المدينة</span>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] text-gray-500">الحد الأقصى: {card.available_quantity.toLocaleString()}</span>
-              <label className="text-[12px] font-black text-gray-800">الكمية المطلوبة</label>
-            </div>
-            <div className="flex items-center gap-2" dir="ltr">
-              <button
-                onClick={() => setQuantity(q => Math.max(1, q - 10))}
-                className="w-11 h-11 rounded-xl flex items-center justify-center text-[18px] font-black transition-all active:scale-90"
-                style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', color: '#15803d' }}
-              >-</button>
-              <input
-                type="number"
-                value={quantity}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value) || 0;
-                  setQuantity(Math.min(card.available_quantity, Math.max(0, v)));
-                }}
-                className="flex-1 text-center text-[18px] font-black text-gray-800 rounded-xl py-2.5 outline-none"
-                style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0' }}
-                min={1}
-                max={card.available_quantity}
-              />
-              <button
-                onClick={() => setQuantity(q => Math.min(card.available_quantity, q + 10))}
-                className="w-11 h-11 rounded-xl flex items-center justify-center text-[18px] font-black transition-all active:scale-90"
-                style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', color: '#15803d' }}
-              >+</button>
-            </div>
-          </div>
-
-          {(totalPrice > 0 || commission > 0) && (
-            <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #e2e8f0' }}>
-              {totalPrice > 0 && (
-                <div className="flex items-center justify-between px-3 py-2.5" style={{ background: '#f8fafc' }}>
-                  <span className="text-[12px] font-black text-gray-800">{totalPrice.toLocaleString()} ريال</span>
-                  <span className="text-[11px] text-gray-500">الإجمالي التقديري</span>
-                </div>
-              )}
-              {commission > 0 && (
-                <div className="flex items-center justify-between px-3 py-2" style={{ background: '#fffbeb', borderTop: '1px solid #fde68a' }}>
-                  <span className="text-[11px] font-bold text-amber-700">{commission.toLocaleString()} ريال</span>
-                  <span className="text-[10px] text-amber-600">عمولة المنصة ({platformFee} ر.س/طبلية)</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
-              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-              <p className="text-[11px] text-red-600 font-semibold">{error}</p>
-            </div>
-          )}
-
-          <button
-            onClick={handleCreate}
-            disabled={loading || quantity < 1}
-            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-70"
-            style={{ background: 'linear-gradient(135deg, #15803d, #16a34a)', boxShadow: '0 6px 20px rgba(21,128,61,0.3)' }}
-          >
-            {loading
-              ? <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              : <Handshake className="w-5 h-5" />
-            }
-            {loading ? 'جاري إنشاء الصفقة...' : 'طلب عقد صفقة'}
-          </button>
-          <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-gray-500" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-            إلغاء
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NegotiationLoginPromptDialog({ card, onClose, onLogin }: {
-  card: SupplyCard;
-  onClose: () => void;
-  onLogin: () => void;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full rounded-3xl overflow-hidden"
-        style={{ maxWidth: 420, background: 'white' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="px-5 pt-5 pb-6 space-y-4" dir="rtl">
-          <div className="flex items-start justify-between">
-            <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
-              <X className="w-3.5 h-3.5 text-gray-500" />
-            </button>
-            <div className="flex items-center gap-2">
-              <div>
-                <p className="text-[15px] font-black text-gray-900">سجّل دخولك لبدء التفاوض</p>
-                <p className="text-[11px] text-gray-500">{card.pallet_type} — {card.city}</p>
-              </div>
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #0369a1, #0284c7)' }}>
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-          <div className="rounded-2xl p-4 space-y-3" style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe' }}>
-            <div className="flex items-start gap-3">
-              <MessageSquare className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-[13px] font-black text-blue-800">أرسل طلب تفاوض للمورد</p>
-                <p className="text-[11px] text-blue-700 mt-0.5 leading-relaxed">
-                  حدد الكمية وأرسل رسالتك — سيردّ عليك المورد مباشرة في حسابك.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-right">
-            <div className="rounded-xl p-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <p className="text-[10px] text-gray-500 mb-0.5">الكمية المتاحة</p>
-              <p className="text-[14px] font-black text-blue-700">{card.available_quantity.toLocaleString()} طبلية</p>
-            </div>
-            <div className="rounded-xl p-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <p className="text-[10px] text-gray-500 mb-0.5">السعر</p>
-              <p className="text-[14px] font-black text-gray-800">
-                {card.price_per_pallet > 0 ? `${card.price_per_pallet} ر.س` : 'قابل للتفاوض'}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onLogin}
-            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97]"
-            style={{ background: 'linear-gradient(135deg, #0369a1, #0284c7)', boxShadow: '0 6px 20px rgba(3,105,161,0.3)' }}
-          >
-            <TrendingUp className="w-5 h-5" />
-            تسجيل الدخول وبدء التفاوض
-          </button>
-          <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-gray-500" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-            ليس الآن
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NegotiationDialog({ card, buyerPhone, onClose, onSent }: {
-  card: SupplyCard;
-  buyerPhone: string;
-  onClose: () => void;
-  onSent: () => void;
-}) {
-  const [quantity, setQuantity] = useState(Math.min(card.available_quantity, 50));
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [existingRequest, setExistingRequest] = useState<{ id: string; status: string } | null>(null);
-  const [checkingExisting, setCheckingExisting] = useState(true);
-
-  useEffect(() => {
-    const checkExisting = async () => {
-      try {
-        const { data } = await supabase
-          .from('negotiation_requests')
-          .select('id, status')
-          .eq('inventory_batch_id', card.id)
-          .eq('buyer_phone', buyerPhone)
-          .eq('status', 'pending')
-          .maybeSingle();
-        setExistingRequest(data);
-      } catch {}
-      setCheckingExisting(false);
-    };
-    checkExisting();
-  }, [card.id, buyerPhone]);
-
-  const handleSend = async () => {
-    if (loading) return;
-    if (quantity < 1) { setError('الكمية يجب أن تكون 1 على الأقل'); return; }
-    if (quantity > card.available_quantity) { setError('الكمية أكبر من المتاح'); return; }
-    setLoading(true);
-    setError('');
-    try {
-      const { error: err } = await supabase
-        .from('negotiation_requests')
-        .insert({
-          inventory_batch_id: card.id,
-          buyer_phone: buyerPhone,
-          supplier_phone: card.phone,
-          status: 'pending',
-          pallet_type: card.pallet_type,
-          size: card.size,
-          quality: card.quality,
-          pallet_condition: card.pallet_condition,
-          available_quantity: quantity,
-          city: card.city,
-          price_per_pallet: card.price_per_pallet,
-          buyer_message: message.trim() || null,
-        });
-      if (err) throw err;
-      onSent();
-    } catch {
-      setError('حدث خطأ أثناء إرسال طلب التفاوض. حاول مرة أخرى.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full rounded-3xl overflow-hidden"
-        style={{ maxWidth: 440, background: 'white' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-5 py-4" style={{ background: 'linear-gradient(135deg, #0369a1, #0284c7)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)' }}>
-            <X className="w-3.5 h-3.5 text-white" />
-          </button>
-          <div className="flex items-center gap-2">
-            <p className="text-[15px] font-black text-white">بدء التفاوض</p>
-            <TrendingUp className="w-5 h-5 text-blue-200" />
-          </div>
-        </div>
-        <div className="px-5 pt-5 pb-6 space-y-4" dir="rtl">
-          {checkingExisting ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-            </div>
-          ) : existingRequest ? (
-            <div className="space-y-4">
-              <div className="rounded-2xl p-4 flex items-start gap-3" style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe' }}>
-                <MessageSquare className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-[13px] font-black text-blue-800">طلب تفاوض قيد الانتظار</p>
-                  <p className="text-[11px] text-blue-700 mt-0.5 leading-relaxed">
-                    أرسلت طلب تفاوض لهذا المورد مسبقاً — ستجد رده في حسابك تحت "طلبات التفاوض".
-                  </p>
-                </div>
-              </div>
-              <button onClick={onClose} className="w-full py-3.5 rounded-2xl text-[13px] font-black text-white" style={{ background: 'linear-gradient(135deg, #0369a1, #0284c7)' }}>
-                حسناً
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="rounded-2xl p-3.5 flex items-center justify-between text-right" style={{ background: '#f5f9fc', border: '1px solid rgba(0,0,0,0.05)' }}>
-                <div className="text-right">
-                  <p className="text-[10px] text-gray-500 mb-0.5">السعر المطلوب</p>
-                  <p className="text-[14px] font-black text-gray-800">
-                    {card.price_per_pallet > 0 ? `${card.price_per_pallet} ر.س / طبلية` : 'قابل للتفاوض'}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-gray-500 mb-0.5">الكمية المتاحة</p>
-                  <p className="text-[14px] font-black text-blue-700">{card.available_quantity.toLocaleString()} طبلية</p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[12px] font-black text-gray-700">الكمية التي تريدها</label>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setQuantity(q => Math.max(1, q - 10))}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold text-blue-700 flex-shrink-0 transition-transform active:scale-95"
-                    style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}
-                  >−</button>
-                  <input
-                    type="number"
-                    min={1}
-                    max={card.available_quantity}
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, Math.min(card.available_quantity, parseInt(e.target.value) || 1)))}
-                    className="flex-1 text-center text-[18px] font-black text-gray-900 rounded-xl py-2.5 outline-none"
-                    style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0' }}
-                  />
-                  <button
-                    onClick={() => setQuantity(q => Math.min(card.available_quantity, q + 10))}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold text-blue-700 flex-shrink-0 transition-transform active:scale-95"
-                    style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}
-                  >+</button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[12px] font-black text-gray-700">رسالة للمورد (اختياري)</label>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="مثال: أبحث عن سعر أفضل عند الكميات الكبيرة..."
-                  rows={3}
-                  className="w-full rounded-xl px-3.5 py-3 text-[13px] text-gray-800 resize-none outline-none"
-                  style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', direction: 'rtl' }}
-                  maxLength={300}
-                />
-              </div>
-
-              {error && (
-                <div className="rounded-xl p-3 flex items-center gap-2" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
-                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                  <p className="text-[12px] text-red-600">{error}</p>
-                </div>
-              )}
-
-              <button
-                onClick={handleSend}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
-                style={{ background: 'linear-gradient(135deg, #0369a1, #0284c7)', boxShadow: '0 6px 20px rgba(3,105,161,0.3)' }}
-              >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                {loading ? 'جاري الإرسال...' : 'إرسال طلب التفاوض'}
-              </button>
-              <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-gray-500" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                إلغاء
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 interface Props {
   card: SupplyCard;
   onClose: () => void;
   sessionPhone?: string | null;
   onLoginRequired?: () => void;
   autoOpenDeal?: boolean;
-  autoOpenNegotiation?: boolean;
 }
 
-export default function SupplyDetailSheet({ card, onClose, sessionPhone, onLoginRequired, autoOpenDeal, autoOpenNegotiation }: Props) {
-  const isAuthenticated = !!sessionPhone;
-  const buyerPhone = sessionPhone ?? undefined;
+export default function SupplyDetailSheet({ card, onClose }: Props) {
   const [imgIndex, setImgIndex] = useState(0);
   const [showRatingDialog, setShowRatingDialog] = useState(false);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [showNegotiationLoginPrompt, setShowNegotiationLoginPrompt] = useState(false);
-  const [showDealDialog, setShowDealDialog] = useState(false);
-  const [showNegotiationDialog, setShowNegotiationDialog] = useState(false);
-  const [negotiationSent, setNegotiationSent] = useState(false);
   const [ratingSummary, setRatingSummary] = useState<{ average_rating: number; total_ratings: number } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [existingDeal, setExistingDeal] = useState<{ id: string; status: string; quantity: number; deal_ref: string } | null>(null);
-  const [dealCreated, setDealCreated] = useState(false);
-  const [platformFee, setPlatformFee] = useState(0.25);
 
-  const isSelf = isAuthenticated && buyerPhone === card.phone;
-
-  useEffect(() => { loadRatingSummary(); loadPlatformFee(); }, [card.phone]);
-  useEffect(() => { if (isAuthenticated && buyerPhone && !isSelf) loadExistingDeal(); }, [isAuthenticated, buyerPhone, card.id]);
-
-  useEffect(() => {
-    if (autoOpenDeal && isAuthenticated && !isSelf) {
-      const t = setTimeout(() => setShowDealDialog(true), 300);
-      return () => clearTimeout(t);
-    }
-  }, [autoOpenDeal, isAuthenticated, isSelf]);
-
-  useEffect(() => {
-    if (autoOpenNegotiation && isAuthenticated && !isSelf) {
-      const t = setTimeout(() => setShowNegotiationDialog(true), 300);
-      return () => clearTimeout(t);
-    }
-  }, [autoOpenNegotiation, isAuthenticated, isSelf]);
+  useEffect(() => { loadRatingSummary(); }, [card.phone]);
 
   const loadRatingSummary = async () => {
     try {
@@ -673,117 +98,12 @@ export default function SupplyDetailSheet({ card, onClose, sessionPhone, onLogin
     } catch {}
   };
 
-  const loadPlatformFee = async () => {
-    try {
-      const { data } = await supabase.from('platform_settings').select('platform_fee_per_pallet').maybeSingle();
-      if (data?.platform_fee_per_pallet) setPlatformFee(data.platform_fee_per_pallet);
-    } catch {}
-  };
-
-  const loadExistingDeal = async () => {
-    if (!buyerPhone) return;
-    const { data } = await supabase
-      .from('deals')
-      .select('id, status, quantity, deal_ref')
-      .eq('inventory_batch_id', card.id)
-      .eq('buyer_phone', buyerPhone)
-      .eq('source', 'supply_card')
-      .not('status', 'in', '("cancelled")')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    setExistingDeal(data);
-  };
-
   const q = QUALITY_COLORS[card.quality] || QUALITY_COLORS.C;
   const cond = CONDITION_MAP[card.pallet_condition] || CONDITION_MAP.used;
   const hasImages = card.image_urls.length > 0;
 
   const goNext = () => setImgIndex((i) => (i + 1) % card.image_urls.length);
   const goPrev = () => setImgIndex((i) => (i - 1 + card.image_urls.length) % card.image_urls.length);
-
-  const handleStartDeal = () => {
-    if (!isAuthenticated) {
-      setShowLoginPrompt(true);
-    } else if (isSelf) {
-      return;
-    } else {
-      setShowDealDialog(true);
-    }
-  };
-
-  const handleLoginFromPrompt = () => {
-    sessionStorage.setItem('pending_supply_card_deal', JSON.stringify({
-      inventory_batch_id: card.id,
-    }));
-    setShowLoginPrompt(false);
-    onClose();
-    onLoginRequired?.();
-  };
-
-  const handleStartNegotiation = () => {
-    if (!isAuthenticated) {
-      setShowNegotiationLoginPrompt(true);
-    } else if (isSelf) {
-      return;
-    } else {
-      setShowNegotiationDialog(true);
-    }
-  };
-
-  const handleNegotiationLoginFromPrompt = () => {
-    sessionStorage.setItem('pending_supply_negotiation', JSON.stringify({
-      inventory_batch_id: card.id,
-    }));
-    setShowNegotiationLoginPrompt(false);
-    onClose();
-    onLoginRequired?.();
-  };
-
-  const handleDealCreated = () => {
-    setDealCreated(true);
-    setShowDealDialog(false);
-    loadExistingDeal();
-  };
-
-  const getDealStatusInfo = () => {
-    if (isSelf) return null;
-    if (!isAuthenticated) return null;
-    if (!existingDeal && !dealCreated) return null;
-    const status = existingDeal?.status;
-    if (status === 'pending_supplier' || dealCreated)
-      return { label: 'طلبك قيد انتظار موافقة المورد', color: '#b45309', bg: '#fffbeb', border: '#fde68a' };
-    if (status === 'in_delivery')
-      return { label: 'المورد قبل طلبك — جاري التفاوض', color: '#0369a1', bg: '#eff6ff', border: '#bfdbfe' };
-    if (status === 'completed')
-      return { label: 'تمت الصفقة بنجاح', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' };
-    return null;
-  };
-
-  const statusInfo = getDealStatusInfo();
-
-  const getButtonState = () => {
-    if (isSelf) return { label: 'عرضك الخاص', disabled: true, bg: '#f3f4f6', color: '#6b7280' };
-    if (!isAuthenticated) return { label: 'طلب عقد صفقة', disabled: false, bg: 'linear-gradient(135deg, #15803d, #16a34a)', color: 'white' };
-    if (existingDeal?.status === 'pending_supplier' || dealCreated)
-      return { label: 'طلبك قيد الانتظار — عرض التفاصيل', disabled: false, bg: 'linear-gradient(135deg, #b45309, #d97706)', color: 'white' };
-    if (existingDeal?.status === 'in_delivery')
-      return { label: 'جاري التفاوض — عرض التفاصيل', disabled: false, bg: 'linear-gradient(135deg, #0369a1, #0284c7)', color: 'white' };
-    if (existingDeal?.status === 'completed')
-      return { label: 'تمت الصفقة', disabled: true, bg: '#ecfdf5', color: '#059669' };
-    return { label: 'طلب عقد صفقة', disabled: false, bg: 'linear-gradient(135deg, #15803d, #16a34a)', color: 'white' };
-  };
-
-  const btnState = getButtonState();
-
-  const handleBtnClick = () => {
-    if (btnState.disabled) return;
-    if ((existingDeal?.status === 'pending_supplier' || dealCreated || existingDeal?.status === 'in_delivery') && isAuthenticated) {
-      setShowDealDialog(true);
-    } else {
-      handleStartDeal();
-    }
-  };
 
   return (
     <div
@@ -865,17 +185,6 @@ export default function SupplyDetailSheet({ card, onClose, sessionPhone, onLogin
             )}
 
             <div className="hidden md:block px-4 mt-4 pb-4 space-y-3">
-              <button
-                onClick={handleBtnClick}
-                disabled={btnState.disabled}
-                className="w-full relative overflow-hidden rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <div className="absolute inset-0 rounded-2xl" style={{ background: btnState.bg, boxShadow: '0 6px 20px rgba(21,128,61,0.3)' }} />
-                <div className="relative flex items-center justify-center gap-2.5 py-3.5">
-                  <Handshake className="w-5 h-5" style={{ color: btnState.color }} strokeWidth={2.5} />
-                  <span className="text-[14px] font-black" style={{ color: btnState.color }}>{btnState.label}</span>
-                </div>
-              </button>
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={onClose} className="flex flex-col items-center justify-center py-3 rounded-2xl" style={{ background: 'linear-gradient(135deg, #1a4a5e, #2c5f73)', boxShadow: '0 4px 12px rgba(26,74,94,0.25)' }}>
                   <Home className="w-5 h-5 text-white mb-1" />
@@ -954,16 +263,6 @@ export default function SupplyDetailSheet({ card, onClose, sessionPhone, onLogin
 
               <TrustRatingBadge rating={card.trust_rating ?? 3} size="md" showLabel={true} variant="detailed" />
 
-              {statusInfo && (
-                <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: statusInfo.bg, border: `1px solid ${statusInfo.border}` }} dir="rtl">
-                  <MessageSquare className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: statusInfo.color }} />
-                  <div>
-                    <p className="text-[12px] font-black" style={{ color: statusInfo.color }}>{statusInfo.label}</p>
-                    <p className="text-[10px] mt-0.5 text-gray-500">تابع التفاصيل في حسابي ← صفقاتي</p>
-                  </div>
-                </div>
-              )}
-
               {card.description && (
                 <div className="rounded-2xl p-3.5 text-right" style={{ background: '#f5f9fc', border: '1px solid rgba(0,0,0,0.04)' }}>
                   <p className="text-[11px] font-bold text-gray-500 mb-1.5">وصف العرض</p>
@@ -986,28 +285,22 @@ export default function SupplyDetailSheet({ card, onClose, sessionPhone, onLogin
               <div className="rounded-2xl p-3.5" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }} dir="rtl">
                 <div className="flex items-center gap-2 mb-2">
                   <Award className="w-4 h-4 text-green-600" />
-                  <p className="text-[12px] font-black text-green-800">كيف تسير الصفقة؟</p>
+                  <p className="text-[12px] font-black text-green-800">تفاصيل العرض</p>
                 </div>
                 <div className="space-y-1.5">
-                  {[
-                    'اختر الكمية وأرسل طلب الصفقة',
-                    'المورد يقبل ويتعهد بالعمولة',
-                    'تواصل مع المورد عبر واتساب للتفاوض',
-                    'عند التسليم ينقل المخزون لحسابك',
-                  ].map((step, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black flex-shrink-0" style={{ background: '#15803d', color: 'white' }}>{i + 1}</span>
-                      <p className="text-[11px] text-green-700">{step}</p>
-                    </div>
-                  ))}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-bold text-green-700">{card.pallet_type}</span>
+                    <span className="text-[11px] text-green-600/60">نوع الطبلية</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-bold text-green-700">{card.city}</span>
+                    <span className="text-[11px] text-green-600/60">المدينة</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-bold text-green-700">{q.label}</span>
+                    <span className="text-[11px] text-green-600/60">الجودة</span>
+                  </div>
                 </div>
-              </div>
-
-              <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#fff7ed', border: '1px solid #fed7aa' }} dir="rtl">
-                <CheckCircle className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                <p className="text-[11px] text-orange-700 leading-relaxed">
-                  عمولة المنصة <span className="font-black">{platformFee} ريال / طبلية</span> — يتحصل عليها المورد من المشتري عند إتمام الصفقة.
-                </p>
               </div>
             </div>
 
@@ -1018,38 +311,6 @@ export default function SupplyDetailSheet({ card, onClose, sessionPhone, onLogin
         </div>
 
         <div className="md:hidden flex-shrink-0 px-4 pb-5 pt-3" style={{ background: 'linear-gradient(to top, #ffffff 0%, #f8fafb 100%)', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-          <button
-            onClick={handleBtnClick}
-            disabled={btnState.disabled}
-            className="w-full relative overflow-hidden group mb-2 rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <div className="absolute inset-0 rounded-2xl" style={{ background: btnState.bg, boxShadow: '0 6px 20px rgba(21,128,61,0.3)' }} />
-            <div className="relative flex items-center justify-center gap-2.5 py-3.5">
-              <Handshake className="w-5 h-5" style={{ color: btnState.color }} strokeWidth={2.5} />
-              <span className="text-[15px] font-black" style={{ color: btnState.color }}>{btnState.label}</span>
-              {!btnState.disabled && !existingDeal && !dealCreated && (
-                <div className="absolute left-3 w-2 h-2 rounded-full animate-pulse" style={{ background: '#86efac' }} />
-              )}
-            </div>
-          </button>
-          {!isSelf && !negotiationSent && (
-            <button
-              onClick={handleStartNegotiation}
-              className="w-full relative overflow-hidden group mb-2.5 rounded-2xl"
-            >
-              <div className="absolute inset-0 rounded-2xl" style={{ background: 'linear-gradient(135deg, #0369a1, #0284c7)', boxShadow: '0 4px 14px rgba(3,105,161,0.25)' }} />
-              <div className="relative flex items-center justify-center gap-2.5 py-3">
-                <TrendingUp className="w-4.5 h-4.5 text-white" strokeWidth={2.5} />
-                <span className="text-[13px] font-black text-white">بدء التفاوض</span>
-              </div>
-            </button>
-          )}
-          {negotiationSent && (
-            <div className="mb-2.5 rounded-2xl py-3 flex items-center justify-center gap-2" style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe' }}>
-              <CheckCircle className="w-4 h-4 text-blue-600" />
-              <span className="text-[13px] font-black text-blue-700">تم إرسال طلب التفاوض</span>
-            </div>
-          )}
           <div className="grid grid-cols-2 gap-2">
             <button onClick={onClose} className="flex flex-col items-center justify-center py-3 rounded-2xl" style={{ background: 'linear-gradient(135deg, #1a4a5e, #2c5f73)', boxShadow: '0 4px 12px rgba(26,74,94,0.25)' }}>
               <Home className="w-5 h-5 text-white mb-1" />
@@ -1072,30 +333,6 @@ export default function SupplyDetailSheet({ card, onClose, sessionPhone, onLogin
           itemType="supply"
           itemId={card.id}
           onRatingSubmitted={() => { setShowRatingDialog(false); loadRatingSummary(); setRefreshKey(prev => prev + 1); }}
-        />
-      )}
-      {showLoginPrompt && (
-        <LoginPromptDialog card={card} onClose={() => setShowLoginPrompt(false)} onLogin={handleLoginFromPrompt} />
-      )}
-      {showNegotiationLoginPrompt && (
-        <NegotiationLoginPromptDialog card={card} onClose={() => setShowNegotiationLoginPrompt(false)} onLogin={handleNegotiationLoginFromPrompt} />
-      )}
-      {showDealDialog && buyerPhone && (
-        <DealRequestDialog
-          card={card}
-          buyerPhone={buyerPhone}
-          existingDeal={existingDeal}
-          platformFee={platformFee}
-          onClose={() => setShowDealDialog(false)}
-          onCreated={handleDealCreated}
-        />
-      )}
-      {showNegotiationDialog && buyerPhone && (
-        <NegotiationDialog
-          card={card}
-          buyerPhone={buyerPhone}
-          onClose={() => setShowNegotiationDialog(false)}
-          onSent={() => { setShowNegotiationDialog(false); setNegotiationSent(true); }}
         />
       )}
     </div>
