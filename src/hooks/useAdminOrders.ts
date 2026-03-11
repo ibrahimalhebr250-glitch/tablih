@@ -136,6 +136,29 @@ export function useAdminOrders() {
 
   const fetchOrders = async () => {
     try {
+      const adminEmail = (() => {
+        try {
+          const raw = sessionStorage.getItem('adminStaffData');
+          if (raw) return JSON.parse(raw)?.email || null;
+        } catch { return null; }
+        return null;
+      })();
+
+      if (adminEmail) {
+        const { data: rpcData, error: rpcError } = await supabase
+          .rpc('admin_get_orders', { p_admin_email: adminEmail });
+
+        if (!rpcError && rpcData) {
+          setOrders((rpcData as any[]).map((order: any) => ({
+            ...order,
+            order_source: order.order_source || 'manual_order',
+            pallet_condition: order.pallet_condition || '',
+            source_supplier_phone: order.source_supplier_phone || null,
+          })));
+          return;
+        }
+      }
+
       const { data, error: fetchError } = await supabase
         .from('orders')
         .select(`
@@ -155,7 +178,7 @@ export function useAdminOrders() {
         setOrders((fallbackData || []).map((order: any) => ({
           ...order,
           buyer_name: order.phone || 'غير معروف',
-          order_source: order.order_source || 'normal',
+          order_source: order.order_source || 'manual_order',
           pallet_condition: order.pallet_condition || '',
           source_supplier_phone: order.source_supplier_phone || null,
         })));
@@ -165,7 +188,7 @@ export function useAdminOrders() {
       const ordersWithNames = (data || []).map((order: any) => ({
         ...order,
         buyer_name: order.platform_users?.display_name || order.phone || 'غير معروف',
-        order_source: order.order_source || 'normal',
+        order_source: order.order_source || 'manual_order',
         pallet_condition: order.pallet_condition || '',
         source_supplier_phone: order.source_supplier_phone || null,
       }));

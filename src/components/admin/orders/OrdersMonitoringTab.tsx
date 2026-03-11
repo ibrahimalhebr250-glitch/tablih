@@ -46,12 +46,14 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 
 const SOURCE_LABELS: Record<string, string> = {
   normal: 'طلب عادي',
+  manual_order: 'طلب عادي',
   market: 'من السوق',
   market_demand_card: 'بطاقة سوق',
 };
 
 const SOURCE_COLORS: Record<string, { bg: string; text: string }> = {
   normal: { bg: '#F0F9FF', text: '#0369A1' },
+  manual_order: { bg: '#F0F9FF', text: '#0369A1' },
   market: { bg: '#FFF7ED', text: '#C2410C' },
   market_demand_card: { bg: '#ECFDF5', text: '#065F46' },
 };
@@ -76,7 +78,9 @@ export default function OrdersMonitoringTab({ orders, onUpdate, onDelete }: Prop
 
     const matchesStage = stageFilter === 'all' || order.current_stage === stageFilter;
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    const matchesSource = sourceFilter === 'all' || (order.order_source || 'normal') === sourceFilter;
+    const effectiveSource = (!order.order_source || order.order_source === 'normal') ? 'manual_order' : order.order_source;
+    const matchesSource = sourceFilter === 'all' || effectiveSource === sourceFilter ||
+      (sourceFilter === 'manual_order' && (!order.order_source || order.order_source === 'normal' || order.order_source === 'manual_order'));
 
     return matchesSearch && matchesStage && matchesStatus && matchesSource;
   });
@@ -129,7 +133,7 @@ export default function OrdersMonitoringTab({ orders, onUpdate, onDelete }: Prop
   const allSelected = filteredOrders.length > 0 && selectedIds.size === filteredOrders.length;
   const someSelected = selectedIds.size > 0;
 
-  const manualCount = orders.filter(o => !o.order_source || o.order_source === 'normal').length;
+  const manualCount = orders.filter(o => !o.order_source || o.order_source === 'normal' || o.order_source === 'manual_order').length;
   const marketCount = orders.filter(o => o.order_source === 'market' || o.order_source === 'market_demand_card').length;
   const demandCardCount = orders.filter(o => o.order_source === 'market_demand_card').length;
 

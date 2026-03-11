@@ -237,6 +237,16 @@ export function useOrders() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
+    const adminEmail = getAdminEmail();
+    if (adminEmail) {
+      const { data: rpcData } = await supabase
+        .rpc('admin_get_orders', { p_admin_email: adminEmail });
+      if (rpcData) {
+        setOrders((rpcData as any[]) as OrderRequest[]);
+        setLoading(false);
+        return;
+      }
+    }
     const { data } = await supabase
       .from('orders')
       .select('*')
