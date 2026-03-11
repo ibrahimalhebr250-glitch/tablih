@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { RefreshCw, Handshake, ShoppingBag, ChevronLeft, Sparkles, Warehouse } from 'lucide-react';
 import { useDashboard } from '../../hooks/useDashboard';
-import { useBuyerInventory } from '../../hooks/useBuyerInventory';
 import ActivitySummaryCard from './ActivitySummaryCard';
 import OrdersSection from './OrdersSection';
 import WarehouseSection from './WarehouseSection';
@@ -18,7 +17,6 @@ interface Props {
 
 export default function OperationalDashboard({ session, onAddInventory, onCreateOrder, onOpenSupplierDeals, onOpenBuyerDeals, refreshRef }: Props) {
   const { orders, batches, deals, summary, loading, refresh, updateBatchPrice, updateBatch, deleteBatch, updateOrder } = useDashboard(session.profile.phone);
-  const { summary: buyerInventorySummary } = useBuyerInventory(session.profile.phone);
 
   useEffect(() => {
     if (refreshRef) refreshRef.current = refresh;

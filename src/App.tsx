@@ -63,7 +63,6 @@ function App() {
   const [adminStaff, setAdminStaff] = useState<AdminStaffData | null>(null);
   const [inventoryPrefill, setInventoryPrefill] = useState<{ pallet_type?: string; size?: string; quality?: string; quantity?: number; city?: string } | undefined>();
   const [inventorySource, setInventorySource] = useState<'supplier_added' | 'purchase_transfer'>('supplier_added');
-  const [accountInitialTab, setAccountInitialTab] = useState<'warehouse' | 'settings' | undefined>();
   const [pendingDemandOrderId, setPendingDemandOrderId] = useState<string | null>(null);
 
   const hasPendingAfterLogin = useCallback(() => {
@@ -601,11 +600,8 @@ function App() {
         {modal === 'account' && session && (
           <AccountPage
             session={session}
-            onClose={() => { setModal('none'); setAccountInitialTab(undefined); }}
-            onAddInventory={openInventory}
-            onCreateOrder={() => setModal('orderBuilder')}
+            onClose={() => { setModal('none'); }}
             onLogout={handleLogout}
-            initialTab={accountInitialTab}
           />
         )}
 

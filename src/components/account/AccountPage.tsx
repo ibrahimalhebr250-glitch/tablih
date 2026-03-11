@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
   ArrowRight,
-  Cloud,
   Settings,
   Warehouse,
   ShoppingCart,
@@ -15,35 +14,22 @@ import { supabase } from '../../lib/supabase';
 import { useTranslation } from '../../lib/i18n';
 import { getTrustConfig } from '../shared/TrustRatingBadge';
 import AccountSummaryCards from './AccountSummaryCards';
-import CloudWarehouseTab from './tabs/CloudWarehouseTab';
 import SettingsTab from './tabs/SettingsTab';
 import AccountEditSheet from './AccountEditSheet';
 
-type AccountTab = 'warehouse' | 'settings';
-
-interface InventoryPrefill {
-  pallet_type?: string;
-  size?: string;
-  quality?: string;
-  quantity?: number;
-  city?: string;
-}
+type AccountTab = 'settings';
 
 interface Props {
   session: AppSession;
   onClose: () => void;
-  onAddInventory: (prefill?: InventoryPrefill, source?: 'supplier_added' | 'purchase_transfer') => void;
-  onCreateOrder: () => void;
   onLogout: () => void;
-  initialTab?: AccountTab;
 }
 
-export default function AccountPage({ session, onClose, onAddInventory, onCreateOrder, onLogout, initialTab }: Props) {
+export default function AccountPage({ session, onClose, onLogout }: Props) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<AccountTab>(initialTab || 'warehouse');
+  const [activeTab] = useState<AccountTab>('settings');
 
-  const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Cloud }[] = [
-    { key: 'warehouse', label: t('account.myWarehouse'), icon: Cloud },
+  const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Settings }[] = [
     { key: 'settings', label: t('account.settings'), icon: Settings },
   ];
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
@@ -51,10 +37,6 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [localSession, setLocalSession] = useState(session);
   const [stats, setStats] = useState({ inventory: 0, purchases: 0, activeDeals: 0, orders: 0 });
-
-  useEffect(() => {
-    if (initialTab) setActiveTab(initialTab);
-  }, [initialTab]);
 
   const isCompany = localSession.profile.user_type === 'company';
   const displayName = isCompany
@@ -96,14 +78,7 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
   };
 
   const renderTab = () => {
-    switch (activeTab) {
-      case 'warehouse':
-        return <CloudWarehouseTab phone={localSession.profile.phone} onAddInventory={onAddInventory} onAddInventoryWithPrefill={onAddInventory} />;
-      case 'settings':
-        return <SettingsTab session={localSession} onLogout={onLogout} onEditProfile={() => setShowEditSheet(true)} />;
-      default:
-        return null;
-    }
+    return <SettingsTab session={localSession} onLogout={onLogout} onEditProfile={() => setShowEditSheet(true)} />;
   };
 
   return (
