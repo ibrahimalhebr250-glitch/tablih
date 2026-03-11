@@ -81,9 +81,20 @@ export function useCities() {
   useEffect(() => { fetch(); }, [fetch]);
 
   const updateCity = async (id: string, updates: Partial<City>) => {
-    const { error: err } = await supabase.from('cities').update(updates).eq('id', id);
-    if (!err) await fetch();
-    return err;
+    const adminEmail = getAdminEmail();
+    if (!adminEmail) return { message: 'غير مصرح لك بهذا الإجراء' };
+    const { data, error: err } = await supabase.rpc('admin_update_city_v2', {
+      p_admin_email: adminEmail,
+      p_city_id: id,
+      p_name: updates.name ?? null,
+      p_status: updates.status ?? null,
+      p_minimum_quantity: updates.minimum_quantity ?? null,
+      p_matching_enabled: updates.matching_enabled ?? null,
+    });
+    if (err) return err;
+    if (data && !data.success) return { message: data.error || 'فشل تعديل المدينة' };
+    await fetch();
+    return null;
   };
 
   const deleteCity = async (id: string) => {
@@ -107,15 +118,17 @@ export function useCities() {
   };
 
   const addCity = async (name: string, status: string = 'active') => {
-    const trimmed = name.trim();
-    if (!trimmed) return { message: 'اسم المدينة مطلوب' };
-    const { error: err } = await supabase.from('cities').insert({
-      name: trimmed,
-      status,
-      minimum_quantity: 1,
-      matching_enabled: true,
+    const adminEmail = getAdminEmail();
+    if (!adminEmail) return { message: 'غير مصرح لك بهذا الإجراء' };
+    const { data, error: err } = await supabase.rpc('admin_add_city', {
+      p_admin_email: adminEmail,
+      p_name: name,
+      p_status: status,
+      p_minimum_quantity: 1,
+      p_matching_enabled: true,
     });
     if (err) return { message: err.message };
+    if (data && !data.success) return { message: data.error || 'فشل إضافة المدينة' };
     await fetch();
     return null;
   };
