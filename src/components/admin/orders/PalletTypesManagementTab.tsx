@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Pencil, Trash2, Eye, EyeOff, GripVertical, Package, Box, Container, Archive, Layers, Grid3x3 as Grid3X3, Truck, ShoppingCart, Warehouse, CreditCard, Recycle, Shield, Zap, Star, Tag, Bookmark, LayoutGrid, Boxes, PackageOpen, PackageCheck, Upload, X, Search, Check, Image as ImageIcon, Smile } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, GripVertical, Package, Box, Container, Archive, Layers, Grid3x3 as Grid3X3, Truck, ShoppingCart, Warehouse, CreditCard, Recycle, Shield, Zap, Star, Tag, Bookmark, LayoutGrid, Boxes, PackageOpen, PackageCheck, Upload, X, Search, Check, Image as ImageIcon, Smile, AlertCircle } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { getAdminEmail } from '../../../utils/adminAuth';
 
 interface PalletType {
   id: string;
@@ -71,10 +72,7 @@ function getLucideComponent(name: string) {
 function renderIconPreview(icon: string, size = 'md') {
   const sizeClass = size === 'sm' ? 'w-5 h-5' : size === 'lg' ? 'w-8 h-8' : 'w-6 h-6';
   const textSize = size === 'sm' ? 'text-base' : size === 'lg' ? 'text-2xl' : 'text-lg';
-
-  if (!icon) {
-    return <Package className={`${sizeClass} text-gray-400`} />;
-  }
+  if (!icon) return <Package className={`${sizeClass} text-gray-400`} />;
   if (icon.startsWith('lucide:')) {
     const name = icon.replace('lucide:', '');
     const Icon = getLucideComponent(name);
@@ -84,6 +82,45 @@ function renderIconPreview(icon: string, size = 'md') {
     return <img src={icon} alt="icon" className={`${sizeClass} object-contain rounded`} />;
   }
   return <span className={textSize}>{icon}</span>;
+}
+
+interface ConfirmDialogProps {
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading?: boolean;
+}
+
+function ConfirmDialog({ message, onConfirm, onCancel, loading }: ConfirmDialogProps) {
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden" dir="rtl">
+        <div className="p-5 flex flex-col items-center gap-4 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center">
+            <AlertCircle className="w-7 h-7 text-red-500" />
+          </div>
+          <p className="text-[14px] font-semibold text-gray-800 leading-relaxed">{message}</p>
+        </div>
+        <div className="flex gap-2 px-5 pb-5">
+          <button
+            onClick={onCancel}
+            disabled={loading}
+            className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-200 transition-colors disabled:opacity-60"
+          >
+            إلغاء
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl font-semibold text-sm hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {loading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+            {loading ? 'جاري الحذف...' : 'حذف'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function PalletTypesManagementTab() {
@@ -96,6 +133,9 @@ export default function PalletTypesManagementTab() {
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -119,16 +159,28 @@ export default function PalletTypesManagementTab() {
     }
   }, [notification]);
 
+  const adminEmail = getAdminEmail();
+
+  const showNotification = (type: 'success' | 'error', msg: string) => {
+    setNotification({ type, msg });
+  };
+
   const loadTypes = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('pallet_types_master')
-        .select('*')
-        .order('sort_order');
-
-      if (error) throw error;
-      setTypes(data || []);
+      const email = getAdminEmail();
+      if (email) {
+        const { data, error } = await supabase.rpc('admin_get_pallet_types', { p_admin_email: email });
+        if (error) throw error;
+        setTypes(data || []);
+      } else {
+        const { data, error } = await supabase
+          .from('pallet_types_master')
+          .select('*')
+          .order('sort_order');
+        if (error) throw error;
+        setTypes(data || []);
+      }
     } catch (err) {
       console.error('Error loading pallet types:', err);
     } finally {
@@ -140,7 +192,7 @@ export default function PalletTypesManagementTab() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 500 * 1024) {
-      setNotification({ type: 'error', msg: 'حجم الصورة يجب أن يكون أقل من 500 كيلوبايت' });
+      showNotification('error', 'حجم الصورة يجب أن يكون أقل من 500 كيلوبايت');
       return;
     }
     const reader = new FileReader();
@@ -154,48 +206,47 @@ export default function PalletTypesManagementTab() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!adminEmail) {
+      showNotification('error', 'يجب تسجيل الدخول كمدير أولاً');
+      return;
+    }
     setSaving(true);
     try {
       if (editingType) {
-        const { error } = await supabase
-          .from('pallet_types_master')
-          .update({
-            name_ar: formData.name_ar,
-            name_en: formData.name_en,
-            description_ar: formData.description_ar || null,
-            description_en: formData.description_en || null,
-            icon: formData.icon || '📦',
-            is_active: formData.is_active,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', editingType.id);
-
+        const { data, error } = await supabase.rpc('admin_update_pallet_type', {
+          p_admin_email: adminEmail,
+          p_id: editingType.id,
+          p_name_ar: formData.name_ar,
+          p_name_en: formData.name_en,
+          p_description_ar: formData.description_ar || null,
+          p_description_en: formData.description_en || null,
+          p_icon: formData.icon || '📦',
+          p_is_active: formData.is_active,
+        });
         if (error) throw error;
-        setNotification({ type: 'success', msg: 'تم تعديل نوع الطبلية بنجاح' });
+        if (data && !data.success) throw new Error(data.error);
+        showNotification('success', 'تم تعديل نوع الطبلية بنجاح');
       } else {
         const maxOrder = types.length > 0 ? Math.max(...types.map(t => t.sort_order)) : 0;
-        const { error } = await supabase
-          .from('pallet_types_master')
-          .insert([{
-            code: formData.code,
-            name_ar: formData.name_ar,
-            name_en: formData.name_en,
-            description_ar: formData.description_ar || null,
-            description_en: formData.description_en || null,
-            icon: formData.icon || '📦',
-            is_active: formData.is_active,
-            sort_order: maxOrder + 1
-          }]);
-
+        const { data, error } = await supabase.rpc('admin_create_pallet_type', {
+          p_admin_email: adminEmail,
+          p_code: formData.code,
+          p_name_ar: formData.name_ar,
+          p_name_en: formData.name_en,
+          p_description_ar: formData.description_ar || null,
+          p_description_en: formData.description_en || null,
+          p_icon: formData.icon || '📦',
+          p_is_active: formData.is_active,
+          p_sort_order: maxOrder + 1,
+        });
         if (error) throw error;
-        setNotification({ type: 'success', msg: 'تمت إضافة نوع الطبلية بنجاح' });
+        if (data && !data.success) throw new Error(data.error);
+        showNotification('success', 'تمت إضافة نوع الطبلية بنجاح');
       }
-
       closeDialog();
       loadTypes();
     } catch (err: any) {
-      console.error('Error saving pallet type:', err);
-      setNotification({ type: 'error', msg: err?.message || 'حدث خطأ أثناء الحفظ' });
+      showNotification('error', err?.message || 'حدث خطأ أثناء الحفظ');
     } finally {
       setSaving(false);
     }
@@ -229,28 +280,50 @@ export default function PalletTypesManagementTab() {
     setShowDialog(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذا النوع؟')) return;
+  const handleDeleteConfirm = async () => {
+    if (!confirmDeleteId || !adminEmail) return;
+    setDeleting(true);
     try {
-      const { error } = await supabase.from('pallet_types_master').delete().eq('id', id);
+      const { data, error } = await supabase.rpc('admin_delete_pallet_type', {
+        p_admin_email: adminEmail,
+        p_id: confirmDeleteId,
+      });
       if (error) throw error;
-      setNotification({ type: 'success', msg: 'تم حذف نوع الطبلية' });
+      if (data && !data.success) throw new Error(data.error);
+      showNotification('success', 'تم حذف نوع الطبلية');
+      setConfirmDeleteId(null);
       loadTypes();
-    } catch (err) {
-      setNotification({ type: 'error', msg: 'حدث خطأ أثناء الحذف' });
+    } catch (err: any) {
+      showNotification('error', err?.message || 'حدث خطأ أثناء الحذف');
+    } finally {
+      setDeleting(false);
     }
   };
 
   const toggleActive = async (id: string, currentStatus: boolean) => {
+    if (!adminEmail) { showNotification('error', 'يجب تسجيل الدخول كمدير أولاً'); return; }
+    setTogglingId(id);
     try {
-      const { error } = await supabase
-        .from('pallet_types_master')
-        .update({ is_active: !currentStatus, updated_at: new Date().toISOString() })
-        .eq('id', id);
+      const type = types.find(t => t.id === id);
+      if (!type) return;
+      const { data, error } = await supabase.rpc('admin_update_pallet_type', {
+        p_admin_email: adminEmail,
+        p_id: id,
+        p_name_ar: type.name_ar,
+        p_name_en: type.name_en,
+        p_description_ar: type.description_ar || null,
+        p_description_en: type.description_en || null,
+        p_icon: type.icon || '📦',
+        p_is_active: !currentStatus,
+      });
       if (error) throw error;
+      if (data && !data.success) throw new Error(data.error);
+      showNotification('success', currentStatus ? 'تم إخفاء النوع بنجاح' : 'تم إظهار النوع بنجاح');
       loadTypes();
-    } catch (err) {
-      console.error('Error toggling active status:', err);
+    } catch (err: any) {
+      showNotification('error', err?.message || 'حدث خطأ');
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -276,9 +349,18 @@ export default function PalletTypesManagementTab() {
         <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[9999] px-6 py-3 rounded-xl shadow-lg text-white text-sm font-medium flex items-center gap-2 transition-all ${
           notification.type === 'success' ? 'bg-green-600' : 'bg-red-600'
         }`}>
-          <Check className="w-4 h-4" />
+          {notification.type === 'success' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
           {notification.msg}
         </div>
+      )}
+
+      {confirmDeleteId && (
+        <ConfirmDialog
+          message={`هل أنت متأكد من حذف نوع الطبلية "${types.find(t => t.id === confirmDeleteId)?.name_ar}"؟ لا يمكن التراجع عن هذا الإجراء.`}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setConfirmDeleteId(null)}
+          loading={deleting}
+        />
       )}
 
       <div className="flex items-center justify-between">
@@ -294,6 +376,13 @@ export default function PalletTypesManagementTab() {
           إضافة نوع جديد
         </button>
       </div>
+
+      {!adminEmail && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3" dir="rtl">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+          <p className="text-sm text-amber-700 font-medium">تسجيل دخول المدير مطلوب لتنفيذ الإجراءات</p>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full">
@@ -317,12 +406,12 @@ export default function PalletTypesManagementTab() {
                 </td>
               </tr>
             ) : types.map((type) => (
-              <tr key={type.id} className="hover:bg-gray-50/50 transition-colors">
+              <tr key={type.id} className={`hover:bg-gray-50/50 transition-colors ${!type.is_active ? 'opacity-60' : ''}`}>
                 <td className="px-5 py-3.5">
                   <GripVertical className="w-4 h-4 text-gray-300 cursor-grab" />
                 </td>
                 <td className="px-5 py-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-700">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${type.is_active ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-400'}`}>
                     {renderIconPreview(type.icon, 'sm')}
                   </div>
                 </td>
@@ -350,10 +439,17 @@ export default function PalletTypesManagementTab() {
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => toggleActive(type.id, type.is_active)}
-                      className={`p-1.5 rounded-lg transition-colors ${type.is_active ? 'text-gray-500 hover:bg-gray-100' : 'text-green-600 hover:bg-green-50'}`}
+                      disabled={togglingId === type.id}
+                      className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${type.is_active ? 'text-gray-500 hover:bg-gray-100' : 'text-green-600 hover:bg-green-50'}`}
                       title={type.is_active ? 'إخفاء' : 'إظهار'}
                     >
-                      {type.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {togglingId === type.id ? (
+                        <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                      ) : type.is_active ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                     <button
                       onClick={() => handleEdit(type)}
@@ -363,7 +459,7 @@ export default function PalletTypesManagementTab() {
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(type.id)}
+                      onClick={() => setConfirmDeleteId(type.id)}
                       className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
                       title="حذف"
                     >
@@ -627,7 +723,7 @@ export default function PalletTypesManagementTab() {
               <div className="flex gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex-shrink-0">
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || !adminEmail}
                   className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold text-sm transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                   {saving ? (
