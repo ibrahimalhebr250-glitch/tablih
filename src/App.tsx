@@ -113,11 +113,20 @@ function App() {
     };
     const visitorId = getOrCreateVisitorId();
     const sessionId = getOrCreateSessionId();
+
     supabase.rpc('log_platform_visit', {
       p_visitor_id: visitorId,
       p_session_id: sessionId,
       p_phone: null,
       p_user_agent: navigator.userAgent.slice(0, 200),
+    }).then(() => {}).catch(() => {});
+
+    supabase.rpc('log_visitor_session', {
+      p_visitor_id: visitorId,
+      p_session_id: sessionId,
+      p_user_agent: navigator.userAgent.slice(0, 200),
+      p_referrer: document.referrer.slice(0, 500) || null,
+      p_phone: null,
     }).then(() => {}).catch(() => {});
 
     analytics.trackPageView('/', 'منصة باليت');

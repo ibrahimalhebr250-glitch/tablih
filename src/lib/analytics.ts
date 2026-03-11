@@ -154,6 +154,7 @@ class Analytics {
 
   private updateVisitorPhone(phone: string) {
     const visitorId = localStorage.getItem('_pvid');
+    const sessionId = this.getSessionId();
     if (!visitorId) return;
     supabase
       .from('platform_visitor_logs')
@@ -161,6 +162,12 @@ class Analytics {
       .eq('visitor_id', visitorId)
       .is('phone', null)
       .then(() => {}).catch(() => {});
+    if (sessionId) {
+      supabase.rpc('update_session_phone', {
+        p_session_id: sessionId,
+        p_phone: phone,
+      }).then(() => {}).catch(() => {});
+    }
   }
 
   private getSessionId(): string {

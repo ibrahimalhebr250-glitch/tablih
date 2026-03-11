@@ -30,8 +30,10 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
   const [abTestResults, setABTestResults] = useState<ABTestResult[]>([]);
   const [realtimeUsers, setRealtimeUsers] = useState(0);
   const [dateRange, setDateRange] = useState('7d');
+  const [liveVisitors, setLiveVisitors] = useState(0);
   const behaviorChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const visitorChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const sessionChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const { experiments } = useABTesting();
 
@@ -57,11 +59,32 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
       })
       .subscribe();
 
+    sessionChannelRef.current = supabase
+      .channel('analytics_sessions_rt')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'visitor_sessions' }, (payload) => {
+        setLiveVisitors(prev => prev + 1);
+        loadRealtimeStats();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'visitor_sessions' }, () => {
+        loadLiveVisitors();
+      })
+      .subscribe();
+
+    loadLiveVisitors();
+    const liveInterval = setInterval(loadLiveVisitors, 30000);
+
     return () => {
       if (behaviorChannelRef.current) supabase.removeChannel(behaviorChannelRef.current);
       if (visitorChannelRef.current) supabase.removeChannel(visitorChannelRef.current);
+      if (sessionChannelRef.current) supabase.removeChannel(sessionChannelRef.current);
+      clearInterval(liveInterval);
     };
   }, []);
+
+  const loadLiveVisitors = async () => {
+    const { data } = await supabase.rpc('get_live_visitor_count', { minutes_ago: 30 });
+    if (typeof data === 'number') setLiveVisitors(data);
+  };
 
   const loadAnalytics = async () => {
     setLoading(true);
@@ -337,14 +360,18 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
               <div className="flex items-center justify-between mb-4">
                 <Zap className="w-8 h-8 text-orange-600" />
-                <span className="px-3 py-1 bg-orange-200 text-orange-700 text-xs font-bold rounded-full">
+                <span className="flex items-center gap-1.5 px-3 py-1 bg-orange-200 text-orange-700 text-xs font-bold rounded-full">
+                  <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
                   الآن
                 </span>
               </div>
-              <div className="text-3xl font-bold text-gray-900 mb-2">
-                {realtimeUsers}
+              <div className="text-3xl font-bold text-gray-900 mb-1">
+                {liveVisitors}
               </div>
-              <div className="text-sm text-gray-600">مستخدم نشط</div>
+              <div className="text-sm text-gray-600">زائر نشط (آخر 30 دقيقة)</div>
+              {realtimeUsers > 0 && (
+                <div className="mt-2 text-xs text-orange-600">{realtimeUsers} جلسة نشطة</div>
+              )}
             </div>
           </div>
 
@@ -483,20 +510,41 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
 
       {activeTab === 'realtime' && (
         <div className="space-y-6">
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-8 border border-green-200 text-center">
-            <Activity className="w-16 h-16 text-green-600 mx-auto mb-4" />
-            <div className="text-5xl font-bold text-gray-900 mb-2">
-              {realtimeUsers}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-8 border border-green-200 text-center">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+                <Activity className="w-10 h-10 text-green-600" />
+              </div>
+              <div className="text-5xl font-bold text-gray-900 mb-2">
+                {liveVisitors}
+              </div>
+              <div className="text-lg text-gray-600">زائر نشط</div>
+              <div className="text-sm text-gray-500 mt-2">آخر 30 دقيقة</div>
             </div>
-            <div className="text-lg text-gray-600">مستخدم نشط الآن</div>
-            <div className="text-sm text-gray-500 mt-2">آخر 5 دقائق</div>
+
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-8 border border-blue-200 text-center">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <span className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+                <Zap className="w-10 h-10 text-blue-600" />
+              </div>
+              <div className="text-5xl font-bold text-gray-900 mb-2">
+                {realtimeUsers}
+              </div>
+              <div className="text-lg text-gray-600">جلسة نشطة</div>
+              <div className="text-sm text-gray-500 mt-2">آخر 30 دقيقة</div>
+            </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">النشاط الأخير</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
+              <h3 className="text-lg font-bold text-gray-900">مراقبة مباشرة</h3>
+            </div>
             <div className="text-center text-gray-500 py-8">
               <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>يتم تحديث النشاط كل 10 ثواني</p>
+              <p>يتحدث تلقائياً عند دخول أي زائر جديد</p>
+              <p className="text-xs text-gray-400 mt-1">مدعوم بـ Supabase Realtime</p>
             </div>
           </div>
         </div>

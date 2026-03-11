@@ -115,6 +115,11 @@ export function useVisitorStats() {
         { event: 'INSERT', schema: 'public', table: 'platform_visitor_logs' },
         () => { load(); }
       )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'visitor_sessions' },
+        () => { load(); }
+      )
       .subscribe();
 
     return () => {
