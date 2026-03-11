@@ -194,10 +194,10 @@ export default function InventoryBuilder({
 
     const approvalMode = invSettings.approval_mode;
     const shouldPublish = builder.form.publishToMarket !== false;
-    const batchStatus = shouldPublish && builder.form.activateImmediately
+    const batchStatus = shouldPublish
       ? (approvalMode === 'require_approval' ? 'draft' : 'active')
       : 'draft';
-    const approvalStatus = shouldPublish && builder.form.activateImmediately && approvalMode === 'require_approval'
+    const approvalStatus = shouldPublish && approvalMode === 'require_approval'
       ? 'pending'
       : 'approved';
 

@@ -8,14 +8,14 @@ export interface InventoryBatch {
   pallet_type: string;
   size: string;
   quality: string;
-  condition: string | null;
+  pallet_condition: string | null;
   city: string;
   quantity: number;
   quantity_available: number;
   price_per_pallet: number | null;
   publish_to_market: boolean;
-  is_active: boolean;
-  source: string | null;
+  status: string;
+  inventory_source: string | null;
   created_at: string;
 }
 
@@ -79,7 +79,7 @@ export function useAccountData(phone: string) {
     const [invRes, purchasesRes, dealsRes, commRes, negRes] = await Promise.all([
       supabase
         .from('inventory_batches')
-        .select('id, batch_ref, pallet_type, size, quality, condition, city, quantity, quantity_available, price_per_pallet, publish_to_market, is_active, source, created_at')
+        .select('id, batch_ref, pallet_type, size, quality, pallet_condition, city, quantity, quantity_available, price_per_pallet, publish_to_market, status, inventory_source, created_at')
         .eq('phone', phone)
         .order('created_at', { ascending: false }),
 
@@ -192,8 +192,9 @@ export function useAccountData(phone: string) {
     return info.company_name || info.display_name || p;
   }, [counterparties]);
 
-  const publishedInventory = inventory.filter(b => b.publish_to_market && b.is_active && (b.quantity_available ?? b.quantity) > 0);
-  const unpublishedInventory = inventory.filter(b => !b.publish_to_market && b.is_active);
+  const isActiveBatch = (b: InventoryBatch) => b.status === 'active' || b.status === 'draft';
+  const publishedInventory = inventory.filter(b => b.publish_to_market && isActiveBatch(b) && (b.quantity_available ?? b.quantity) > 0);
+  const unpublishedInventory = inventory.filter(b => !b.publish_to_market && isActiveBatch(b));
   const reservedInventory = inventory.filter(b => {
     const reserved = (b.quantity ?? 0) - (b.quantity_available ?? b.quantity ?? 0);
     return reserved > 0;

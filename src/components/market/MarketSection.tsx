@@ -451,6 +451,7 @@ export default function MarketSection({
           .from('inventory_batches')
           .select('id, phone, pallet_type, size, quality, pallet_condition, quantity_available, price_per_pallet, city, description, image_url, created_at, publish_to_market')
           .eq('publish_to_market', true)
+          .eq('status', 'active')
           .gt('quantity_available', 0)
           .order('created_at', { ascending: false })
           .limit(60),
