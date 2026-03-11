@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import {
   ArrowRight,
   Cloud,
-  Handshake,
-  ClipboardList,
   Settings,
   Warehouse,
   ShoppingCart,
@@ -18,12 +16,10 @@ import { useTranslation } from '../../lib/i18n';
 import { getTrustConfig } from '../shared/TrustRatingBadge';
 import AccountSummaryCards from './AccountSummaryCards';
 import CloudWarehouseTab from './tabs/CloudWarehouseTab';
-import DealsTab from './tabs/DealsTab';
-import MyOrdersTab from './tabs/MyOrdersTab';
 import SettingsTab from './tabs/SettingsTab';
 import AccountEditSheet from './AccountEditSheet';
 
-type AccountTab = 'warehouse' | 'deals' | 'orders' | 'settings';
+type AccountTab = 'warehouse' | 'settings';
 
 interface InventoryPrefill {
   pallet_type?: string;
@@ -33,15 +29,6 @@ interface InventoryPrefill {
   city?: string;
 }
 
-interface PendingDemandOffer {
-  order_id: string;
-  pallet_type: string;
-  size: string;
-  quality: string;
-  city: string;
-  quantity: number;
-}
-
 interface Props {
   session: AppSession;
   onClose: () => void;
@@ -49,18 +36,14 @@ interface Props {
   onCreateOrder: () => void;
   onLogout: () => void;
   initialTab?: AccountTab;
-  pendingDemandOffer?: PendingDemandOffer | null;
-  onPendingDemandOfferCleared?: () => void;
 }
 
-export default function AccountPage({ session, onClose, onAddInventory, onCreateOrder, onLogout, initialTab, pendingDemandOffer, onPendingDemandOfferCleared }: Props) {
+export default function AccountPage({ session, onClose, onAddInventory, onCreateOrder, onLogout, initialTab }: Props) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<AccountTab>(initialTab || 'warehouse');
 
   const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Cloud }[] = [
     { key: 'warehouse', label: t('account.myWarehouse'), icon: Cloud },
-    { key: 'deals', label: t('account.deals'), icon: Handshake },
-    { key: 'orders', label: t('account.myOrders'), icon: ClipboardList },
     { key: 'settings', label: t('account.settings'), icon: Settings },
   ];
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
@@ -116,10 +99,6 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
     switch (activeTab) {
       case 'warehouse':
         return <CloudWarehouseTab phone={localSession.profile.phone} onAddInventory={onAddInventory} onAddInventoryWithPrefill={onAddInventory} />;
-      case 'deals':
-        return <DealsTab phone={localSession.profile.phone} pendingDemandOffer={pendingDemandOffer ?? null} onPendingDemandOfferCleared={onPendingDemandOfferCleared} />;
-      case 'orders':
-        return <MyOrdersTab phone={localSession.profile.phone} onCreateOrder={onCreateOrder} onGoToDeals={() => setActiveTab('deals')} onGoToWarehouse={() => setActiveTab('warehouse')} />;
       case 'settings':
         return <SettingsTab session={localSession} onLogout={onLogout} onEditProfile={() => setShowEditSheet(true)} />;
       default:
@@ -162,14 +141,12 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
         <div className="relative overflow-hidden px-5 pt-6 pb-5 flex-shrink-0">
           <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
 
-          {/* Close button */}
           <div className="flex justify-end mb-4">
             <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors border border-white/10">
               <X className="w-4 h-4 text-white/70" />
             </button>
           </div>
 
-          {/* Profile */}
           <div className="flex flex-col items-center text-center gap-3" dir="rtl">
             <div className="relative">
               <button onClick={() => setShowEditSheet(true)} className="w-20 h-20 rounded-2xl overflow-hidden flex items-center justify-center active:scale-95 transition-transform" style={{ background: profileImageUrl ? 'transparent' : 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', border: '3px solid rgba(255,255,255,0.2)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
@@ -232,7 +209,6 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
           {TAB_CONFIG.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
-            const badgeCount = tab.key === 'deals' ? stats.activeDeals : tab.key === 'orders' ? stats.orders : 0;
             return (
               <button
                 key={tab.key}
@@ -242,11 +218,6 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
               >
                 <Icon className="w-4 h-4 flex-shrink-0" />
                 <span className="flex-1 text-right">{tab.label}</span>
-                {badgeCount > 0 && (
-                  <span className="min-w-[20px] h-5 flex items-center justify-center rounded-full text-[10px] font-black px-1.5" style={{ background: tab.key === 'deals' ? '#059669' : '#0369A1', color: 'white' }}>
-                    {badgeCount > 99 ? '99+' : badgeCount}
-                  </span>
-                )}
               </button>
             );
           })}
@@ -343,7 +314,6 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
             {TAB_CONFIG.map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.key;
-              const badgeCount = tab.key === 'deals' ? stats.activeDeals : tab.key === 'orders' ? stats.orders : 0;
               return (
                 <button
                   key={tab.key}
@@ -353,16 +323,6 @@ export default function AccountPage({ session, onClose, onAddInventory, onCreate
                 >
                   <Icon className="w-4 h-4" />
                   <span>{tab.label}</span>
-                  {badgeCount > 0 && !isActive && (
-                    <span className="absolute -top-1 left-1/2 translate-x-2 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-black text-white px-1" style={{ background: tab.key === 'deals' ? '#059669' : '#0369A1', boxShadow: `0 2px 6px ${tab.key === 'deals' ? 'rgba(5,150,105,0.4)' : 'rgba(3,105,161,0.4)'}` }}>
-                      {badgeCount > 99 ? '99+' : badgeCount}
-                    </span>
-                  )}
-                  {badgeCount > 0 && isActive && (
-                    <span className="min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-black px-1 mr-0.5" style={{ background: 'rgba(255,255,255,0.25)', color: 'white' }}>
-                      {badgeCount > 99 ? '99+' : badgeCount}
-                    </span>
-                  )}
                 </button>
               );
             })}

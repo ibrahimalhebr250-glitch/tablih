@@ -7,7 +7,7 @@ import type { Deal } from '../../../types/deal';
 import { ActionToast } from '../../shared/ActionToast';
 import type { ToastConfig } from '../../shared/ActionToast';
 import RatingDialog from '../shared/RatingDialog';
-import { buildWhatsAppLink } from '../../account/deals/DealCards';
+import { buildWhatsAppLink } from '../../../utils/whatsappUtils';
 import { logWhatsAppContact } from '../../../hooks/useWhatsAppTemplates';
 import { supabase } from '../../../lib/supabase';
 
