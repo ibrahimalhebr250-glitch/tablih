@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BarChart3, TrendingUp, Users, Activity, Target, Zap, Filter, Download } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useABTesting } from '../../../hooks/useABTesting';
@@ -30,6 +30,8 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
   const [abTestResults, setABTestResults] = useState<ABTestResult[]>([]);
   const [realtimeUsers, setRealtimeUsers] = useState(0);
   const [dateRange, setDateRange] = useState('7d');
+  const behaviorChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const visitorChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const { experiments } = useABTesting();
 
@@ -38,9 +40,27 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
   }, [dateRange]);
 
   useEffect(() => {
-    const interval = setInterval(loadRealtimeStats, 10000);
     loadRealtimeStats();
-    return () => clearInterval(interval);
+
+    behaviorChannelRef.current = supabase
+      .channel('analytics_behavior_rt')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_behavior_tracking' }, () => {
+        loadBehaviorStats();
+        loadRealtimeStats();
+      })
+      .subscribe();
+
+    visitorChannelRef.current = supabase
+      .channel('analytics_visitors_rt')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'platform_visitor_logs' }, () => {
+        loadRealtimeStats();
+      })
+      .subscribe();
+
+    return () => {
+      if (behaviorChannelRef.current) supabase.removeChannel(behaviorChannelRef.current);
+      if (visitorChannelRef.current) supabase.removeChannel(visitorChannelRef.current);
+    };
   }, []);
 
   const loadAnalytics = async () => {
@@ -182,17 +202,23 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
   };
 
   const loadRealtimeStats = async () => {
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
 
-    const { data, error } = await supabase
-      .from('user_behavior_tracking')
-      .select('user_phone')
-      .gte('created_at', fiveMinutesAgo.toISOString());
+    const [{ data: behaviorData }, { data: visitorData }] = await Promise.all([
+      supabase
+        .from('user_behavior_tracking')
+        .select('user_phone, session_id')
+        .gte('created_at', thirtyMinutesAgo.toISOString()),
+      supabase
+        .from('platform_visitor_logs')
+        .select('visitor_id, session_id')
+        .gte('created_at', thirtyMinutesAgo.toISOString()),
+    ]);
 
-    if (!error && data) {
-      const unique = new Set(data.map(d => d.user_phone)).size;
-      setRealtimeUsers(unique);
-    }
+    const sessions = new Set<string>();
+    behaviorData?.forEach(d => { if (d.session_id) sessions.add(d.session_id); });
+    visitorData?.forEach(d => { if (d.session_id) sessions.add(d.session_id); });
+    setRealtimeUsers(sessions.size);
   };
 
   const exportData = () => {

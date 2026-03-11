@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 export interface VisitorPeriodStats {
@@ -24,23 +24,25 @@ export function useVisitorStats() {
   const [stats, setStats] = useState<VisitorPeriodStats | null>(null);
   const [dailyChart, setDailyChart] = useState<VisitorDailyPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const load = useCallback(async () => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     thirtyDaysAgo.setHours(0, 0, 0, 0);
 
-    const { data, error } = await supabase
-      .from('platform_visitor_logs')
-      .select('visitor_id, visit_date, created_at')
-      .gte('created_at', thirtyDaysAgo.toISOString())
-      .order('created_at', { ascending: false });
+    const [{ data, error }, { count: totalCount }] = await Promise.all([
+      supabase
+        .from('platform_visitor_logs')
+        .select('visitor_id, visit_date, created_at')
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('platform_visitor_logs')
+        .select('visitor_id', { count: 'exact', head: true }),
+    ]);
 
-    const { count: totalCount } = await supabase
-      .from('platform_visitor_logs')
-      .select('visitor_id', { count: 'exact', head: true });
-
-    if (error) {
+    if (error || !data) {
       setLoading(false);
       return;
     }
@@ -105,8 +107,22 @@ export function useVisitorStats() {
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, 60000);
-    return () => clearInterval(interval);
+
+    channelRef.current = supabase
+      .channel('visitor_logs_realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'platform_visitor_logs' },
+        () => { load(); }
+      )
+      .subscribe();
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   }, [load]);
 
   return { stats, dailyChart, loading, refetch: load };
