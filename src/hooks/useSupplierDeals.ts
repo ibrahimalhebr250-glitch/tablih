@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Deal } from '../types/deal';
 
-const DEAL_COLUMNS = 'id, deal_ref, request_id, order_id, inventory_batch_id, buyer_phone, supplier_phone, pallet_type, size, quality, city, quantity, final_price, supplier_price, platform_fee, platform_fee_per_pallet, buyer_price, status, supplier_confirmed_at, buyer_confirmed_at, reserved_at, delivery_started_at, delivery_failed_at, completed_at, cancelled_at, cancel_reason, is_suspended, admin_notes, created_at, updated_at';
+const DEAL_COLUMNS = 'id, deal_ref, request_id, order_id, inventory_batch_id, buyer_phone, supplier_phone, pallet_type, size, quality, city, quantity, final_price, supplier_price, platform_fee, platform_fee_per_pallet, buyer_price, status, source, supplier_confirmed_at, buyer_confirmed_at, reserved_at, delivery_started_at, delivery_failed_at, completed_at, cancelled_at, cancel_reason, is_suspended, admin_notes, created_at, updated_at';
 
 export function useSupplierDeals(phone: string) {
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -44,7 +44,12 @@ export function useSupplierDeals(phone: string) {
   const now = Date.now();
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
-  const newRequests   = deals.filter(d => d.status === 'matched' || d.status === 'pending_supplier');
+  const newRequests   = deals.filter(d => {
+    if (d.status === 'pending_supplier') return true;
+    if (d.status === 'matched' && d.source !== 'demand_offer') return true;
+    return false;
+  });
+  const platformDeals = deals.filter(d => d.status === 'matched' && d.source === 'demand_offer');
   const reservedDeals = deals.filter(d => d.status === 'supplier_confirmed' || d.status === 'awaiting_buyer' || d.status === 'inventory_reserved');
   const inDelivery    = deals.filter(d => d.status === 'in_delivery');
   const endedDeals    = deals.filter(d => {
@@ -146,6 +151,7 @@ export function useSupplierDeals(phone: string) {
   return {
     deals,
     newRequests,
+    platformDeals,
     reservedDeals,
     inDelivery,
     endedDeals,

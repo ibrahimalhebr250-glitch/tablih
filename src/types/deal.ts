@@ -39,6 +39,7 @@ export interface Deal {
   cancel_reason: string | null;
   is_suspended: boolean;
   admin_notes: string | null;
+  source: string | null;
   execution_deadline: string | null;
   execution_hours: number | null;
   created_at: string;

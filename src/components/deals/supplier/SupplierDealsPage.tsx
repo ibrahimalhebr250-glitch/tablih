@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Handshake, RefreshCw, Bell, Package, CheckCircle, MapPin, Layers, Hash, Banknote, CheckSquare, Square, Receipt, MessageCircle, Truck, XCircle, AlertTriangle, Star, ShieldAlert } from 'lucide-react';
+import { ArrowRight, Handshake, RefreshCw, Bell, Package, CheckCircle, MapPin, Layers, Hash, Banknote, CheckSquare, Square, Receipt, MessageCircle, Truck, XCircle, AlertTriangle, Star, ShieldAlert, Sparkles } from 'lucide-react';
 import { useSupplierDeals } from '../../../hooks/useSupplierDeals';
 import { DEAL_STATUS_CONFIG } from '../../../types/deal';
 import type { Deal } from '../../../types/deal';
@@ -10,7 +10,7 @@ import { buildWhatsAppLink } from '../../account/deals/DealCards';
 import { logWhatsAppContact } from '../../../hooks/useWhatsAppTemplates';
 import { supabase } from '../../../lib/supabase';
 
-type Tab = 'new' | 'reserved' | 'delivery' | 'ended';
+type Tab = 'new' | 'platform' | 'reserved' | 'delivery' | 'ended';
 
 interface Props {
   phone: string;
@@ -33,10 +33,11 @@ async function getDefaultTemplate(role: 'buyer' | 'supplier'): Promise<{ id: str
 }
 
 const TABS: { id: Tab; label: string; icon: typeof Bell }[] = [
-  { id: 'new',      label: 'طلبات جديدة',      icon: Bell },
-  { id: 'reserved', label: 'تأكيد المشتري',    icon: Package },
-  { id: 'delivery', label: 'جاري التسليم',    icon: Truck },
-  { id: 'ended',    label: 'منتهية',           icon: CheckCircle },
+  { id: 'new',      label: 'طلبات جديدة',    icon: Bell },
+  { id: 'platform', label: 'من المنصة',      icon: Sparkles },
+  { id: 'reserved', label: 'تأكيد المشتري',  icon: Package },
+  { id: 'delivery', label: 'جاري التسليم',   icon: Truck },
+  { id: 'ended',    label: 'منتهية',          icon: CheckCircle },
 ];
 
 function DealInfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -406,6 +407,64 @@ function ReservedDealCard({ deal, onStartDelivery, loading }: {
   );
 }
 
+function PlatformDealCard({ deal, onStartDelivery, loading }: {
+  deal: Deal; onStartDelivery: () => void; loading: boolean;
+}) {
+  const supplierPrice = deal.supplier_price ?? deal.final_price;
+  const feePerPallet = deal.platform_fee_per_pallet ?? 0.25;
+  const totalFee = deal.platform_fee ?? (feePerPallet * deal.quantity);
+  const totalPrice = supplierPrice * deal.quantity;
+  const grandTotal = totalPrice + totalFee;
+
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden shadow-sm" style={{ border: '2px solid #d4e8f0' }}>
+      <div className="flex items-center justify-between px-4 py-2.5" style={{ background: 'linear-gradient(135deg, #0f2535, #1a3d56)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <span className="text-[10px] font-mono text-white/50">{deal.deal_ref}</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-[10px] font-bold text-white">موافقة المشتري</span>
+        </div>
+      </div>
+
+      <div className="mx-4 mt-3.5 mb-0 flex items-center gap-2.5 rounded-xl px-3 py-2.5" style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)', border: '1px solid #A7F3D0' }}>
+        <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center flex-shrink-0">
+          <CheckCircle className="w-4 h-4 text-white" />
+        </div>
+        <div className="flex-1 min-w-0" dir="rtl">
+          <p className="text-[12px] font-black text-emerald-800 leading-tight">المشتري وافق على العرض</p>
+          <p className="text-[10px] text-emerald-600 mt-0.5 leading-tight">اضغط "بدء التسليم" للمتابعة وتحصيل العمولة</p>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-2.5" dir="rtl">
+        <DealInfoRow icon={<MapPin className="w-3.5 h-3.5 text-[#7a9aab]" />} label="المدينة" value={deal.city} />
+        <DealInfoRow icon={<Package className="w-3.5 h-3.5 text-[#7a9aab]" />} label="النوع" value={`${deal.pallet_type} · ${deal.size} · درجة ${deal.quality}`} />
+        <DealInfoRow icon={<Hash className="w-3.5 h-3.5 text-[#7a9aab]" />} label="الكمية" value={`${deal.quantity.toLocaleString('ar-SA')} طبلية`} />
+        <DealInfoRow icon={<Banknote className="w-3.5 h-3.5 text-[#7a9aab]" />} label="سعر الوحدة" value={`${supplierPrice.toLocaleString('ar-SA')} ر.س`} />
+        <DealInfoRow icon={<Banknote className="w-3.5 h-3.5 text-[#F59E0B]" />} label="رسوم المنصة" value={`${totalFee.toLocaleString('ar-SA')} ر.س`} />
+        <div className="border-t border-[#e2edf5] pt-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[14px] font-black text-[#1a2f3e]">{grandTotal.toLocaleString('ar-SA')} ر.س</span>
+            <span className="text-[11px] font-bold text-[#4a7a94]">المبلغ الإجمالي</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 pb-4">
+        <button
+          disabled={loading}
+          onClick={onStartDelivery}
+          className="w-full py-3.5 rounded-xl text-[13px] font-bold text-white flex items-center justify-center gap-2 active:scale-[0.97] transition-transform disabled:opacity-50"
+          style={{ background: 'linear-gradient(135deg, #0369A1, #0284C7)', boxShadow: '0 4px 14px rgba(3,105,161,0.25)' }}
+        >
+          <Truck className="w-4 h-4" />
+          {loading ? 'جارٍ التحديث...' : 'بدء التسليم'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function InDeliveryCard({ deal, onConfirmDelivery, onFailDelivery, loading }: {
   deal: Deal;
   onConfirmDelivery: () => void;
@@ -638,6 +697,7 @@ function EndedDealCard({ deal, onRate }: { deal: Deal; onRate: () => void }) {
 function EmptyState({ tab }: { tab: Tab }) {
   const messages: Record<Tab, { title: string; sub: string }> = {
     new:      { title: 'لا توجد طلبات جديدة',             sub: 'ستظهر هنا طلبات المشترين التي تطابق مخزونك' },
+    platform: { title: 'لا توجد صفقات من المنصة',         sub: 'عندما يوافق مشتري على عرضك ستظهر الصفقة هنا' },
     reserved: { title: 'لا توجد صفقات بانتظار المشتري',  sub: 'الصفقات التي قبلتها وتنتظر تأكيد المشتري ستظهر هنا' },
     delivery: { title: 'لا توجد صفقات جاري تسليمها', sub: 'الصفقات التي بدأ تسليمها ستظهر هنا' },
     ended:    { title: 'لا توجد صفقات منتهية',       sub: 'الصفقات المكتملة والملغاة ستظهر هنا' },
@@ -657,7 +717,7 @@ function EmptyState({ tab }: { tab: Tab }) {
 export default function SupplierDealsPage({ phone, onClose }: Props) {
   const {
     loading, actionLoading,
-    newRequests, reservedDeals, inDelivery, endedDeals,
+    newRequests, platformDeals, reservedDeals, inDelivery, endedDeals,
     confirmDeal, startDeliveryWithPledge, confirmDelivery, failDelivery,
     refresh,
   } = useSupplierDeals(phone);
@@ -672,11 +732,12 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
 
   const counts = {
     new: newRequests.length,
+    platform: platformDeals.length,
     reserved: reservedDeals.length,
     delivery: inDelivery.length,
     ended: endedDeals.length,
   };
-  const total = counts.new + counts.reserved + counts.delivery + counts.ended;
+  const total = counts.new + counts.platform + counts.reserved + counts.delivery + counts.ended;
 
   const handleConfirm = async () => {
     if (!confirmingDeal) return;
@@ -807,6 +868,11 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
                 {counts.new} جديد
               </span>
             )}
+            {counts.platform > 0 && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white animate-pulse">
+                {counts.platform} منصة
+              </span>
+            )}
             {counts.delivery > 0 && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#0369A1] text-white animate-pulse">
                 {counts.delivery} تسليم
@@ -845,10 +911,11 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
                       style={{
                         background: isActive ? 'rgba(255,255,255,0.25)'
                           : id === 'new' ? '#F59E0B'
+                          : id === 'platform' ? '#10B981'
                           : id === 'delivery' ? '#0369A1'
                           : '#e2ecf3',
                         color: isActive ? 'white'
-                          : (id === 'new' || id === 'delivery') ? 'white'
+                          : (id === 'new' || id === 'platform' || id === 'delivery') ? 'white'
                           : '#2c5f7c',
                       }}
                     >
@@ -873,6 +940,19 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
               <div className="space-y-3">
                 {newRequests.map(deal => (
                   <NewRequestCard key={deal.id} deal={deal} onConfirm={d => setConfirmingDeal(d)} />
+                ))}
+              </div>
+            )
+          ) : activeTab === 'platform' ? (
+            platformDeals.length === 0 ? <EmptyState tab="platform" /> : (
+              <div className="space-y-3">
+                {platformDeals.map(deal => (
+                  <PlatformDealCard
+                    key={deal.id}
+                    deal={deal}
+                    onStartDelivery={() => setPledgingDeal(deal)}
+                    loading={actionLoading === deal.id}
+                  />
                 ))}
               </div>
             )
