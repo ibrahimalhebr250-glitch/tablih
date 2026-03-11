@@ -429,7 +429,7 @@ function SupplierNegotiationRequests({ phone }: { phone: string }) {
   );
 }
 
-function PendingOfferDialog({ offer, supplierPhone, onClose, onSent }: {
+function InlinePendingOfferCard({ offer, supplierPhone, onClose, onSent }: {
   offer: PendingDemandOffer;
   supplierPhone: string;
   onClose: () => void;
@@ -458,7 +458,7 @@ function PendingOfferDialog({ offer, supplierPhone, onClose, onSent }: {
       if (err) throw err;
       if (data && !data.success) { setError(data.error || 'حدث خطأ'); return; }
       setSent(true);
-      setTimeout(() => { onSent(); }, 2000);
+      setTimeout(() => { onSent(); }, 2500);
     } catch {
       setError('حدث خطأ أثناء إرسال العرض. حاول مرة أخرى.');
     } finally {
@@ -466,113 +466,110 @@ function PendingOfferDialog({ offer, supplierPhone, onClose, onSent }: {
     }
   };
 
-  return (
-    <div
-      className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)' }}
-    >
+  if (sent) {
+    return (
       <div
-        className="w-full sm:rounded-3xl rounded-t-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300 flex flex-col"
-        style={{ maxWidth: 480, background: 'white', boxShadow: '0 24px 60px rgba(0,0,0,0.3)', maxHeight: '92vh' }}
+        className="rounded-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300"
+        style={{ background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)', border: '2px solid #A7F3D0', boxShadow: '0 4px 16px rgba(5,150,105,0.15)' }}
         dir="rtl"
       >
-        {sent ? (
-          <div className="px-6 py-10 flex flex-col items-center text-center gap-4">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: '#ECFDF5' }}>
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
-            </div>
-            <div>
-              <p className="text-[17px] font-black text-[#1a3a4a]">تم إرسال عرضك بنجاح</p>
-              <p className="text-[12px] text-[#7a9aab] mt-1">ستُشعَر عند رد المشتري — تابع هنا في صفقاتك</p>
+        <div className="px-5 py-6 flex flex-col items-center text-center gap-3">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.7)' }}>
+            <CheckCircle2 className="w-7 h-7 text-green-600" />
+          </div>
+          <div>
+            <p className="text-[15px] font-black text-green-800">تم إرسال عرضك بنجاح</p>
+            <p className="text-[12px] text-green-600 mt-1">ستُشعَر عند رد المشتري — تابع هنا في صفقاتك</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden animate-in fade-in slide-in-from-top-3 duration-400"
+      style={{ background: 'white', border: '2px solid #059669', boxShadow: '0 4px 20px rgba(5,150,105,0.12), 0 1px 4px rgba(0,0,0,0.06)' }}
+      dir="rtl"
+    >
+      <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #059669, #10b981)' }}>
+        <button
+          onClick={onClose}
+          className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/20 hover:bg-white/30 transition-colors"
+        >
+          <X className="w-3.5 h-3.5 text-white" />
+        </button>
+        <div className="flex items-center gap-2">
+          <div>
+            <p className="text-[14px] font-black text-white">تقديم عرضك للمشتري</p>
+            <p className="text-[11px] text-white/70">{offer.pallet_type} — {offer.city}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/20">
+            <Handshake className="w-5 h-5 text-white" />
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 pt-4 pb-5 space-y-3.5">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-xl p-2.5 text-center" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+            <p className="text-[9px] text-green-600 mb-0.5">النوع</p>
+            <p className="text-[12px] font-black text-[#1a3a4a]">{offer.pallet_type}</p>
+          </div>
+          <div className="rounded-xl p-2.5 text-center" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+            <div className="flex items-center justify-center gap-1">
+              <MapPin className="w-3 h-3 text-green-600" />
+              <p className="text-[12px] font-black text-[#1a3a4a]">{offer.city}</p>
             </div>
           </div>
-        ) : (
-          <>
-            <div className="flex-shrink-0 h-1 w-12 rounded-full mx-auto mt-3 mb-1 sm:hidden" style={{ background: '#d1d5db' }} />
-            <div className="overflow-y-auto flex-1">
-              <div className="px-5 pt-4 pb-6 space-y-4">
-                <div className="flex items-start justify-between">
-                  <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                    <X className="w-3.5 h-3.5 text-gray-500" />
-                  </button>
-                  <div className="flex items-center gap-2">
-                    <div>
-                      <p className="text-[15px] font-black text-[#1a3a4a]">تقديم عرضك للمشتري</p>
-                      <p className="text-[11px] text-[#7a9aab]">{offer.pallet_type} — {offer.city}</p>
-                    </div>
-                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #059669, #10b981)' }}>
-                      <Handshake className="w-5 h-5 text-white" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl p-4 space-y-2" style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)', border: '1.5px solid #A7F3D0' }}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    <p className="text-[13px] font-black text-green-700">تم تسجيلك — يمكنك الآن تقديم عرضك</p>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.6)' }}>
-                      <p className="text-[10px] text-green-600 mb-0.5">الطلب</p>
-                      <p className="text-[12px] font-black text-[#1a3a4a]">{offer.pallet_type}</p>
-                    </div>
-                    <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.6)' }}>
-                      <div className="flex items-center justify-center gap-1">
-                        <MapPin className="w-3 h-3 text-green-600" />
-                        <p className="text-[12px] font-black text-[#1a3a4a]">{offer.city}</p>
-                      </div>
-                    </div>
-                    <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.6)' }}>
-                      <div className="flex items-center justify-center gap-1">
-                        <ShoppingBag className="w-3 h-3 text-green-600" />
-                        <p className="text-[12px] font-black text-[#1a3a4a]">{offer.quantity}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2">الكمية التي يمكنك توريدها</label>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setQuantity(q => Math.max(1, q - 10))} className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90" style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', color: '#059669' }}>-</button>
-                    <input type="number" value={quantity} onChange={(e) => { const v = parseInt(e.target.value) || 0; setQuantity(Math.max(1, v)); }} className="flex-1 text-center text-[16px] font-black text-[#1a3a4a] rounded-xl py-2.5 outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} min={1} />
-                    <button onClick={() => setQuantity(q => q + 10)} className="w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black transition-all active:scale-90" style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', color: '#059669' }}>+</button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2">السعر المقترح للطبلية (ريال) — اختياري</label>
-                  <input
-                    type="number"
-                    value={price || ''}
-                    onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-                    placeholder="0 — اتركه فارغاً للتفاوض"
-                    className="w-full rounded-2xl px-4 py-3 text-[13px] text-[#1a3a4a] outline-none"
-                    style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[12px] font-bold text-[#1a3a4a] mb-2">رسالة للمشتري (اختياري)</label>
-                  <div className="relative">
-                    <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="أضف تفاصيل عرضك أو ملاحظاتك..." rows={3} maxLength={300} className="w-full rounded-2xl px-4 py-3 text-[13px] text-[#1a3a4a] resize-none outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} />
-                    <span className="absolute bottom-2 left-3 text-[10px] text-[#a0b5c0]">{message.length}/300</span>
-                  </div>
-                </div>
-
-                {error && <p className="text-[12px] text-red-600 text-center font-semibold">{error}</p>}
-
-                <button onClick={handleSend} disabled={loading} className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[14px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-70" style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 6px 20px rgba(5,150,105,0.3)' }}>
-                  {loading ? <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Send className="w-5 h-5" />}
-                  {loading ? 'جاري إرسال العرض...' : 'إرسال العرض للمشتري'}
-                </button>
-                <button onClick={onClose} className="w-full py-3 rounded-2xl text-[13px] font-bold text-[#4a6a7e]" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
-                  لاحقاً
-                </button>
-              </div>
+          <div className="rounded-xl p-2.5 text-center" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+            <div className="flex items-center justify-center gap-1">
+              <ShoppingBag className="w-3 h-3 text-green-600" />
+              <p className="text-[12px] font-black text-[#1a3a4a]">{offer.quantity}</p>
             </div>
-          </>
-        )}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-[12px] font-bold text-[#1a3a4a] mb-1.5">الكمية التي يمكنك توريدها</label>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setQuantity(q => Math.max(1, q - 10))} className="w-9 h-9 rounded-xl flex items-center justify-center text-[15px] font-black transition-all active:scale-90" style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', color: '#059669' }}>-</button>
+            <input type="number" value={quantity} onChange={(e) => { const v = parseInt(e.target.value) || 0; setQuantity(Math.max(1, v)); }} className="flex-1 text-center text-[15px] font-black text-[#1a3a4a] rounded-xl py-2 outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} min={1} />
+            <button onClick={() => setQuantity(q => q + 10)} className="w-9 h-9 rounded-xl flex items-center justify-center text-[15px] font-black transition-all active:scale-90" style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', color: '#059669' }}>+</button>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-[12px] font-bold text-[#1a3a4a] mb-1.5">السعر المقترح للطبلية (ريال) — اختياري</label>
+          <input
+            type="number"
+            value={price || ''}
+            onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+            placeholder="0 — اتركه فارغاً للتفاوض"
+            className="w-full rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a3a4a] outline-none"
+            style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }}
+          />
+        </div>
+
+        <div>
+          <label className="block text-[12px] font-bold text-[#1a3a4a] mb-1.5">رسالة للمشتري (اختياري)</label>
+          <div className="relative">
+            <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="أضف تفاصيل عرضك أو ملاحظاتك..." rows={2} maxLength={300} className="w-full rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a3a4a] resize-none outline-none" style={{ background: '#f8fbfd', border: '1.5px solid #e2edf5' }} />
+            <span className="absolute bottom-2 left-3 text-[10px] text-[#a0b5c0]">{message.length}/300</span>
+          </div>
+        </div>
+
+        {error && <p className="text-[12px] text-red-600 text-center font-semibold">{error}</p>}
+
+        <div className="flex gap-2">
+          <button onClick={onClose} className="px-4 py-3 rounded-xl text-[12px] font-bold text-[#4a6a7e] flex-shrink-0" style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}>
+            لاحقاً
+          </button>
+          <button onClick={handleSend} disabled={loading} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-black text-white transition-transform active:scale-[0.97] disabled:opacity-70" style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 4px 14px rgba(5,150,105,0.3)' }}>
+            {loading ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Send className="w-4 h-4" />}
+            {loading ? 'جاري الإرسال...' : 'إرسال العرض'}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -659,7 +656,7 @@ export default function DealsTab({ phone, pendingDemandOffer, onPendingDemandOff
       )}
 
       {showPendingOfferDialog && pendingDemandOffer && (
-        <PendingOfferDialog
+        <InlinePendingOfferCard
           offer={pendingDemandOffer}
           supplierPhone={phone}
           onClose={() => {
