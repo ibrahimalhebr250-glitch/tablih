@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { BarChart3, TrendingUp, Users, Activity, Target, Zap, Filter, Download } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { BarChart3, TrendingUp, Users, Activity, Target, Zap, Filter, Download, Monitor, Smartphone, Globe, Clock, RefreshCw } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useABTesting } from '../../../hooks/useABTesting';
 import VisitorStatsPanel from '../analytics/VisitorStatsPanel';
@@ -31,6 +31,16 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
   const [realtimeUsers, setRealtimeUsers] = useState(0);
   const [dateRange, setDateRange] = useState('7d');
   const [liveVisitors, setLiveVisitors] = useState(0);
+  const [liveSessions, setLiveSessions] = useState<Array<{
+    session_id: string;
+    visitor_id: string;
+    phone: string | null;
+    user_agent: string | null;
+    last_seen_at: string;
+    created_at: string;
+    page_count: number;
+  }>>([]);
+  const [liveStats, setLiveStats] = useState<{last5m:number;last15m:number;last30m:number;last1h:number;last24h:number;total_sessions:number} | null>(null);
   const behaviorChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const visitorChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const sessionChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -80,14 +90,30 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
     };
   }, []);
 
-  const loadLiveVisitors = async () => {
-    const { data } = await supabase.rpc('admin_get_visitor_stats');
-    if (data) {
-      const s = data as Record<string, number>;
+  const loadLiveVisitors = useCallback(async () => {
+    const [statsRes, sessionsRes] = await Promise.all([
+      supabase.rpc('admin_get_visitor_stats'),
+      supabase.rpc('admin_get_live_sessions', { minutes_back: 60 }),
+    ]);
+
+    if (statsRes.data) {
+      const s = statsRes.data as Record<string, number>;
       setLiveVisitors(s.last30m ?? 0);
       setRealtimeUsers(s.last30m ?? 0);
+      setLiveStats({
+        last5m: s.last5m ?? 0,
+        last15m: s.last15m ?? 0,
+        last30m: s.last30m ?? 0,
+        last1h: s.last1h ?? 0,
+        last24h: s.last24h ?? 0,
+        total_sessions: s.total_sessions ?? 0,
+      });
     }
-  };
+
+    if (sessionsRes.data) {
+      setLiveSessions(sessionsRes.data as any[]);
+    }
+  }, []);
 
   const loadAnalytics = async () => {
     setLoading(true);
@@ -501,43 +527,130 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
       )}
 
       {activeTab === 'realtime' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-8 border border-green-200 text-center">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-                <Activity className="w-10 h-10 text-green-600" />
-              </div>
-              <div className="text-5xl font-bold text-gray-900 mb-2">
-                {liveVisitors}
-              </div>
-              <div className="text-lg text-gray-600">زائر نشط</div>
-              <div className="text-sm text-gray-500 mt-2">آخر 30 دقيقة</div>
+        <div className="space-y-5" dir="rtl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
+              <h3 className="text-[15px] font-black text-[#1a2f3e]">مراقبة لحظية</h3>
+              <span className="text-[11px] text-[#94a3b8]">يتحدث كل 15 ثانية</span>
             </div>
+            <button
+              onClick={loadLiveVisitors}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-[#4a7a94] hover:bg-[#e8f2f8] transition-colors"
+              style={{ background: '#f0f6fa', border: '1px solid #e2edf5' }}
+            >
+              <RefreshCw className="w-3 h-3" />
+              تحديث
+            </button>
+          </div>
 
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-8 border border-blue-200 text-center">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <span className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
-                <Zap className="w-10 h-10 text-blue-600" />
+          {/* Period cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: 'آخر 5 دقائق', value: liveStats?.last5m ?? 0, color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0', dot: true },
+              { label: 'آخر 15 دقيقة', value: liveStats?.last15m ?? 0, color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd', dot: true },
+              { label: 'آخر 30 دقيقة', value: liveStats?.last30m ?? 0, color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', dot: false },
+              { label: 'آخر ساعة', value: liveStats?.last1h ?? 0, color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe', dot: false },
+            ].map((item, i) => (
+              <div key={i} className="rounded-2xl px-4 py-4 flex flex-col gap-1.5" style={{ background: item.bg, border: `1.5px solid ${item.border}` }}>
+                <div className="flex items-center gap-1.5">
+                  {item.dot && <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: item.color }} />}
+                  <span className="text-[10px] font-bold" style={{ color: item.color }}>{item.label}</span>
+                </div>
+                <div className="text-[30px] font-black leading-none" style={{ color: item.color }}>
+                  {item.value.toLocaleString('ar-SA')}
+                </div>
+                <div className="text-[10px] text-[#94a3b8]">جلسة</div>
               </div>
-              <div className="text-5xl font-bold text-gray-900 mb-2">
-                {realtimeUsers}
+            ))}
+          </div>
+
+          {/* Summary row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl px-5 py-4 flex items-center gap-4" style={{ background: '#fafafa', border: '1.5px solid #e2edf5' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#eff6ff' }}>
+                <Activity className="w-5 h-5 text-blue-600" />
               </div>
-              <div className="text-lg text-gray-600">جلسة نشطة</div>
-              <div className="text-sm text-gray-500 mt-2">آخر 30 دقيقة</div>
+              <div>
+                <div className="text-[11px] text-[#94a3b8]">اليوم الحالي</div>
+                <div className="text-[22px] font-black text-[#1a2f3e]">{(liveStats?.last24h ?? 0).toLocaleString('ar-SA')}</div>
+                <div className="text-[10px] text-[#94a3b8]">جلسة في آخر 24 ساعة</div>
+              </div>
+            </div>
+            <div className="rounded-2xl px-5 py-4 flex items-center gap-4" style={{ background: '#fafafa', border: '1.5px solid #e2edf5' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#f0fdf4' }}>
+                <Globe className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <div className="text-[11px] text-[#94a3b8]">إجمالي كل الوقت</div>
+                <div className="text-[22px] font-black text-[#1a2f3e]">{(liveStats?.total_sessions ?? 0).toLocaleString('ar-SA')}</div>
+                <div className="text-[10px] text-[#94a3b8]">جلسة منذ الإطلاق</div>
+              </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
-              <h3 className="text-lg font-bold text-gray-900">مراقبة مباشرة</h3>
+          {/* Live sessions table */}
+          <div className="rounded-2xl overflow-hidden" style={{ border: '1.5px solid #e2edf5', boxShadow: '0 2px 8px rgba(26,58,74,0.06)' }}>
+            <div className="px-5 py-3.5 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #1a3a4a, #2c5f7c)' }}>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                <span className="text-[13px] font-black text-white">الجلسات الأخيرة — آخر 60 دقيقة</span>
+              </div>
+              <span className="text-[11px] text-white/60">{liveSessions.length} جلسة</span>
             </div>
-            <div className="text-center text-gray-500 py-8">
-              <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>يتحدث تلقائياً عند دخول أي زائر جديد</p>
-              <p className="text-xs text-gray-400 mt-1">مدعوم بـ Supabase Realtime</p>
-            </div>
+
+            {liveSessions.length === 0 ? (
+              <div className="bg-white px-5 py-10 text-center">
+                <Activity className="w-10 h-10 mx-auto mb-2 text-[#d1e5f0]" />
+                <p className="text-[13px] text-[#94a3b8]">لا توجد جلسات في آخر ساعة</p>
+              </div>
+            ) : (
+              <div className="bg-white divide-y divide-[#f0f6fa]">
+                {liveSessions.map((s) => {
+                  const isPhone = s.user_agent?.toLowerCase().includes('mobile') || s.user_agent?.toLowerCase().includes('android') || s.user_agent?.toLowerCase().includes('iphone');
+                  const minutesAgo = Math.floor((Date.now() - new Date(s.last_seen_at).getTime()) / 60000);
+                  const isActive = minutesAgo <= 5;
+
+                  return (
+                    <div key={s.session_id} className="px-5 py-3 flex items-center gap-4">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: isPhone ? '#f0fdf4' : '#eff6ff' }}>
+                        {isPhone
+                          ? <Smartphone className="w-4 h-4 text-green-600" />
+                          : <Monitor className="w-4 h-4 text-blue-600" />
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          {isActive && <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />}
+                          <span className="text-[12px] font-bold text-[#1a2f3e] truncate">
+                            {s.phone ? s.phone : `زائر ${s.visitor_id.slice(0, 8)}...`}
+                          </span>
+                          {s.phone && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}>
+                              مسجّل
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-[#94a3b8] truncate">
+                          {isPhone ? 'جوال' : 'كمبيوتر'} · {s.page_count} صفحة
+                        </div>
+                      </div>
+                      <div className="text-left flex-shrink-0">
+                        <div className="flex items-center gap-1 justify-end">
+                          <Clock className="w-3 h-3 text-[#94a3b8]" />
+                          <span className="text-[11px] text-[#94a3b8]">
+                            {minutesAgo === 0 ? 'الآن' : `${minutesAgo}د`}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-[#c4d4dc] text-left">
+                          {new Date(s.created_at).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}

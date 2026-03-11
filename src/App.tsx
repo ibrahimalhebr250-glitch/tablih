@@ -104,9 +104,17 @@ function App() {
       return id;
     };
 
+    const getOrCreatePageSessionId = () => {
+      let sid = sessionStorage.getItem('_psid');
+      if (!sid) {
+        sid = crypto.randomUUID();
+        sessionStorage.setItem('_psid', sid);
+      }
+      return sid;
+    };
+
     const visitorId = getOrCreateVisitorId();
-    const sessionId = crypto.randomUUID();
-    sessionStorage.setItem('_psid', sessionId);
+    const sessionId = getOrCreatePageSessionId();
 
     supabase.rpc('log_platform_visit', {
       p_visitor_id: visitorId,
