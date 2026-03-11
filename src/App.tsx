@@ -23,9 +23,10 @@ const AdminLoginSheet = lazy(() => import('./components/admin/AdminLoginSheet'))
 const SupplierInventory = lazy(() => import('./components/inventory/SupplierInventory'));
 const MarketSection = lazy(() => import('./components/market/MarketSection'));
 const AccountPage = lazy(() => import('./components/account/AccountPage'));
+const AuthSheet = lazy(() => import('./components/account/AuthSheet'));
 import FloatingSupportChat from './components/shared/FloatingSupportChat';
 
-type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'registration' | 'login' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'account';
+type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'registration' | 'login' | 'auth' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'account';
 type MainView = 'marketplace' | 'dashboard';
 
 const LoadingFallback = () => (
@@ -278,6 +279,12 @@ function App() {
     setModal('login');
   };
 
+  const openAuthForDeal = () => {
+    setAuthError('');
+    setLoginError('');
+    setModal('auth');
+  };
+
   const handleNavigation = (view: 'marketplace' | 'orders' | 'inventory' | 'deals' | 'account') => {
     setModal('none');
     if (view === 'marketplace') {
@@ -358,7 +365,7 @@ function App() {
                           onShowAuth={() => openAuth('none')}
                           onDetailSheetChange={setIsDetailSheetOpen}
                           onGoToDeals={() => setModal('buyerDeals')}
-                          onLoginRequired={() => openAuth('none')}
+                          onLoginRequired={openAuthForDeal}
                           pendingDemandOrderId={pendingDemandOrderId}
                           onPendingDemandCleared={() => setPendingDemandOrderId(null)}
                           pendingSupplyBatchId={pendingSupplyBatchId}
@@ -418,7 +425,7 @@ function App() {
                       onShowAuth={() => openAuth('none')}
                       onDetailSheetChange={setIsDetailSheetOpen}
                       onGoToDeals={() => openAuth('none')}
-                      onLoginRequired={() => openAuth('none')}
+                      onLoginRequired={openAuthForDeal}
                     />
                   </div>
                 </Suspense>
@@ -460,7 +467,7 @@ function App() {
                         onShowAuth={() => openAuth('none')}
                         onDetailSheetChange={setIsDetailSheetOpen}
                         onGoToDeals={() => setModal('buyerDeals')}
-                        onLoginRequired={() => openAuth('none')}
+                        onLoginRequired={openAuthForDeal}
                         pendingDemandOrderId={pendingDemandOrderId}
                         onPendingDemandCleared={() => setPendingDemandOrderId(null)}
                         pendingSupplyBatchId={pendingSupplyBatchId}
@@ -510,7 +517,7 @@ function App() {
                   onShowAuth={() => openAuth('none')}
                   onDetailSheetChange={setIsDetailSheetOpen}
                   onGoToDeals={() => openAuth('none')}
-                  onLoginRequired={() => openAuth('none')}
+                  onLoginRequired={openAuthForDeal}
                 />
               </Suspense>
             </div>
@@ -557,6 +564,17 @@ function App() {
             prefillOpportunity={inventoryPrefill}
             inventorySource={inventorySource}
           />
+        )}
+
+        {modal === 'auth' && (
+          <Suspense fallback={<LoadingFallback />}>
+            <AuthSheet
+              onRegisterComplete={handleRegisterComplete}
+              onLoginComplete={handleLoginComplete}
+              onClose={() => { setModal('none'); setAuthError(''); setLoginError(''); }}
+              externalError={authError || loginError}
+            />
+          </Suspense>
         )}
 
         {modal === 'registration' && (
