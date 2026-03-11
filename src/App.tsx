@@ -63,6 +63,7 @@ function App() {
   const [inventoryPrefill, setInventoryPrefill] = useState<{ pallet_type?: string; size?: string; quality?: string; quantity?: number; city?: string } | undefined>();
   const [inventorySource, setInventorySource] = useState<'supplier_added' | 'purchase_transfer'>('supplier_added');
   const [pendingDemandOrderId, setPendingDemandOrderId] = useState<string | null>(null);
+  const [pendingSupplyBatchId, setPendingSupplyBatchId] = useState<string | null>(null);
   const [accountInitialTab, setAccountInitialTab] = useState<'warehouse' | 'deals' | 'negotiations' | 'commissions' | 'settings' | undefined>(undefined);
 
   const hasPendingAfterLogin = useCallback(() => {
@@ -71,6 +72,33 @@ function App() {
       sessionStorage.getItem('pending_demand_offer') ||
       sessionStorage.getItem('pending_supply_card_deal')
     );
+  }, []);
+
+  const consumePendingMarketActions = useCallback(() => {
+    const rawDemand = sessionStorage.getItem('pending_demand_offer');
+    if (rawDemand) {
+      try {
+        const pending = JSON.parse(rawDemand);
+        if (pending.order_id) {
+          sessionStorage.removeItem('pending_demand_offer');
+          setPendingDemandOrderId(pending.order_id);
+        }
+      } catch {
+        sessionStorage.removeItem('pending_demand_offer');
+      }
+    }
+    const rawSupply = sessionStorage.getItem('pending_supply_card_deal');
+    if (rawSupply) {
+      try {
+        const pending = JSON.parse(rawSupply);
+        if (pending.inventory_batch_id) {
+          sessionStorage.removeItem('pending_supply_card_deal');
+          setPendingSupplyBatchId(pending.inventory_batch_id);
+        }
+      } catch {
+        sessionStorage.removeItem('pending_supply_card_deal');
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -183,6 +211,7 @@ function App() {
     }
 
     if (hasPendingAfterLogin()) {
+      consumePendingMarketActions();
       setModal('none');
       setFreshLogin(true);
       setMainView('marketplace');
@@ -211,6 +240,7 @@ function App() {
     }
 
     if (hasPendingAfterLogin()) {
+      consumePendingMarketActions();
       setModal('none');
       setFreshLogin(true);
       setMainView('marketplace');
@@ -331,6 +361,8 @@ function App() {
                           onLoginRequired={() => openAuth('none')}
                           pendingDemandOrderId={pendingDemandOrderId}
                           onPendingDemandCleared={() => setPendingDemandOrderId(null)}
+                          pendingSupplyBatchId={pendingSupplyBatchId}
+                          onPendingSupplyCleared={() => setPendingSupplyBatchId(null)}
                         />
                       </div>
                     ) : (
@@ -431,6 +463,8 @@ function App() {
                         onLoginRequired={() => openAuth('none')}
                         pendingDemandOrderId={pendingDemandOrderId}
                         onPendingDemandCleared={() => setPendingDemandOrderId(null)}
+                        pendingSupplyBatchId={pendingSupplyBatchId}
+                        onPendingSupplyCleared={() => setPendingSupplyBatchId(null)}
                       />
                     </>
                   ) : (

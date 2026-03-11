@@ -330,6 +330,8 @@ interface MarketSectionProps {
   onLoginRequired?: () => void;
   pendingDemandOrderId?: string | null;
   onPendingDemandCleared?: () => void;
+  pendingSupplyBatchId?: string | null;
+  onPendingSupplyCleared?: () => void;
 }
 
 export default function MarketSection({
@@ -343,6 +345,8 @@ export default function MarketSection({
   onLoginRequired,
   pendingDemandOrderId,
   onPendingDemandCleared,
+  pendingSupplyBatchId,
+  onPendingSupplyCleared,
 }: MarketSectionProps) {
   const { t } = useTranslation();
   const resolvedPhone = sessionPhone ?? (isAuthenticated && userPhone ? userPhone : null);
@@ -362,8 +366,6 @@ export default function MarketSection({
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const prevSheetOpen = useRef(false);
-  const itemsRef = useRef<MarketItem[]>([]);
-  const pendingChecked = useRef(false);
 
   useEffect(() => {
     const nowOpen = !!(selectedSupply || selectedDemand);
@@ -373,62 +375,6 @@ export default function MarketSection({
     }
   }, [selectedSupply, selectedDemand, onDetailSheetChange]);
 
-  const checkAndResumePendingAction = useCallback((currentItems: MarketItem[]) => {
-    const rawDemand = sessionStorage.getItem('pending_demand_offer');
-    if (rawDemand) {
-      try {
-        const pending = JSON.parse(rawDemand);
-        if (pending.order_id) {
-          sessionStorage.removeItem('pending_demand_offer');
-          const match = currentItems.find(i => i.kind === 'demand' && i.id === pending.order_id) as DemandCard | undefined;
-          if (match) {
-            setAutoOpenOfferForId(pending.order_id);
-            setSelectedDemand(match);
-          }
-        }
-      } catch {
-        sessionStorage.removeItem('pending_demand_offer');
-      }
-    }
-
-    const rawSupply = sessionStorage.getItem('pending_supply_card_deal');
-    if (rawSupply) {
-      try {
-        const pending = JSON.parse(rawSupply);
-        if (pending.inventory_batch_id) {
-          sessionStorage.removeItem('pending_supply_card_deal');
-          const match = currentItems.find(i => i.kind === 'supply' && i.id === pending.inventory_batch_id) as SupplyCard | undefined;
-          if (match) {
-            setAutoOpenDealForId(pending.inventory_batch_id);
-            setSelectedSupply(match);
-          }
-        }
-      } catch {
-        sessionStorage.removeItem('pending_supply_card_deal');
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isAuthenticated || pendingChecked.current) return;
-    pendingChecked.current = true;
-
-    const hasDemand = !!sessionStorage.getItem('pending_demand_offer');
-    const hasSupply = !!sessionStorage.getItem('pending_supply_card_deal');
-    if (!hasDemand && !hasSupply) return;
-
-    if (itemsRef.current.length > 0) {
-      checkAndResumePendingAction(itemsRef.current);
-    } else {
-      const interval = setInterval(() => {
-        if (itemsRef.current.length > 0) {
-          clearInterval(interval);
-          checkAndResumePendingAction(itemsRef.current);
-        }
-      }, 200);
-      setTimeout(() => clearInterval(interval), 10000);
-    }
-  }, [isAuthenticated, checkAndResumePendingAction]);
 
   useEffect(() => {
     const phone = sessionPhone || userPhone;
@@ -460,6 +406,16 @@ export default function MarketSection({
       onPendingDemandCleared?.();
     }
   }, [pendingDemandOrderId, items, loading, onPendingDemandCleared]);
+
+  useEffect(() => {
+    if (!pendingSupplyBatchId || loading) return;
+    const match = items.find(i => i.kind === 'supply' && i.id === pendingSupplyBatchId) as SupplyCard | undefined;
+    if (match) {
+      setAutoOpenDealForId(pendingSupplyBatchId);
+      setSelectedSupply(match);
+      onPendingSupplyCleared?.();
+    }
+  }, [pendingSupplyBatchId, items, loading, onPendingSupplyCleared]);
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -562,7 +518,6 @@ export default function MarketSection({
         if (supplyItems[i]) merged.push(supplyItems[i]);
         if (demandItems[i]) merged.push(demandItems[i]);
       }
-      itemsRef.current = merged;
       setItems(merged);
     } catch (e) {
       console.error('Market load error:', e);
