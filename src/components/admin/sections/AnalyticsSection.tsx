@@ -607,7 +607,8 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
             ) : (
               <div className="bg-white divide-y divide-[#f0f6fa]">
                 {liveSessions.map((s) => {
-                  const isPhone = s.user_agent?.toLowerCase().includes('mobile') || s.user_agent?.toLowerCase().includes('android') || s.user_agent?.toLowerCase().includes('iphone');
+                  const ua = (s.user_agent ?? '').toLowerCase();
+                  const isPhone = ua.includes('mobile') || ua.includes('android') || ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod') || ua.includes('blackberry') || ua.includes('windows phone');
                   const minutesAgo = Math.floor((Date.now() - new Date(s.last_seen_at).getTime()) / 60000);
                   const isActive = minutesAgo <= 5;
 

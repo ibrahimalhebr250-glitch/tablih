@@ -95,41 +95,54 @@ function App() {
   useEffect(() => {
     initializeAnalytics();
 
-    const getOrCreateVisitorId = () => {
-      let id = localStorage.getItem('_pvid');
-      if (!id) {
-        id = crypto.randomUUID();
-        localStorage.setItem('_pvid', id);
-      }
-      return id;
+    const buildDeviceFingerprint = async (): Promise<string> => {
+      const components = [
+        navigator.userAgent,
+        navigator.language,
+        screen.width + 'x' + screen.height,
+        screen.colorDepth,
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+        navigator.hardwareConcurrency ?? 0,
+        (navigator as any).deviceMemory ?? 0,
+        navigator.platform ?? '',
+      ].join('|');
+
+      const msgBuffer = new TextEncoder().encode(components);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return [
+        hashHex.slice(0, 8),
+        hashHex.slice(8, 12),
+        '4' + hashHex.slice(13, 16),
+        ((parseInt(hashHex.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + hashHex.slice(17, 20),
+        hashHex.slice(20, 32),
+      ].join('-');
     };
 
-    const getOrCreatePageSessionId = () => {
-      let sid = sessionStorage.getItem('_psid');
-      if (!sid) {
-        sid = crypto.randomUUID();
-        sessionStorage.setItem('_psid', sid);
+    buildDeviceFingerprint().then((visitorId) => {
+      const storageKey = '_psid_' + visitorId.slice(0, 8);
+      let sessionId = sessionStorage.getItem(storageKey);
+      if (!sessionId) {
+        sessionId = crypto.randomUUID();
+        sessionStorage.setItem(storageKey, sessionId);
       }
-      return sid;
-    };
 
-    const visitorId = getOrCreateVisitorId();
-    const sessionId = getOrCreatePageSessionId();
+      supabase.rpc('log_platform_visit', {
+        p_visitor_id: visitorId,
+        p_session_id: sessionId,
+        p_phone: null,
+        p_user_agent: navigator.userAgent.slice(0, 200),
+      }).catch(() => {});
 
-    supabase.rpc('log_platform_visit', {
-      p_visitor_id: visitorId,
-      p_session_id: sessionId,
-      p_phone: null,
-      p_user_agent: navigator.userAgent.slice(0, 200),
-    }).then(() => {}).catch(() => {});
-
-    supabase.rpc('log_visitor_session', {
-      p_visitor_id: visitorId,
-      p_session_id: sessionId,
-      p_user_agent: navigator.userAgent.slice(0, 200),
-      p_referrer: document.referrer ? document.referrer.slice(0, 500) : null,
-      p_phone: null,
-    }).then(() => {}).catch(() => {});
+      supabase.rpc('log_visitor_session', {
+        p_visitor_id: visitorId,
+        p_session_id: sessionId,
+        p_user_agent: navigator.userAgent.slice(0, 200),
+        p_referrer: document.referrer ? document.referrer.slice(0, 500) : null,
+        p_phone: null,
+      }).catch(() => {});
+    });
 
     analytics.trackPageView('/', 'منصة باليت');
   }, []);
