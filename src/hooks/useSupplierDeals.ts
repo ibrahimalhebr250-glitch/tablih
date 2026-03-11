@@ -51,7 +51,7 @@ export function useSupplierDeals(phone: string) {
   });
   const platformDeals = deals.filter(d => d.status === 'matched' && d.source === 'demand_offer');
   const reservedDeals = deals.filter(d => d.status === 'supplier_confirmed' || d.status === 'awaiting_buyer' || d.status === 'inventory_reserved');
-  const inDelivery    = deals.filter(d => d.status === 'in_delivery');
+  const inDelivery    = deals.filter(d => d.status === 'in_delivery' || d.status === 'execution_in_progress');
   const endedDeals    = deals.filter(d => {
     if (d.status === 'cancelled') return true;
     if (d.status === 'completed' && d.completed_at) {
