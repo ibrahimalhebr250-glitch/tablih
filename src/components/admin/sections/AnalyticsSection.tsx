@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Users, Activity, Target, Zap, Filter, Download } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useABTesting } from '../../../hooks/useABTesting';
+import VisitorStatsPanel from '../analytics/VisitorStatsPanel';
 
 interface BehaviorStats {
   total_events: number;
@@ -318,6 +319,10 @@ export default function AnalyticsSection({ adminEmail }: { adminEmail: string })
               </div>
               <div className="text-sm text-gray-600">مستخدم نشط</div>
             </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <VisitorStatsPanel />
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

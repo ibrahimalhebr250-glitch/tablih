@@ -81,6 +81,33 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    const getOrCreateVisitorId = () => {
+      let id = localStorage.getItem('_pvid');
+      if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem('_pvid', id);
+      }
+      return id;
+    };
+    const getOrCreateSessionId = () => {
+      let sid = sessionStorage.getItem('_psid');
+      if (!sid) {
+        sid = crypto.randomUUID();
+        sessionStorage.setItem('_psid', sid);
+      }
+      return sid;
+    };
+    const visitorId = getOrCreateVisitorId();
+    const sessionId = getOrCreateSessionId();
+    supabase.rpc('log_platform_visit', {
+      p_visitor_id: visitorId,
+      p_session_id: sessionId,
+      p_phone: null,
+      p_user_agent: navigator.userAgent.slice(0, 200),
+    }).then(() => {}).catch(() => {});
+  }, []);
+
   if (loading) {
     return <LoadingFallback />;
   }
