@@ -139,7 +139,7 @@ export function useAdminDashboard(filter: TimeFilter) {
         total_buyers: buyerPhones.size || users.filter(u => u.user_type === 'buyer' || u.user_type === 'both').length,
         active_inventory: inventory.filter(i => i.status === 'active').length,
         published_to_market: inventory.filter(i => i.publish_to_market === true).length,
-        active_orders: orders.filter(o => !['cancelled', 'fulfilled'].includes(o.status)).length,
+        active_orders: orders.filter(o => !['cancelled', 'fulfilled'].includes(o.status || '')).length,
         unmatched_orders: orders.filter(o => o.status === 'unmatched').length,
         active_deals: deals.filter(d => !['cancelled', 'completed'].includes(d.status)).length,
         completed_deals: deals.filter(d => d.status === 'completed').length,
@@ -148,7 +148,7 @@ export function useAdminDashboard(filter: TimeFilter) {
         pallets_traded: deals.filter(d => d.status === 'completed').reduce((s, d) => s + (d.quantity ?? 0), 0),
         total_pallets_in_platform: inventory.reduce((s, i) => s + (i.quantity ?? 0), 0),
         negotiation_requests: negotiations.length,
-        orders_from_market: orders.filter(o => o.order_source === 'market').length,
+        orders_from_market: orders.filter(o => o.order_source === 'market' || o.order_source === 'market_demand_card').length,
       };
       setStats(platformStats);
 

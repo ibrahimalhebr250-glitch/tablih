@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, CreditCard as Edit2, Pause, Trash2, MessageCircle, ExternalLink, Search, Filter, CheckSquare, Square, XSquare, Loader2 } from 'lucide-react';
+import { Eye, CreditCard as Edit2, Pause, Trash2, MessageCircle, ExternalLink, Search, Filter, CheckSquare, Square, XSquare, Loader2, ShoppingBag, Store } from 'lucide-react';
 import type { OrderWithDetails } from '../../../hooks/useAdminOrders';
 
 interface Props {
@@ -47,11 +47,13 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 const SOURCE_LABELS: Record<string, string> = {
   normal: 'طلب عادي',
   market: 'من السوق',
+  market_demand_card: 'بطاقة سوق',
 };
 
 const SOURCE_COLORS: Record<string, { bg: string; text: string }> = {
   normal: { bg: '#F0F9FF', text: '#0369A1' },
   market: { bg: '#FFF7ED', text: '#C2410C' },
+  market_demand_card: { bg: '#ECFDF5', text: '#065F46' },
 };
 
 export default function OrdersMonitoringTab({ orders, onUpdate, onDelete }: Props) {
@@ -127,8 +129,42 @@ export default function OrdersMonitoringTab({ orders, onUpdate, onDelete }: Prop
   const allSelected = filteredOrders.length > 0 && selectedIds.size === filteredOrders.length;
   const someSelected = selectedIds.size > 0;
 
+  const manualCount = orders.filter(o => !o.order_source || o.order_source === 'normal').length;
+  const marketCount = orders.filter(o => o.order_source === 'market' || o.order_source === 'market_demand_card').length;
+  const demandCardCount = orders.filter(o => o.order_source === 'market_demand_card').length;
+
   return (
     <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-3" dir="rtl">
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+            <ShoppingBag className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-xl font-black text-gray-900">{manualCount.toLocaleString('ar-SA')}</p>
+            <p className="text-xs font-semibold text-gray-500">طلبات يدوية</p>
+          </div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
+            <Store className="w-5 h-5 text-orange-600" />
+          </div>
+          <div>
+            <p className="text-xl font-black text-gray-900">{marketCount.toLocaleString('ar-SA')}</p>
+            <p className="text-xs font-semibold text-gray-500">طلبات من السوق</p>
+          </div>
+        </div>
+        <div className="bg-white border border-[#6ee7b7] rounded-2xl p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+            <Store className="w-5 h-5 text-emerald-600" />
+          </div>
+          <div>
+            <p className="text-xl font-black text-gray-900">{demandCardCount.toLocaleString('ar-SA')}</p>
+            <p className="text-xs font-semibold text-gray-500">بطاقات طلب سوق</p>
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-3">
         <div className="flex-1 relative">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -176,6 +212,7 @@ export default function OrdersMonitoringTab({ orders, onUpdate, onDelete }: Prop
             <option value="all">جميع المصادر</option>
             <option value="normal">طلب عادي</option>
             <option value="market">من السوق</option>
+            <option value="market_demand_card">بطاقة سوق</option>
           </select>
         </div>
       </div>

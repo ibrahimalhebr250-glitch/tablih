@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RefreshCw, Activity, Users, Package, ShoppingCart, Handshake, BarChart3, TrendingUp, ArrowLeft, Layers, Store, MessageSquare } from 'lucide-react';
+import { RefreshCw, Activity, Users, Package, ShoppingCart, Handshake, BarChart3, TrendingUp, ArrowLeft, Layers, Store, MessageSquare, ShoppingBag } from 'lucide-react';
 import { useAdminDashboard } from '../../../hooks/useAdminDashboard';
 import type { TimeFilter, PlatformStats } from '../../../hooks/useAdminDashboard';
 import MarketOverview from '../dashboard/MarketOverview';
@@ -72,6 +72,7 @@ function PlatformOverview({ stats, loading, onNavigate }: { stats: PlatformStats
     { label: 'صفقات مكتملة', value: stats?.completed_deals ?? 0, icon: <BarChart3 className="w-5 h-5 text-slate-600" />, color: '#475569', bg: '#f8fafc', nav: 'deals' },
     { label: 'طبليات متداولة', value: stats?.total_pallets_in_platform ?? 0, icon: <Package className="w-5 h-5 text-orange-600" />, color: '#ea580c', bg: '#fff7ed', suffix: 'طبلية', nav: 'inventory' },
     { label: 'طلبات تفاوض', value: stats?.negotiation_requests ?? 0, icon: <MessageSquare className="w-5 h-5 text-rose-600" />, color: '#e11d48', bg: '#fff1f2', nav: 'market' },
+    { label: 'طلبات من بطاقات السوق', value: stats?.orders_from_market ?? 0, icon: <ShoppingBag className="w-5 h-5 text-teal-600" />, color: '#0d9488', bg: '#f0fdfa', nav: 'orders' },
   ];
 
   return (
@@ -83,7 +84,7 @@ function PlatformOverview({ stats, loading, onNavigate }: { stats: PlatformStats
           <p className="text-xs text-slate-500">إحصائيات المنصة في الوقت الفعلي</p>
         </div>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         {cards.map(c => (
           <StatCard
             key={c.label}

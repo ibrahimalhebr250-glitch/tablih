@@ -54,6 +54,7 @@ export interface OrderRequest {
   quantity: number;
   city: string;
   status: string;
+  order_source: string | null;
   accept_close_quality: boolean;
   accept_close_city: boolean;
   accept_partial_delivery: boolean;

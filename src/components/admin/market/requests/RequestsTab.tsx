@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Eye, Pencil, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Trash2, Store } from 'lucide-react';
 import { useOrders } from '../../../../hooks/useMarket';
 import type { OrderRequest } from '../../../../hooks/useMarket';
 import TableControls from '../shared/TableControls';
@@ -15,21 +15,32 @@ const STATUS_BADGE: Record<string, { label: string; color: string; bg: string }>
   fulfilled: { label: 'مكتمل', color: '#64748b', bg: '#f1f5f9' },
 };
 
+const SOURCE_BADGE: Record<string, { label: string; color: string; bg: string }> = {
+  normal: { label: 'يدوي', color: '#0369a1', bg: '#f0f9ff' },
+  market: { label: 'سوق', color: '#c2410c', bg: '#fff7ed' },
+  market_demand_card: { label: 'بطاقة سوق', color: '#065f46', bg: '#ecfdf5' },
+};
+
 const CITIES = ['الرياض','جدة','مكة المكرمة','المدينة المنورة','الدمام','الخبر','الأحساء','بريدة','تبوك','نجران','ابها','جازان','ينبع','حائل','القصيف','القطيف','الجبيل','خميس مشيط','الطائف','الخرج'];
 
 type SubView = { mode: 'list' } | { mode: 'view'; order: OrderRequest } | { mode: 'edit'; order: OrderRequest };
 
 function RequestViewPage({ order, onBack }: { order: OrderRequest; onBack: () => void }) {
   const badge = STATUS_BADGE[order.status ?? 'pending'] ?? STATUS_BADGE.pending;
+  const srcBadge = SOURCE_BADGE[order.order_source ?? 'normal'] ?? SOURCE_BADGE.normal;
   return (
     <div className="space-y-6" dir="rtl">
       <div className="flex items-center gap-3">
         <button onClick={onBack} className="p-2 rounded-xl bg-[#f0f6fa] text-[#4a7a94] hover:bg-[#e2edf5] transition-colors">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
         </button>
-        <div>
+        <div className="flex items-center gap-2">
           <h3 className="text-[17px] font-black text-[#1a2f3e]">{order.request_id}</h3>
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold" style={{ background: srcBadge.bg, color: srcBadge.color }}>
+            {(order.order_source === 'market_demand_card' || order.order_source === 'market') && <Store className="w-3 h-3" />}
+            {srcBadge.label}
+          </span>
         </div>
       </div>
       <div className="bg-white rounded-2xl border border-[#e2edf5] p-5 space-y-3">
@@ -111,18 +122,22 @@ export default function RequestsTab() {
   const [search, setSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [sourceFilter, setSourceFilter] = useState('');
   const [page, setPage] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<OrderRequest | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const demandCardCount = useMemo(() => orders.filter(o => o.order_source === 'market_demand_card').length, [orders]);
 
   const filtered = useMemo(() => {
     return orders.filter(o => {
       const matchSearch = o.request_id.includes(search) || (o.phone ?? '').includes(search) || o.city.includes(search);
       const matchCity = !cityFilter || o.city === cityFilter;
       const matchStatus = !statusFilter || o.status === statusFilter;
-      return matchSearch && matchCity && matchStatus;
+      const matchSource = !sourceFilter || (o.order_source ?? 'normal') === sourceFilter;
+      return matchSearch && matchCity && matchStatus && matchSource;
     });
-  }, [orders, search, cityFilter, statusFilter]);
+  }, [orders, search, cityFilter, statusFilter, sourceFilter]);
 
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
@@ -131,6 +146,21 @@ export default function RequestsTab() {
 
   return (
     <div className="space-y-4" dir="rtl">
+      {demandCardCount > 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+          <Store className="w-4 h-4 text-emerald-700 flex-shrink-0" />
+          <span className="text-[13px] font-bold text-emerald-800">
+            {demandCardCount} طلب قادم من بطاقات الطلب في السوق
+          </span>
+          <button
+            onClick={() => { setSourceFilter('market_demand_card'); setPage(0); }}
+            className="mr-auto text-[12px] font-bold text-emerald-700 underline underline-offset-2 hover:text-emerald-900 transition-colors"
+          >
+            عرضها فقط
+          </button>
+        </div>
+      )}
+
       {confirmDelete && (
         <ConfirmDialog
           title="حذف الطلب"
@@ -181,6 +211,16 @@ export default function RequestsTab() {
               { value: 'fulfilled', label: 'مكتمل' },
             ],
           },
+          {
+            label: 'المصدر',
+            value: sourceFilter,
+            onChange: v => { setSourceFilter(v); setPage(0); },
+            options: [
+              { value: 'normal', label: 'يدوي' },
+              { value: 'market', label: 'سوق' },
+              { value: 'market_demand_card', label: 'بطاقة سوق' },
+            ],
+          },
         ]}
         total={filtered.length}
         page={page}
@@ -196,8 +236,11 @@ export default function RequestsTab() {
                 <th className="px-4 py-3 text-right font-bold text-[#4a7a94]">معرف الطلب</th>
                 <th className="px-4 py-3 text-right font-bold text-[#4a7a94]">الهاتف</th>
                 <th className="px-4 py-3 text-right font-bold text-[#4a7a94]">المدينة</th>
+                <th className="px-4 py-3 text-right font-bold text-[#4a7a94]">نوع الطبلية</th>
                 <th className="px-4 py-3 text-right font-bold text-[#4a7a94]">المقاس</th>
+                <th className="px-4 py-3 text-right font-bold text-[#4a7a94]">الجودة</th>
                 <th className="px-4 py-3 text-right font-bold text-[#4a7a94]">الكمية</th>
+                <th className="px-4 py-3 text-right font-bold text-[#4a7a94]">المصدر</th>
                 <th className="px-4 py-3 text-right font-bold text-[#4a7a94]">الحالة</th>
                 <th className="px-4 py-3 text-right font-bold text-[#4a7a94]">تاريخ الإنشاء</th>
                 <th className="px-4 py-3 text-right font-bold text-[#4a7a94]">إجراءات</th>
@@ -206,20 +249,30 @@ export default function RequestsTab() {
             <tbody className="divide-y divide-[#f0f6fa]">
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
-                  <tr key={i}>{Array.from({ length: 8 }).map((__, j) => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse w-16" /></td>)}</tr>
+                  <tr key={i}>{Array.from({ length: 11 }).map((__, j) => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse w-16" /></td>)}</tr>
                 ))
               ) : paginated.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-10 text-center text-[#7a9aab]">لا توجد نتائج</td></tr>
+                <tr><td colSpan={11} className="px-4 py-10 text-center text-[#7a9aab]">لا توجد نتائج</td></tr>
               ) : (
                 paginated.map(o => {
                   const badge = STATUS_BADGE[o.status ?? 'pending'] ?? STATUS_BADGE.pending;
+                  const srcBadge = SOURCE_BADGE[o.order_source ?? 'normal'] ?? SOURCE_BADGE.normal;
+                  const isDemandCard = o.order_source === 'market_demand_card';
                   return (
-                    <tr key={o.id} className="hover:bg-[#f7fbfd] transition-colors">
+                    <tr key={o.id} className={`transition-colors ${isDemandCard ? 'bg-emerald-50/30 hover:bg-emerald-50/50' : 'hover:bg-[#f7fbfd]'}`}>
                       <td className="px-4 py-3 font-bold text-[#1a2f3e]">{o.request_id}</td>
                       <td className="px-4 py-3 text-[#4a7a94]">{o.phone ?? '—'}</td>
                       <td className="px-4 py-3 text-[#4a7a94]">{o.city}</td>
+                      <td className="px-4 py-3 text-[#4a7a94]">{o.pallet_type}</td>
                       <td className="px-4 py-3 text-[#4a7a94]">{o.size}</td>
+                      <td className="px-4 py-3 text-[#4a7a94]">{o.quality}</td>
                       <td className="px-4 py-3 text-[#1a2f3e] font-bold">{o.quantity}</td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold" style={{ background: srcBadge.bg, color: srcBadge.color }}>
+                          {isDemandCard && <Store className="w-3 h-3" />}
+                          {srcBadge.label}
+                        </span>
+                      </td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
                       </td>
