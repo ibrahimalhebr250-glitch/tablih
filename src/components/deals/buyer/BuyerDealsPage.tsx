@@ -656,7 +656,7 @@ export default function BuyerDealsPage({ phone, onClose, onNavigateToWarehouse }
 
   const [activeTab, setActiveTab] = useState<Tab>('awaiting');
   const [toast, setToast] = useState<ToastConfig | null>(null);
-  const [ratingDialog, setRatingDialog] = useState<{ dealId: string; supplierPhone: string; supplierName: string } | null>(null);
+  const [ratingDialog, setRatingDialog] = useState<{ dealId: string; supplierPhone: string; supplierName: string; dealRef?: string } | null>(null);
 
   const handleConfirmPurchase = async (dealId: string) => {
     const result = await confirmPurchase(dealId);
@@ -676,6 +676,7 @@ export default function BuyerDealsPage({ phone, onClose, onNavigateToWarehouse }
       dealId: deal.id,
       supplierPhone: deal.supplier_phone,
       supplierName,
+      dealRef: deal.deal_ref,
     });
   };
 
@@ -867,6 +868,7 @@ export default function BuyerDealsPage({ phone, onClose, onNavigateToWarehouse }
         ratedUserPhone={ratingDialog.supplierPhone}
         ratedUserName={ratingDialog.supplierName}
         userType="supplier"
+        dealRef={ratingDialog.dealRef}
         onRatingSubmitted={handleRatingSubmitted}
       />
     )}

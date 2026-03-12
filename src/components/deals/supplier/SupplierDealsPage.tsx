@@ -1055,7 +1055,7 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
   const [failingDeal, setFailingDeal] = useState<Deal | null>(null);
   const [pledgingDeal, setPledgingDeal] = useState<Deal | null>(null);
   const [toast, setToast] = useState<ToastConfig | null>(null);
-  const [ratingDialog, setRatingDialog] = useState<{ dealId: string; buyerPhone: string; buyerName: string } | null>(null);
+  const [ratingDialog, setRatingDialog] = useState<{ dealId: string; buyerPhone: string; buyerName: string; dealRef?: string; autoOpened?: boolean } | null>(null);
 
   const supplyCardPending = newRequests.filter(d => d.source === 'supply_card' && d.status === 'pending_supplier');
   const otherNewRequests  = newRequests.filter(d => !(d.source === 'supply_card' && d.status === 'pending_supplier'));
@@ -1104,14 +1104,25 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
   };
 
   const handleConfirmDelivery = async (dealId: string) => {
+    const deal = inDelivery.find(d => d.id === dealId);
     const result = await confirmDelivery(dealId);
     if (result.success) {
-      setToast({
-        title: 'تم تأكيد التسليم بنجاح',
-        message: 'الصفقة مكتملة — شكراً لتعاملك مع منصة العاديات',
-        variant: 'success',
-      });
       setActiveTab('ended');
+      if (deal) {
+        setRatingDialog({
+          dealId: deal.id,
+          buyerPhone: deal.buyer_phone,
+          buyerName: 'المشتري',
+          dealRef: deal.deal_ref,
+          autoOpened: true,
+        });
+      } else {
+        setToast({
+          title: 'تم تأكيد التسليم بنجاح',
+          message: 'الصفقة مكتملة — شكراً لتعاملك مع منصة العاديات',
+          variant: 'success',
+        });
+      }
     } else {
       setToast({
         title: 'تعذّر تأكيد التسليم',
@@ -1140,6 +1151,7 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
       dealId: deal.id,
       buyerPhone: deal.buyer_phone,
       buyerName: 'المشتري',
+      dealRef: deal.deal_ref,
     });
   };
 
@@ -1340,8 +1352,8 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
                     onConfirmDelivery={async () => {
                       const r = await confirmSupplyCardDelivery(deal.id);
                       if (r.success) {
-                        setToast({ title: 'تم التسليم بنجاح', message: 'تم خصم المخزون ونقله للمشتري وتسجيل العمولة', variant: 'success' });
                         setActiveTab('ended');
+                        setRatingDialog({ dealId: deal.id, buyerPhone: deal.buyer_phone, buyerName: 'المشتري', dealRef: deal.deal_ref, autoOpened: true });
                       } else {
                         setToast({ title: 'خطأ', message: r.error ?? 'حدث خطأ', variant: 'error' });
                       }
@@ -1363,8 +1375,8 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
                     onConfirmDelivery={async () => {
                       const r = await confirmDemandCardDelivery(deal.id);
                       if (r.success) {
-                        setToast({ title: 'تم التسليم بنجاح', message: 'تم خصم المخزون ونقله للمشتري وتسجيل العمولة', variant: 'success' });
                         setActiveTab('ended');
+                        setRatingDialog({ dealId: deal.id, buyerPhone: deal.buyer_phone, buyerName: 'المشتري', dealRef: deal.deal_ref, autoOpened: true });
                       } else {
                         setToast({ title: 'خطأ', message: r.error ?? 'حدث خطأ', variant: 'error' });
                       }
@@ -1415,6 +1427,7 @@ export default function SupplierDealsPage({ phone, onClose }: Props) {
         ratedUserPhone={ratingDialog.buyerPhone}
         ratedUserName={ratingDialog.buyerName}
         userType="buyer"
+        dealRef={ratingDialog.dealRef}
         onRatingSubmitted={handleRatingSubmitted}
       />
     )}
