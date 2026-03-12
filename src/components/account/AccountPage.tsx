@@ -20,13 +20,12 @@ import AccountSummaryCards from './AccountSummaryCards';
 import SettingsTab from './tabs/SettingsTab';
 import AccountEditSheet from './AccountEditSheet';
 import CloudWarehouseTab from './tabs/CloudWarehouseTab';
-import MyDealsTab from './tabs/MyDealsTab';
 import CommissionsTab from './tabs/CommissionsTab';
 import SaleRequestsTab from './tabs/SaleRequestsTab';
 import { useAccountData } from '../../hooks/useAccountData';
 import { useSupplierSaleRequests, useBuyerSaleRequests } from '../../hooks/useSaleRequests';
 
-type AccountTab = 'warehouse' | 'deals' | 'commissions' | 'settings' | 'sale_requests';
+type AccountTab = 'warehouse' | 'commissions' | 'settings' | 'sale_requests';
 
 interface Props {
   session: AppSession;
@@ -84,7 +83,6 @@ export default function AccountPage({ session, onClose, onLogout, initialTab, sa
   const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Settings; badge?: number }[] = [
     { key: 'warehouse', label: 'مستودعي', icon: Cloud },
     { key: 'sale_requests', label: 'طلبات شراء', icon: ShoppingBag, badge: saleRequestsBadge || undefined },
-    { key: 'deals', label: 'بيع طبليات', icon: Handshake, badge: marketCardDeals.filter(d => !['completed', 'cancelled'].includes(d.status)).length || undefined },
     { key: 'commissions', label: 'العمولات', icon: DollarSign, badge: pendingCommissions.length || undefined },
     { key: 'settings', label: t('account.settings'), icon: Settings },
   ];
@@ -118,15 +116,6 @@ export default function AccountPage({ session, onClose, onLogout, initialTab, sa
         );
       case 'sale_requests':
         return <SaleRequestsTab phone={phone} initialView={saleRequestsView} />;
-      case 'deals':
-        return (
-          <MyDealsTab
-            deals={marketCardDeals}
-            myPhone={phone}
-            getCounterpartyName={getCounterpartyName}
-            loading={loading}
-          />
-        );
       case 'commissions':
         return (
           <CommissionsTab

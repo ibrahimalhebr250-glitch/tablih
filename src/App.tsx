@@ -69,7 +69,7 @@ function App() {
   const [adminStaff, setAdminStaff] = useState<AdminStaffData | null>(null);
   const [inventoryPrefill, setInventoryPrefill] = useState<{ pallet_type?: string; size?: string; quality?: string; quantity?: number; city?: string } | undefined>();
   const [inventorySource, setInventorySource] = useState<'supplier_added' | 'purchase_transfer'>('supplier_added');
-  const [accountInitialTab, setAccountInitialTab] = useState<'warehouse' | 'deals' | 'commissions' | 'settings' | 'sale_requests' | undefined>(undefined);
+  const [accountInitialTab, setAccountInitialTab] = useState<'warehouse' | 'commissions' | 'settings' | 'sale_requests' | undefined>(undefined);
   const [accountSaleRequestsView, setAccountSaleRequestsView] = useState<'supplier' | 'buyer' | undefined>(undefined);
   const pendingBuyCard = useRef<import('./components/market/PalletCards').SupplyCardData | null>(null);
   const [pendingBuyCardState, setPendingBuyCardState] = useState<import('./components/market/PalletCards').SupplyCardData | null>(null);
