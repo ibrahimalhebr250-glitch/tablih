@@ -195,6 +195,9 @@ export default function MarketSection({
       <PalletDetailsPage
         card={selectedCard}
         onClose={() => setSelectedCard(null)}
+        onLoginRequired={() => {
+          setSelectedCard(null);
+        }}
       />
     );
   }

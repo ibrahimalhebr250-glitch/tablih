@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  X, MapPin, Package, Star, Layers, Tag, Award, Building2,
+  MapPin, Package, Star, Layers, Tag, Award, Building2,
   CheckCircle2, ArrowLeftCircle, ChevronLeft, Calendar, ZoomIn,
-  ShoppingBag, Store
+  ShoppingBag, Store, LogIn, AlertTriangle
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { sessionManager } from '../../lib/sessionManager';
 import { FullscreenGallery } from './ImageGallery';
+import BuyRequestSheet from './BuyRequestSheet';
 import type { SupplyCardData, DemandCardData } from './PalletCards';
 
 type Card = SupplyCardData | DemandCardData;
@@ -21,7 +23,7 @@ interface SellerProfile {
 interface Props {
   card: Card;
   onClose: () => void;
-  onAction?: (card: Card) => void;
+  onLoginRequired?: () => void;
 }
 
 const QUALITY_MAP: Record<string, { label: string; color: string; bg: string; dot: string }> = {
@@ -73,13 +75,16 @@ function StarDisplay({ rating, count }: { rating: number; count: number }) {
   );
 }
 
-export default function PalletDetailsPage({ card, onClose, onAction }: Props) {
+export default function PalletDetailsPage({ card, onClose, onLoginRequired }: Props) {
   const [profile, setProfile] = useState<SellerProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [fullscreenIndex, setFullscreenIndex] = useState(0);
   const [currentImage, setCurrentImage] = useState(0);
   const [imgError, setImgError] = useState<Record<number, boolean>>({});
+  const [showBuySheet, setShowBuySheet] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
 
   const isSupply = card.kind === 'supply';
   const images = isSupply ? (card as SupplyCardData).image_urls : [];
@@ -139,6 +144,15 @@ export default function PalletDetailsPage({ card, onClose, onAction }: Props) {
     if (validImages.length === 0) return;
     setFullscreenIndex(index);
     setFullscreenOpen(true);
+  };
+
+  const handleBuyAction = () => {
+    const token = sessionManager.getSessionToken();
+    if (!token) {
+      setShowLoginPrompt(true);
+      return;
+    }
+    setShowBuySheet(true);
   };
 
   const supplyCard = isSupply ? (card as SupplyCardData) : null;
@@ -490,30 +504,34 @@ export default function PalletDetailsPage({ card, onClose, onAction }: Props) {
           className="shrink-0 px-4 pb-6 pt-3 safe-bottom"
           style={{ background: 'white', borderTop: '1px solid #f1f5f9', boxShadow: '0 -4px 20px rgba(0,0,0,0.08)' }}
         >
-          {onAction ? (
-            <button
-              onClick={() => onAction(card)}
-              className="w-full py-4 rounded-2xl text-[16px] font-black text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-              style={{
-                background: isSupply
-                  ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
-                  : 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
-                boxShadow: isSupply
-                  ? '0 4px 20px rgba(5,150,105,0.4)'
-                  : '0 4px 20px rgba(234,88,12,0.4)',
-              }}
-            >
-              {isSupply
-                ? <><Store className="w-5 h-5" /> عرض بيع طبليات</>
-                : <><ShoppingBag className="w-5 h-5" /> طلب شراء طبليات</>
-              }
-            </button>
+          {isSupply ? (
+            requestSent ? (
+              <div
+                className="w-full py-4 rounded-2xl text-[15px] font-black text-center flex items-center justify-center gap-2"
+                style={{ background: '#dcfce7', color: '#15803d' }}
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                تم إرسال طلبك بنجاح
+              </div>
+            ) : (
+              <button
+                onClick={handleBuyAction}
+                className="w-full py-4 rounded-2xl text-[16px] font-black text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                style={{
+                  background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                  boxShadow: '0 4px 20px rgba(5,150,105,0.4)',
+                }}
+              >
+                <Store className="w-5 h-5" />
+                عرض بيع طبليات
+              </button>
+            )
           ) : (
             <div
               className="w-full py-3.5 rounded-2xl text-[14px] font-bold text-center"
               style={{ background: '#f3f4f6', color: '#9ca3af' }}
             >
-              سيتم تفعيل هذا الزر قريباً
+              هذا طلب شراء من مشترٍ
             </div>
           )}
         </div>
@@ -525,6 +543,68 @@ export default function PalletDetailsPage({ card, onClose, onAction }: Props) {
           initialIndex={fullscreenIndex}
           onClose={() => setFullscreenOpen(false)}
         />
+      )}
+
+      {showBuySheet && supplyCard && (
+        <BuyRequestSheet
+          card={supplyCard}
+          onClose={() => setShowBuySheet(false)}
+          onSuccess={() => {
+            setShowBuySheet(false);
+            setRequestSent(true);
+          }}
+        />
+      )}
+
+      {showLoginPrompt && (
+        <div
+          className="fixed inset-0 z-[80] flex items-end justify-center"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
+          onClick={() => setShowLoginPrompt(false)}
+        >
+          <div
+            className="w-full rounded-t-3xl overflow-hidden px-5 pt-6 pb-10"
+            style={{ background: 'white', maxWidth: 480, boxShadow: '0 -8px 40px rgba(0,0,0,0.2)', direction: 'rtl' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                style={{ background: '#dcfce7' }}
+              >
+                <LogIn className="w-8 h-8 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-[18px] font-black text-gray-900 mb-1">سجّل دخولك للمتابعة</h3>
+                <p className="text-[13px] text-gray-500 leading-relaxed">
+                  يجب تسجيل الدخول لإرسال طلب شراء إلى المورد.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl w-full" style={{ background: '#fff7ed', border: '1px solid #fed7aa' }}>
+                <AlertTriangle className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                <span className="text-[12px] text-orange-700">بعد تسجيل الدخول، ارجع لهذا الإعلان وأرسل طلبك.</span>
+              </div>
+              <button
+                onClick={() => {
+                  setShowLoginPrompt(false);
+                  onLoginRequired?.();
+                }}
+                className="w-full py-3.5 rounded-2xl text-[15px] font-black text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 6px 20px rgba(5,150,105,0.35)' }}
+              >
+                <LogIn className="w-5 h-5" />
+                تسجيل الدخول
+              </button>
+              <button
+                onClick={() => setShowLoginPrompt(false)}
+                className="w-full py-3 rounded-2xl text-[14px] font-bold text-gray-500 transition-all active:scale-[0.98]"
+                style={{ background: '#f3f4f6' }}
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
