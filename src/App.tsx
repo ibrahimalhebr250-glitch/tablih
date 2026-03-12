@@ -365,6 +365,7 @@ function App() {
                           onDetailSheetChange={setIsDetailSheetOpen}
                           onGoToDeals={() => setModal('buyerDeals')}
                           onLoginRequired={openAuthForDeal}
+                          onGoToInventory={openInventory}
                         />
                       </div>
                     ) : (
@@ -421,6 +422,7 @@ function App() {
                       onDetailSheetChange={setIsDetailSheetOpen}
                       onGoToDeals={() => openAuth('none')}
                       onLoginRequired={openAuthForDeal}
+                      onGoToInventory={openInventory}
                     />
                   </div>
                 </Suspense>
@@ -463,6 +465,7 @@ function App() {
                         onDetailSheetChange={setIsDetailSheetOpen}
                         onGoToDeals={() => setModal('buyerDeals')}
                         onLoginRequired={openAuthForDeal}
+                        onGoToInventory={openInventory}
                       />
                     </>
                   ) : (
@@ -509,6 +512,7 @@ function App() {
                   onDetailSheetChange={setIsDetailSheetOpen}
                   onGoToDeals={() => openAuth('none')}
                   onLoginRequired={openAuthForDeal}
+                  onGoToInventory={openInventory}
                 />
               </Suspense>
             </div>

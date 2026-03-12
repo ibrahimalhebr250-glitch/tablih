@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   X, Package, MapPin, Star, Layers, Tag, Award,
   Minus, Plus, CheckCircle2, Loader, AlertTriangle,
-  Truck, ChevronDown, MessageSquare, Warehouse
+  Truck, ChevronDown, MessageSquare, Warehouse, PackagePlus, ArrowLeft
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { sessionManager } from '../../lib/sessionManager';
@@ -23,6 +23,7 @@ interface Props {
   card: DemandCardData;
   onClose: () => void;
   onSuccess: () => void;
+  onGoToInventory?: () => void;
 }
 
 const QUALITY_MAP: Record<string, { label: string; color: string; bg: string }> = {
@@ -32,7 +33,7 @@ const QUALITY_MAP: Record<string, { label: string; color: string; bg: string }> 
   Scrap: { label: 'خردة', color: '#b91c1c', bg: '#fee2e2' },
 };
 
-export default function SupplyOfferSheet({ card, onClose, onSuccess }: Props) {
+export default function SupplyOfferSheet({ card, onClose, onSuccess, onGoToInventory }: Props) {
   const [batches, setBatches] = useState<InventoryBatch[]>([]);
   const [loadingBatches, setLoadingBatches] = useState(true);
   const [selectedBatch, setSelectedBatch] = useState<InventoryBatch | null>(null);
@@ -271,17 +272,43 @@ export default function SupplyOfferSheet({ card, onClose, onSuccess }: Props) {
                       <span className="text-[13px] text-gray-400">جاري تحميل مخزونك...</span>
                     </div>
                   ) : batches.length === 0 ? (
-                    <div
-                      className="rounded-xl p-4 flex items-start gap-3"
-                      style={{ background: '#fff7ed', border: '1px solid #fed7aa' }}
-                    >
-                      <AlertTriangle className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
+                    <div className="flex flex-col items-center text-center gap-5 py-6 px-2">
+                      <div
+                        className="w-20 h-20 rounded-3xl flex items-center justify-center"
+                        style={{ background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)', border: '2px dashed #fb923c' }}
+                      >
+                        <PackagePlus className="w-9 h-9 text-orange-400" />
+                      </div>
                       <div>
-                        <p className="text-[13px] font-bold text-orange-800">لا يوجد مخزون متاح</p>
-                        <p className="text-[11px] text-orange-600 mt-0.5">
-                          أضف مخزوناً من مستودعك السحابي أولاً لتتمكن من تقديم عروض.
+                        <p className="text-[16px] font-black text-gray-900 mb-1">
+                          لا يوجد رصيد طبليات في مستودعك
+                        </p>
+                        <p className="text-[12px] text-gray-500 leading-relaxed">
+                          قم بتسجيل مخزونك أولاً في <strong className="text-orange-600">إضافة مخزون</strong>،<br />
+                          ثم عُد مرة أخرى لتقديم عرضك للمشتري
                         </p>
                       </div>
+                      <div
+                        className="w-full rounded-2xl p-3 flex items-center gap-2.5"
+                        style={{ background: '#fff7ed', border: '1px solid #fed7aa' }}
+                      >
+                        <AlertTriangle className="w-4 h-4 text-orange-500 shrink-0" />
+                        <p className="text-[11px] text-orange-700 text-right leading-relaxed">
+                          المخزون في المستودع السحابي يتيح لك تقديم عروض للمشترين في السوق
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => { onClose(); onGoToInventory?.(); }}
+                        className="w-full py-4 rounded-2xl font-black text-[15px] text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                        style={{
+                          background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
+                          boxShadow: '0 6px 20px rgba(234,88,12,0.35)',
+                        }}
+                      >
+                        <PackagePlus className="w-5 h-5" />
+                        الذهاب إلى إضافة مخزون
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
                     </div>
                   ) : (
                     <div className="space-y-2">

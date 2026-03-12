@@ -34,6 +34,7 @@ interface Props {
   card: Card;
   onClose: () => void;
   onLoginRequired?: (card?: SupplyCardData) => void;
+  onGoToInventory?: () => void;
 }
 
 const QUALITY_MAP: Record<string, { label: string; color: string; bg: string; dot: string }> = {
@@ -85,7 +86,7 @@ function StarDisplay({ rating, count }: { rating: number; count: number }) {
   );
 }
 
-export default function PalletDetailsPage({ card, onClose, onLoginRequired }: Props) {
+export default function PalletDetailsPage({ card, onClose, onLoginRequired, onGoToInventory }: Props) {
   const [profile, setProfile] = useState<SellerProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
@@ -680,6 +681,7 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired }: Pr
             setShowOfferSheet(false);
             setOfferSent(true);
           }}
+          onGoToInventory={onGoToInventory}
         />
       )}
 

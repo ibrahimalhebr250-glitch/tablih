@@ -17,6 +17,7 @@ interface MarketSectionProps {
   onDetailSheetChange?: (open: boolean) => void;
   onGoToDeals?: () => void;
   onLoginRequired?: (card?: import('./PalletCards').SupplyCardData) => void;
+  onGoToInventory?: () => void;
 }
 
 const QUALITY_OPTIONS = ['A', 'B', 'C', 'Scrap'];
@@ -27,6 +28,7 @@ export default function MarketSection({
   sessionPhone,
   onDetailSheetChange,
   onLoginRequired,
+  onGoToInventory,
 }: MarketSectionProps) {
   const { t } = useTranslation();
 
@@ -199,6 +201,10 @@ export default function MarketSection({
         onLoginRequired={(card) => {
           setSelectedCard(null);
           onLoginRequired?.(card);
+        }}
+        onGoToInventory={() => {
+          setSelectedCard(null);
+          onGoToInventory?.();
         }}
       />
     );
