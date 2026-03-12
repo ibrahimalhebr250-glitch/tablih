@@ -387,10 +387,11 @@ type ViewMode = 'supplier' | 'buyer';
 
 interface Props {
   phone: string;
+  initialView?: ViewMode;
 }
 
-export default function SaleRequestsTab({ phone }: Props) {
-  const [view, setView] = useState<ViewMode>('supplier');
+export default function SaleRequestsTab({ phone, initialView }: Props) {
+  const [view, setView] = useState<ViewMode>(initialView ?? 'supplier');
 
   const {
     requests: supplierRequests,
@@ -409,7 +410,7 @@ export default function SaleRequestsTab({ phone }: Props) {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-[16px] font-black text-gray-900 flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-green-600" />
-            طلبات شراء الطبليات
+            طلبات الشراء والبيع
           </h2>
         </div>
 
@@ -423,7 +424,7 @@ export default function SaleRequestsTab({ phone }: Props) {
               boxShadow: view === 'supplier' ? '0 4px 12px rgba(22,163,74,0.25)' : 'none',
             }}
           >
-            طلبات واردة
+            بيع طبليات
             {pending > 0 && (
               <span className="absolute -top-1 -left-1 w-5 h-5 rounded-full text-[10px] font-black text-white flex items-center justify-center" style={{ background: '#dc2626' }}>
                 {pending}
@@ -439,7 +440,7 @@ export default function SaleRequestsTab({ phone }: Props) {
               boxShadow: view === 'buyer' ? '0 4px 12px rgba(37,99,235,0.25)' : 'none',
             }}
           >
-            طلباتي كمشتري
+            طلبات الشراء
             {buyerActive > 0 && (
               <span className="absolute -top-1 -left-1 w-5 h-5 rounded-full text-[10px] font-black text-white flex items-center justify-center" style={{ background: '#2563eb' }}>
                 {buyerActive}

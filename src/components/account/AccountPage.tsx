@@ -33,9 +33,10 @@ interface Props {
   onClose: () => void;
   onLogout: () => void;
   initialTab?: AccountTab;
+  saleRequestsView?: 'supplier' | 'buyer';
 }
 
-export default function AccountPage({ session, onClose, onLogout, initialTab }: Props) {
+export default function AccountPage({ session, onClose, onLogout, initialTab, saleRequestsView }: Props) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<AccountTab>(initialTab ?? 'warehouse');
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
@@ -82,8 +83,8 @@ export default function AccountPage({ session, onClose, onLogout, initialTab }: 
 
   const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Settings; badge?: number }[] = [
     { key: 'warehouse', label: 'مستودعي', icon: Cloud },
-    { key: 'sale_requests', label: 'طلبات البيع', icon: ShoppingBag, badge: saleRequestsBadge || undefined },
-    { key: 'deals', label: 'صفقاتي', icon: Handshake, badge: marketCardDeals.filter(d => !['completed', 'cancelled'].includes(d.status)).length || undefined },
+    { key: 'sale_requests', label: 'طلبات شراء', icon: ShoppingBag, badge: saleRequestsBadge || undefined },
+    { key: 'deals', label: 'بيع طبليات', icon: Handshake, badge: marketCardDeals.filter(d => !['completed', 'cancelled'].includes(d.status)).length || undefined },
     { key: 'commissions', label: 'العمولات', icon: DollarSign, badge: pendingCommissions.length || undefined },
     { key: 'settings', label: t('account.settings'), icon: Settings },
   ];
@@ -116,7 +117,7 @@ export default function AccountPage({ session, onClose, onLogout, initialTab }: 
           />
         );
       case 'sale_requests':
-        return <SaleRequestsTab phone={phone} />;
+        return <SaleRequestsTab phone={phone} initialView={saleRequestsView} />;
       case 'deals':
         return (
           <MyDealsTab
