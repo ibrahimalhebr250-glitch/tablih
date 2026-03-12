@@ -24,7 +24,13 @@ const SupplierInventory = lazy(() => import('./components/inventory/SupplierInve
 const MarketSection = lazy(() => import('./components/market/MarketSection'));
 const AccountPage = lazy(() => import('./components/account/AccountPage'));
 const AuthSheet = lazy(() => import('./components/account/AuthSheet'));
+const BuyRequestSheet = lazy(() => import('./components/market/BuyRequestSheet'));
 import FloatingSupportChat from './components/shared/FloatingSupportChat';
+import type { SupplyCardData } from './components/market/PalletCards';
+
+function PendingBuySheet({ card, onClose, onSuccess }: { card: SupplyCardData; onClose: () => void; onSuccess: () => void }) {
+  return <BuyRequestSheet card={card} onClose={onClose} onSuccess={onSuccess} />;
+}
 
 type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'registration' | 'login' | 'auth' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'account';
 type MainView = 'marketplace' | 'dashboard';
@@ -63,15 +69,23 @@ function App() {
   const [adminStaff, setAdminStaff] = useState<AdminStaffData | null>(null);
   const [inventoryPrefill, setInventoryPrefill] = useState<{ pallet_type?: string; size?: string; quality?: string; quantity?: number; city?: string } | undefined>();
   const [inventorySource, setInventorySource] = useState<'supplier_added' | 'purchase_transfer'>('supplier_added');
-  const [accountInitialTab, setAccountInitialTab] = useState<'warehouse' | 'deals' | 'commissions' | 'settings' | undefined>(undefined);
+  const [accountInitialTab, setAccountInitialTab] = useState<'warehouse' | 'deals' | 'commissions' | 'settings' | 'sale_requests' | undefined>(undefined);
+  const pendingBuyCard = useRef<import('./components/market/PalletCards').SupplyCardData | null>(null);
+  const [pendingBuyCardState, setPendingBuyCardState] = useState<import('./components/market/PalletCards').SupplyCardData | null>(null);
 
   const hasPendingAfterLogin = useCallback(() => {
     return !!(
-      sessionStorage.getItem('pending_market_request')
+      sessionStorage.getItem('pending_market_request') || pendingBuyCard.current
     );
   }, []);
 
   const consumePendingMarketActions = useCallback(() => {
+    if (pendingBuyCard.current) {
+      const card = pendingBuyCard.current;
+      pendingBuyCard.current = null;
+      setMainView('marketplace');
+      setTimeout(() => setPendingBuyCardState(card), 100);
+    }
   }, []);
 
   useEffect(() => {
@@ -259,7 +273,10 @@ function App() {
     setModal('login');
   };
 
-  const openAuthForDeal = () => {
+  const openAuthForDeal = (card?: import('./components/market/PalletCards').SupplyCardData) => {
+    if (card) {
+      pendingBuyCard.current = card;
+    }
     sessionStorage.setItem('pending_deal_flow', '1');
     setAuthError('');
     setLoginError('');
@@ -633,6 +650,20 @@ function App() {
         )}
 
       </Suspense>
+
+      {pendingBuyCardState && session && (
+        <Suspense fallback={null}>
+          <PendingBuySheet
+            card={pendingBuyCardState}
+            onClose={() => setPendingBuyCardState(null)}
+            onSuccess={() => {
+              setPendingBuyCardState(null);
+              setAccountInitialTab('sale_requests');
+              setTimeout(() => setModal('account'), 300);
+            }}
+          />
+        </Suspense>
+      )}
 
       <FloatingSupportChat
         userPhone={session?.profile?.phone}

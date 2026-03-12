@@ -16,7 +16,7 @@ interface MarketSectionProps {
   onAuthRequired?: () => void;
   onDetailSheetChange?: (open: boolean) => void;
   onGoToDeals?: () => void;
-  onLoginRequired?: () => void;
+  onLoginRequired?: (card?: import('./PalletCards').SupplyCardData) => void;
 }
 
 const QUALITY_OPTIONS = ['A', 'B', 'C', 'Scrap'];
@@ -26,6 +26,7 @@ export default function MarketSection({
   userPhone,
   sessionPhone,
   onDetailSheetChange,
+  onLoginRequired,
 }: MarketSectionProps) {
   const { t } = useTranslation();
 
@@ -195,8 +196,9 @@ export default function MarketSection({
       <PalletDetailsPage
         card={selectedCard}
         onClose={() => setSelectedCard(null)}
-        onLoginRequired={() => {
+        onLoginRequired={(card) => {
           setSelectedCard(null);
+          onLoginRequired?.(card);
         }}
       />
     );

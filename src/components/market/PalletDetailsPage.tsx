@@ -23,7 +23,7 @@ interface SellerProfile {
 interface Props {
   card: Card;
   onClose: () => void;
-  onLoginRequired?: () => void;
+  onLoginRequired?: (card?: SupplyCardData) => void;
 }
 
 const QUALITY_MAP: Record<string, { label: string; color: string; bg: string; dot: string }> = {
@@ -149,7 +149,11 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired }: Pr
   const handleBuyAction = () => {
     const token = sessionManager.getSessionToken();
     if (!token) {
-      setShowLoginPrompt(true);
+      if (supplyCard) {
+        onLoginRequired?.(supplyCard);
+      } else {
+        setShowLoginPrompt(true);
+      }
       return;
     }
     setShowBuySheet(true);
