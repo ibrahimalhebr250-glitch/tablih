@@ -5,6 +5,7 @@ import { useTranslation } from '../../lib/i18n';
 import SupplyDetailSheet from './SupplyDetailSheet';
 import DemandDetailSheet from './DemandDetailSheet';
 import AuthPromptSheet from './AuthPromptSheet';
+import SaleRequestSheet from './SaleRequestSheet';
 
 interface SupplyCard {
   id: string;
@@ -77,16 +78,15 @@ function useTimeAgo() {
   };
 }
 
-function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => void }) {
+function SupplyCardItem({ card, onClick, onSaleRequest }: { card: SupplyCard; onClick: () => void; onSaleRequest: (card: SupplyCard) => void }) {
   const { t } = useTranslation();
   const qBase = QUALITY_BASE[card.quality] || QUALITY_BASE['C'];
   const qc = { ...qBase, label: t(`market.${qBase.key}`) };
   const img = card.image_urls?.[0];
 
   return (
-    <button
-      onClick={onClick}
-      className="w-full text-right transition-all active:scale-[0.98] hover:shadow-lg"
+    <div
+      className="w-full text-right"
       style={{
         background: 'white',
         borderRadius: 20,
@@ -95,114 +95,119 @@ function SupplyCardItem({ card, onClick }: { card: SupplyCard; onClick: () => vo
         boxShadow: '0 2px 12px rgba(21,128,61,0.08)',
       }}
     >
-      {img ? (
-        <div className="relative w-full" style={{ aspectRatio: '16/9', background: '#f3f4f6' }}>
-          <img src={img} alt="" className="w-full h-full object-cover" />
-          <div
-            className="absolute inset-0"
-            style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, transparent 40%, rgba(0,0,0,0.45) 100%)' }}
-          />
-          <div
-            className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black"
-            style={{ background: 'rgba(21,128,61,0.88)', color: 'white', backdropFilter: 'blur(4px)' }}
-          >
-            <Package className="w-2.5 h-2.5" />
-            عرض مورّد
-          </div>
-          <div
-            className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
-            style={{ background: 'rgba(255,255,255,0.92)', color: qc.text, backdropFilter: 'blur(4px)' }}
-          >
-            {qc.label}
-          </div>
-          {card.price_per_pallet > 0 && (
+      <button onClick={onClick} className="w-full text-right active:opacity-90 transition-opacity">
+        {img ? (
+          <div className="relative w-full" style={{ aspectRatio: '16/9', background: '#f3f4f6' }}>
+            <img src={img} alt="" className="w-full h-full object-cover" />
             <div
-              className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
-              style={{ background: 'rgba(0,0,0,0.6)', color: 'white', backdropFilter: 'blur(4px)' }}
-            >
-              {card.price_per_pallet} ر.س
-            </div>
-          )}
-          <div
-            className="absolute inset-0 flex flex-col items-center justify-center"
-          >
-            <span className="text-[20px] font-black text-white leading-none" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
-              {card.available_quantity.toLocaleString()}
-            </span>
-            <span className="text-[9px] font-semibold text-white/80">{t('market.pallets')}</span>
-          </div>
-        </div>
-      ) : (
-        <div
-          className="w-full relative flex items-center justify-center overflow-hidden"
-          style={{ aspectRatio: '16/9', background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' }}
-        >
-          <div className="flex flex-col items-center justify-center gap-1 z-10">
+              className="absolute inset-0"
+              style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, transparent 40%, rgba(0,0,0,0.45) 100%)' }}
+            />
             <div
-              className="w-10 h-10 rounded-2xl flex items-center justify-center"
-              style={{ background: 'rgba(21,128,61,0.12)', border: `2px solid rgba(21,128,61,0.2)` }}
+              className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black"
+              style={{ background: 'rgba(21,128,61,0.88)', color: 'white', backdropFilter: 'blur(4px)' }}
             >
-              <Package className="w-5 h-5 text-green-700" />
+              <Package className="w-2.5 h-2.5" />
+              عرض مورّد
             </div>
-            <span className="text-[18px] font-black text-green-800">{card.available_quantity.toLocaleString()}</span>
-            <span className="text-[9px] text-green-600/70">{t('market.pallets')}</span>
-          </div>
-          <div
-            className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black"
-            style={{ background: 'rgba(21,128,61,0.88)', color: 'white' }}
-          >
-            <Package className="w-2.5 h-2.5" />
-            عرض مورّد
-          </div>
-          <div
-            className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
-            style={{ background: qc.bg, color: qc.text }}
-          >
-            {qc.label}
-          </div>
-        </div>
-      )}
-      <div className="p-3">
-        <p className="text-[13px] font-black text-gray-900 leading-tight truncate">{card.pallet_type}</p>
-        <div className="flex items-center justify-between mt-1.5">
-          <div className="flex items-center gap-1">
-            <MapPin className="w-2.5 h-2.5 flex-shrink-0 text-gray-400" />
-            <span className="text-[11px] text-gray-500 truncate">{card.city}</span>
-          </div>
-          {card.price_per_pallet > 0 ? (
-            <span
-              className="px-2 py-0.5 rounded-lg text-[10px] font-black flex-shrink-0"
-              style={{ background: '#f0fdf4', color: '#15803d' }}
+            <div
+              className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
+              style={{ background: 'rgba(255,255,255,0.92)', color: qc.text, backdropFilter: 'blur(4px)' }}
             >
-              {card.price_per_pallet} ر.س
-            </span>
-          ) : (
-            <span
-              className="px-2 py-0.5 rounded-lg text-[10px] font-semibold flex-shrink-0"
-              style={{ background: '#f3f4f6', color: '#6b7280' }}
+              {qc.label}
+            </div>
+            {card.price_per_pallet > 0 && (
+              <div
+                className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
+                style={{ background: 'rgba(0,0,0,0.6)', color: 'white', backdropFilter: 'blur(4px)' }}
+              >
+                {card.price_per_pallet} ر.س
+              </div>
+            )}
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-[20px] font-black text-white leading-none" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+                {card.available_quantity.toLocaleString()}
+              </span>
+              <span className="text-[9px] font-semibold text-white/80">{t('market.pallets')}</span>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="w-full relative flex items-center justify-center overflow-hidden"
+            style={{ aspectRatio: '16/9', background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' }}
+          >
+            <div className="flex flex-col items-center justify-center gap-1 z-10">
+              <div
+                className="w-10 h-10 rounded-2xl flex items-center justify-center"
+                style={{ background: 'rgba(21,128,61,0.12)', border: '2px solid rgba(21,128,61,0.2)' }}
+              >
+                <Package className="w-5 h-5 text-green-700" />
+              </div>
+              <span className="text-[18px] font-black text-green-800">{card.available_quantity.toLocaleString()}</span>
+              <span className="text-[9px] text-green-600/70">{t('market.pallets')}</span>
+            </div>
+            <div
+              className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black"
+              style={{ background: 'rgba(21,128,61,0.88)', color: 'white' }}
             >
-              سعر قابل للتفاوض
-            </span>
-          )}
-        </div>
-        {card.trust_rating != null && (
-          <div className="flex items-center gap-0.5 mt-1.5">
-            {[1,2,3,4,5].map((s) => (
-              <Star
-                key={s}
-                className="w-2.5 h-2.5"
-                style={{
-                  fill: s <= Math.round(card.trust_rating!) ? '#f59e0b' : 'none',
-                  color: s <= Math.round(card.trust_rating!) ? '#f59e0b' : '#d1d5db',
-                  strokeWidth: 1.5,
-                }}
-              />
-            ))}
-            <span className="text-[10px] font-bold text-amber-600 mr-0.5">{card.trust_rating.toFixed(1)}</span>
+              <Package className="w-2.5 h-2.5" />
+              عرض مورّد
+            </div>
+            <div
+              className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
+              style={{ background: qc.bg, color: qc.text }}
+            >
+              {qc.label}
+            </div>
           </div>
         )}
+        <div className="px-3 pt-3 pb-2">
+          <p className="text-[13px] font-black text-gray-900 leading-tight truncate">{card.pallet_type}</p>
+          <div className="flex items-center justify-between mt-1.5">
+            <div className="flex items-center gap-1">
+              <MapPin className="w-2.5 h-2.5 flex-shrink-0 text-gray-400" />
+              <span className="text-[11px] text-gray-500 truncate">{card.city}</span>
+            </div>
+            {card.price_per_pallet > 0 ? (
+              <span className="px-2 py-0.5 rounded-lg text-[10px] font-black flex-shrink-0" style={{ background: '#f0fdf4', color: '#15803d' }}>
+                {card.price_per_pallet} ر.س
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded-lg text-[10px] font-semibold flex-shrink-0" style={{ background: '#f3f4f6', color: '#6b7280' }}>
+                سعر قابل للتفاوض
+              </span>
+            )}
+          </div>
+          {card.trust_rating != null && (
+            <div className="flex items-center gap-0.5 mt-1.5">
+              {[1,2,3,4,5].map((s) => (
+                <Star
+                  key={s}
+                  className="w-2.5 h-2.5"
+                  style={{
+                    fill: s <= Math.round(card.trust_rating!) ? '#f59e0b' : 'none',
+                    color: s <= Math.round(card.trust_rating!) ? '#f59e0b' : '#d1d5db',
+                    strokeWidth: 1.5,
+                  }}
+                />
+              ))}
+              <span className="text-[10px] font-bold text-amber-600 mr-0.5">{card.trust_rating.toFixed(1)}</span>
+            </div>
+          )}
+        </div>
+      </button>
+
+      <div className="px-3 pb-3">
+        <button
+          onClick={(e) => { e.stopPropagation(); onSaleRequest(card); }}
+          className="w-full py-2.5 rounded-xl flex items-center justify-center gap-1.5 font-black text-[12px] text-white transition-all active:scale-[0.97]"
+          style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', boxShadow: '0 4px 12px rgba(22,163,74,0.3)' }}
+        >
+          <ShoppingBag className="w-3.5 h-3.5" />
+          عرض بيع طبليات
+        </button>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -354,6 +359,7 @@ export default function MarketSection({
   const [selectedSupply, setSelectedSupply] = useState<SupplyCard | null>(null);
   const [selectedDemand, setSelectedDemand] = useState<DemandCard | null>(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [saleRequestCard, setSaleRequestCard] = useState<SupplyCard | null>(null);
 
   const prevSheetOpen = useRef(false);
 
@@ -513,6 +519,14 @@ export default function MarketSection({
   const handleDemandClick = useCallback((card: DemandCard) => {
     setSelectedDemand(card);
   }, []);
+
+  const handleSaleRequest = useCallback((card: SupplyCard) => {
+    if (!resolvedPhone) {
+      onLoginRequired?.();
+      return;
+    }
+    setSaleRequestCard(card);
+  }, [resolvedPhone, onLoginRequired]);
 
   const baseItems = tab === 'all' ? items : tab === 'supply' ? items.filter(i => i.kind === 'supply') : items.filter(i => i.kind === 'demand');
   const allPalletTypes = [...new Set(baseItems.map((i) => i.pallet_type))].filter(Boolean);
@@ -703,7 +717,12 @@ export default function MarketSection({
           <div className="grid grid-cols-2 gap-3">
             {filtered.map((item, idx) =>
               item.kind === 'supply' ? (
-                <SupplyCardItem key={item.id} card={item as SupplyCard} onClick={() => handleSupplyClick(item as SupplyCard)} />
+                <SupplyCardItem
+                  key={item.id}
+                  card={item as SupplyCard}
+                  onClick={() => handleSupplyClick(item as SupplyCard)}
+                  onSaleRequest={handleSaleRequest}
+                />
               ) : (
                 <DemandCardItem key={item.id} card={item as DemandCard} onClick={() => handleDemandClick(item as DemandCard)} index={idx} />
               )
@@ -736,6 +755,14 @@ export default function MarketSection({
             onShowAuth?.();
             onAuthRequired?.();
           }}
+        />
+      )}
+
+      {saleRequestCard && (
+        <SaleRequestSheet
+          card={saleRequestCard}
+          onClose={() => setSaleRequestCard(null)}
+          onSuccess={() => setSaleRequestCard(null)}
         />
       )}
     </div>
