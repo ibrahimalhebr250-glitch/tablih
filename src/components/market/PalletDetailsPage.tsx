@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   MapPin, Package, Star, Layers, Tag, Award, Building2,
   CheckCircle2, ArrowLeftCircle, ChevronLeft, Calendar, ZoomIn,
-  ShoppingBag, Store, LogIn, AlertTriangle
+  ShoppingBag, Store, LogIn, AlertTriangle, Truck
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { sessionManager } from '../../lib/sessionManager';
 import { FullscreenGallery } from './ImageGallery';
 import BuyRequestSheet from './BuyRequestSheet';
+import SupplyOfferSheet from './SupplyOfferSheet';
 import type { SupplyCardData, DemandCardData } from './PalletCards';
 
 type Card = SupplyCardData | DemandCardData;
@@ -83,8 +84,10 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired }: Pr
   const [currentImage, setCurrentImage] = useState(0);
   const [imgError, setImgError] = useState<Record<number, boolean>>({});
   const [showBuySheet, setShowBuySheet] = useState(false);
+  const [showOfferSheet, setShowOfferSheet] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
+  const [offerSent, setOfferSent] = useState(false);
 
   const isSupply = card.kind === 'supply';
   const images = isSupply ? (card as SupplyCardData).image_urls : [];
@@ -157,6 +160,15 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired }: Pr
       return;
     }
     setShowBuySheet(true);
+  };
+
+  const handleOfferAction = () => {
+    const token = sessionManager.getSessionToken();
+    if (!token) {
+      setShowLoginPrompt(true);
+      return;
+    }
+    setShowOfferSheet(true);
   };
 
   const supplyCard = isSupply ? (card as SupplyCardData) : null;
@@ -527,16 +539,29 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired }: Pr
                 }}
               >
                 <Store className="w-5 h-5" />
-                عرض بيع طبليات
+                طلب شراء طبليات
               </button>
             )
-          ) : (
+          ) : offerSent ? (
             <div
-              className="w-full py-3.5 rounded-2xl text-[14px] font-bold text-center"
-              style={{ background: '#f3f4f6', color: '#9ca3af' }}
+              className="w-full py-4 rounded-2xl text-[15px] font-black text-center flex items-center justify-center gap-2"
+              style={{ background: '#ffedd5', color: '#c2410c' }}
             >
-              هذا طلب شراء من مشترٍ
+              <CheckCircle2 className="w-5 h-5" />
+              تم إرسال عرضك بنجاح
             </div>
+          ) : (
+            <button
+              onClick={handleOfferAction}
+              className="w-full py-4 rounded-2xl text-[16px] font-black text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              style={{
+                background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
+                boxShadow: '0 4px 20px rgba(234,88,12,0.4)',
+              }}
+            >
+              <Truck className="w-5 h-5" />
+              عرض توريد طبليات
+            </button>
           )}
         </div>
       </div>
@@ -556,6 +581,17 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired }: Pr
           onSuccess={() => {
             setShowBuySheet(false);
             setRequestSent(true);
+          }}
+        />
+      )}
+
+      {showOfferSheet && demandCard && (
+        <SupplyOfferSheet
+          card={demandCard}
+          onClose={() => setShowOfferSheet(false)}
+          onSuccess={() => {
+            setShowOfferSheet(false);
+            setOfferSent(true);
           }}
         />
       )}
