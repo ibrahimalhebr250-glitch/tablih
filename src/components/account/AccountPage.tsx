@@ -82,7 +82,7 @@ export default function AccountPage({ session, onClose, onLogout, initialTab, sa
 
   const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Settings; badge?: number }[] = [
     { key: 'warehouse', label: 'مستودعي', icon: Cloud },
-    { key: 'sale_requests', label: 'طلبات شراء', icon: ShoppingBag, badge: saleRequestsBadge || undefined },
+    { key: 'sale_requests', label: 'بيع و شراء', icon: ShoppingBag, badge: saleRequestsBadge || undefined },
     { key: 'commissions', label: 'العمولات', icon: DollarSign, badge: pendingCommissions.length || undefined },
     { key: 'settings', label: t('account.settings'), icon: Settings },
   ];
