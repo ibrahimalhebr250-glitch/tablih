@@ -120,6 +120,7 @@ function SupplierRequestCard({ req, onAccept, onReject, onStartContact, onComple
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPledge, setShowPledge] = useState(false);
+  const [pledgeMode, setPledgeMode] = useState<'accept' | 'contact'>('accept');
   const [err, setErr] = useState<string | null>(null);
 
   const cfg = STATUS_CONFIG[req.status] || STATUS_CONFIG.pending_supplier;
@@ -132,14 +133,31 @@ function SupplierRequestCard({ req, onAccept, onReject, onStartContact, onComple
     setLoading(false);
   };
 
-  const handleStartContact = async () => {
-    setLoading(true); setErr(null);
-    const res = await onStartContact(req.id);
-    setLoading(false);
-    if (!res.success) { setErr(res.error || 'حدث خطأ'); return; }
-    setShowPledge(false);
-    const buyerPhone = (res as { buyer_phone?: string }).buyer_phone || req.buyer_phone;
-    openWhatsApp(buyerPhone, `مرحباً، أنا المورد لطلب الشراء رقم ${req.id.slice(0, 8)}. أنا جاهز للتواصل معك بشأن ${req.requested_quantity} طبلية ${req.pallet_type}.`);
+  const handleOpenPledge = (mode: 'accept' | 'contact') => {
+    setPledgeMode(mode);
+    setShowPledge(true);
+  };
+
+  const handlePledgeConfirm = async () => {
+    if (pledgeMode === 'accept') {
+      setLoading(true); setErr(null);
+      const acceptRes = await onAccept(req.id);
+      if (!acceptRes.success) { setErr(acceptRes.error || 'حدث خطأ'); setLoading(false); return; }
+      const contactRes = await onStartContact(req.id);
+      setLoading(false);
+      if (!contactRes.success) { setErr(contactRes.error || 'حدث خطأ'); return; }
+      setShowPledge(false);
+      const buyerPhone = (contactRes as { buyer_phone?: string }).buyer_phone || req.buyer_phone;
+      openWhatsApp(buyerPhone, `مرحباً، أنا المورد لطلب الشراء رقم ${req.id.slice(0, 8)}. أنا جاهز للتواصل معك بشأن ${req.requested_quantity} طبلية ${req.pallet_type}.`);
+    } else {
+      setLoading(true); setErr(null);
+      const res = await onStartContact(req.id);
+      setLoading(false);
+      if (!res.success) { setErr(res.error || 'حدث خطأ'); return; }
+      setShowPledge(false);
+      const buyerPhone = (res as { buyer_phone?: string }).buyer_phone || req.buyer_phone;
+      openWhatsApp(buyerPhone, `مرحباً، أنا المورد لطلب الشراء رقم ${req.id.slice(0, 8)}. أنا جاهز للتواصل معك بشأن ${req.requested_quantity} طبلية ${req.pallet_type}.`);
+    }
   };
 
   return (
@@ -223,7 +241,7 @@ function SupplierRequestCard({ req, onAccept, onReject, onStartContact, onComple
                   {loading ? <Loader className="w-4 h-4 animate-spin mx-auto" /> : 'رفض الطلب'}
                 </button>
                 <button
-                  onClick={() => setShowPledge(true)}
+                  onClick={() => handleOpenPledge('accept')}
                   disabled={loading}
                   className="py-2.5 rounded-xl text-[13px] font-bold text-white transition-all active:scale-[0.97] disabled:opacity-50"
                   style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', boxShadow: '0 4px 12px rgba(22,163,74,0.3)' }}
@@ -235,7 +253,7 @@ function SupplierRequestCard({ req, onAccept, onReject, onStartContact, onComple
 
             {req.status === 'accepted' && (
               <button
-                onClick={() => setShowPledge(true)}
+                onClick={() => handleOpenPledge('contact')}
                 disabled={loading}
                 className="w-full py-2.5 rounded-xl text-[13px] font-bold text-white transition-all active:scale-[0.97] disabled:opacity-50 flex items-center justify-center gap-2"
                 style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }}
@@ -282,7 +300,7 @@ function SupplierRequestCard({ req, onAccept, onReject, onStartContact, onComple
       {showPledge && (
         <CommissionPledgeDialog
           request={req}
-          onConfirm={handleStartContact}
+          onConfirm={handlePledgeConfirm}
           onClose={() => setShowPledge(false)}
           loading={loading}
         />
