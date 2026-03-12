@@ -357,83 +357,111 @@ export default function SupplierInventory({ phone, onClose, onAddInventory }: Pr
                 const qualLabel = QUALITY_LABELS[listing.quality as PalletQuality]?.ar ?? listing.quality;
 
                 return (
-                  <div key={listing.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm" dir="rtl">
-                    <div className="flex gap-3 p-3.5">
+                  <div key={listing.id} className="bg-white rounded-2xl overflow-hidden shadow-sm" style={{ border: `1.5px solid ${sc.border}` }} dir="rtl">
+
+                    <div className="flex items-stretch">
                       <button
                         onClick={() => openImageManager(listing.id)}
-                        className="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-100 flex-shrink-0 group"
+                        className="relative w-24 flex-shrink-0 group overflow-hidden"
+                        style={{ minHeight: '100px' }}
                       >
                         {listing.primary_image_url ? (
                           <>
-                            <img src={listing.primary_image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" loading="lazy" />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                              <ImageIcon className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
+                            <img src={listing.primary_image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                             {listing.image_urls.length > 1 && (
-                              <div className="absolute bottom-0.5 right-0.5 flex items-center gap-0.5 bg-black/50 rounded px-1 py-0.5">
-                                <ImageIcon className="w-2 h-2 text-white" />
-                                <span className="text-[8px] text-white font-bold">{listing.image_urls.length}</span>
+                              <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 bg-black/60 backdrop-blur-sm rounded-full px-1.5 py-0.5">
+                                <ImageIcon className="w-2.5 h-2.5 text-white" />
+                                <span className="text-[9px] text-white font-bold">{listing.image_urls.length}</span>
                               </div>
                             )}
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                <ImageIcon className="w-4 h-4 text-white" />
+                              </div>
+                            </div>
                           </>
                         ) : (
-                          <div className="w-full h-full bg-gray-50 flex flex-col items-center justify-center gap-0.5 group-hover:bg-[#f0f6fa] transition-colors">
-                            <ImagePlus className="w-4 h-4 text-gray-300 group-hover:text-[#1a4a5e] transition-colors" />
-                            <span className="text-[7px] font-bold text-gray-300 group-hover:text-[#1a4a5e] transition-colors">صور</span>
+                          <div className="w-full h-full flex flex-col items-center justify-center gap-1 group-hover:bg-[#f0f6fa] transition-colors" style={{ background: '#f8fafc' }}>
+                            <ImagePlus className="w-5 h-5 text-gray-300 group-hover:text-[#1a4a5e] transition-colors" />
+                            <span className="text-[9px] font-bold text-gray-300 group-hover:text-[#1a4a5e] transition-colors">أضف صور</span>
                           </div>
                         )}
                       </button>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-1.5">
+                      <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-2">
                           <div
-                            className="flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-bold"
-                            style={{ background: sc.bg, borderColor: sc.border, color: sc.color }}
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold flex-shrink-0"
+                            style={{ background: sc.bg, border: `1.5px solid ${sc.border}`, color: sc.color }}
                           >
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: sc.color }} />
+                            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: listing.status === 'active' ? sc.color : 'transparent', border: `1.5px solid ${sc.color}` }} />
                             {sc.label}
                           </div>
-                          <h3 className="text-[14px] font-bold text-[#1a3a4a]">{listing.pallet_type}</h3>
+                          <h3 className="text-[15px] font-black text-[#0f2535] truncate">{listing.pallet_type}</h3>
                         </div>
 
-                        <div className="flex items-center gap-1 mb-1.5">
-                          <MapPin className="w-3 h-3 text-[#1565C0]" />
-                          <span className="text-[11px] font-semibold text-[#1565C0]">{listing.city}</span>
+                        <div className="flex items-center gap-1 mb-2">
+                          <MapPin className="w-3 h-3 text-[#1565C0] flex-shrink-0" />
+                          <span className="text-[11px] font-bold text-[#1565C0] truncate">{listing.city}</span>
+                          <span className="text-gray-300 mx-0.5">·</span>
+                          <span className="text-[10px] font-semibold text-gray-400" dir="ltr">{listing.size}</span>
                         </div>
 
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
-                            <Package className="w-2.5 h-2.5 text-[#7a9aab]" />
-                            <span className="text-[11px] font-bold text-[#1a3a4a]">{listing.available_quantity.toLocaleString()}</span>
-                          </div>
-                          <div className="px-2 py-1 rounded-lg bg-gray-50 border border-gray-100">
-                            <span className="text-[10px] font-semibold text-[#4a6a7a]" dir="ltr">{listing.size}</span>
-                          </div>
+                        <div className="flex items-center gap-2">
                           <div className="px-2 py-1 rounded-lg border" style={{ background: qs.bg, borderColor: qs.border }}>
-                            <span className="text-[10px] font-bold" style={{ color: qs.text }}>{qualLabel}</span>
+                            <span className="text-[10px] font-black" style={{ color: qs.text }}>{qualLabel}</span>
                           </div>
-                          <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
-                            <Wrench className="w-2.5 h-2.5 text-[#7a9aab]" />
-                            <span className="text-[10px] text-[#4a6a7a]">{condLabel}</span>
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-50 border border-gray-100">
+                            <Wrench className="w-2.5 h-2.5 text-gray-400" />
+                            <span className="text-[10px] text-gray-500 font-semibold">{condLabel}</span>
                           </div>
                           {listing.price_per_pallet > 0 && (
-                            <div className="flex items-center gap-1 bg-[#ECFDF5] px-2 py-1 rounded-lg border border-[#A7F3D0]">
+                            <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#ECFDF5] border border-[#A7F3D0]">
                               <DollarSign className="w-2.5 h-2.5 text-[#059669]" />
-                              <span className="text-[10px] font-bold text-[#059669]">{listing.price_per_pallet} ر.س</span>
+                              <span className="text-[10px] font-black text-[#059669]">{listing.price_per_pallet}</span>
                             </div>
                           )}
                         </div>
                       </div>
+
+                      <div
+                        className="flex flex-col items-center justify-center px-3 flex-shrink-0 border-r border-gray-100"
+                        style={{ background: 'linear-gradient(180deg, #f8fafc, #f0f6fa)', minWidth: '68px' }}
+                      >
+                        <span className="text-[22px] font-black text-[#0f2535] leading-none">{listing.available_quantity.toLocaleString()}</span>
+                        <span className="text-[9px] font-bold text-[#7a9aab] mt-0.5">طبلية</span>
+                        {listing.quantity > listing.available_quantity && (
+                          <div className="mt-1.5 w-full">
+                            <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all"
+                                style={{
+                                  width: `${Math.round((listing.available_quantity / listing.quantity) * 100)}%`,
+                                  background: listing.available_quantity === 0 ? '#ef4444' : listing.available_quantity < listing.quantity * 0.3 ? '#f59e0b' : '#059669',
+                                }}
+                              />
+                            </div>
+                            <span className="text-[8px] text-gray-400 mt-0.5 block text-center">
+                              {Math.round((listing.available_quantity / listing.quantity) * 100)}%
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex items-center border-t border-gray-100 divide-x divide-gray-100">
+                    <div className="flex items-center border-t border-gray-100" style={{ borderTopColor: sc.border + '66' }}>
                       <button
                         onClick={() => openImageManager(listing.id)}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold text-[#1a4a5e] hover:bg-[#f0f6fa] transition-colors"
                       >
                         <ImageIcon className="w-3 h-3" />
-                        الصور ({listing.image_urls.length})
+                        <span>الصور</span>
+                        {listing.image_urls.length > 0 && (
+                          <span className="w-4 h-4 rounded-full bg-[#1a4a5e] text-white text-[8px] font-black flex items-center justify-center">{listing.image_urls.length}</span>
+                        )}
                       </button>
+                      <div className="w-px h-5 bg-gray-100" />
                       <button
                         onClick={() => openEdit(listing)}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold text-[#1a4a5e] hover:bg-[#f0f6fa] transition-colors"
@@ -442,17 +470,21 @@ export default function SupplierInventory({ phone, onClose, onAddInventory }: Pr
                         تعديل
                       </button>
                       {(listing.status === 'active' || listing.status === 'paused') && (
-                        <button
-                          onClick={() => togglePause(listing)}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold text-[#4a6a7a] hover:bg-gray-50 transition-colors"
-                        >
-                          {listing.status === 'paused' ? (
-                            <><Play className="w-3 h-3 text-[#27AE60]" /><span className="text-[#27AE60]">تفعيل</span></>
-                          ) : (
-                            <><Pause className="w-3 h-3 text-amber-500" /><span className="text-amber-500">إيقاف</span></>
-                          )}
-                        </button>
+                        <>
+                          <div className="w-px h-5 bg-gray-100" />
+                          <button
+                            onClick={() => togglePause(listing)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold hover:bg-gray-50 transition-colors"
+                          >
+                            {listing.status === 'paused' ? (
+                              <><Play className="w-3 h-3 text-[#27AE60]" /><span className="text-[#27AE60] font-bold">تفعيل</span></>
+                            ) : (
+                              <><Pause className="w-3 h-3 text-amber-500" /><span className="text-amber-500 font-bold">إيقاف</span></>
+                            )}
+                          </button>
+                        </>
                       )}
+                      <div className="w-px h-5 bg-gray-100" />
                       <button
                         onClick={() => setDeleteConfirm(listing)}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold text-red-400 hover:bg-red-50 transition-colors"
