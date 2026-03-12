@@ -39,8 +39,9 @@ export interface BuyerInventoryItem {
 
 export interface CommissionRecord {
   id: string;
-  deal_id: string;
+  deal_id: string | null;
   deal_ref: string | null;
+  deal_reference: string | null;
   supplier_phone: string;
   buyer_phone: string;
   quantity: number;
@@ -102,7 +103,7 @@ export function useAccountData(phone: string) {
 
       supabase
         .from('commission_settlements')
-        .select('id, deal_id, deal_ref, supplier_phone, buyer_phone, quantity, commission_per_unit, total_commission, status, created_at')
+        .select('id, deal_id, deal_reference, supplier_phone, buyer_phone, pallet_count, commission_amount, total_commission, status, created_at')
         .eq('supplier_phone', phone)
         .order('created_at', { ascending: false }),
 
@@ -118,7 +119,21 @@ export function useAccountData(phone: string) {
     setInventory((invRes.data as InventoryBatch[]) ?? []);
     setPurchases((purchasesRes.data as BuyerInventoryItem[]) ?? []);
     setAllDeals(fetchedDeals);
-    setCommissions((commRes.data as CommissionRecord[]) ?? []);
+    const rawComm = (commRes.data ?? []) as Record<string, unknown>[];
+    const mappedComm: CommissionRecord[] = rawComm.map(r => ({
+      id: r.id as string,
+      deal_id: (r.deal_id as string | null) ?? null,
+      deal_ref: null,
+      deal_reference: (r.deal_reference as string | null) ?? null,
+      supplier_phone: r.supplier_phone as string,
+      buyer_phone: (r.buyer_phone as string) ?? '',
+      quantity: Number(r.pallet_count) || 0,
+      commission_per_unit: Number(r.commission_amount) || 0,
+      total_commission: Number(r.total_commission) || Number(r.commission_amount) || 0,
+      status: r.status as string,
+      created_at: r.created_at as string,
+    }));
+    setCommissions(mappedComm);
 
     const negData = (negRes.data ?? []) as NegotiationRequest[];
 

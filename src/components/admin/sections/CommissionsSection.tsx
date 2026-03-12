@@ -336,7 +336,7 @@ export default function CommissionsSection() {
 
   const handleSettleConfirm = async (method: SettlementMethod, staff: string) => {
     if (!settleTarget) return;
-    await settleCommission(settleTarget.deal_ids, method, staff || getAdminEmail() || 'admin');
+    await settleCommission(settleTarget.deal_ids, method, staff || getAdminEmail() || 'admin', settleTarget.settlement_ids);
     setSettleTarget(null);
     refresh();
   };

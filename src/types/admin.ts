@@ -60,6 +60,7 @@ export interface SupplierCommission {
   last_deal_date: string;
   days_overdue: number;
   deal_ids: string[];
+  settlement_ids?: string[];
 }
 
 export interface SettledCommission {

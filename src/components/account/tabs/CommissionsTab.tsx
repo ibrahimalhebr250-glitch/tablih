@@ -24,7 +24,7 @@ function CommissionCard({ record }: { record: CommissionRecord }) {
         }}
       >
         <span className="text-[10px] font-mono text-white/60">
-          {record.deal_ref ?? record.deal_id?.slice(0, 8)}
+          {record.deal_reference?.replace('sale_request:', 'طلب-') ?? record.deal_ref ?? record.deal_id?.slice(0, 8)}
         </span>
         <div className="flex items-center gap-1.5">
           {isPending ? (

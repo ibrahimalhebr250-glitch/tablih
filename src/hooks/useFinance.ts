@@ -57,16 +57,20 @@ export function useCommissions() {
       .select('id, deal_ref, supplier_phone, city, quantity, platform_fee_per_pallet, completed_at, created_at, status')
       .not('status', 'eq', 'cancelled');
 
-    const { data: settlements } = await supabase
+    const { data: allSettlements } = await supabase
       .from('commission_settlements')
-      .select('*')
-      .eq('status', 'settled');
+      .select('*');
 
     const { data: users } = await supabase
       .from('platform_users')
       .select('phone, display_name, city');
 
-    const settledDealIds = new Set((settlements || []).map(s => s.deal_id));
+    const settlements = allSettlements || [];
+    const settledRecords = settlements.filter(s => s.status === 'settled');
+    const pendingRecords = settlements.filter(s => s.status === 'pending');
+
+    const settledDealIds = new Set(settledRecords.filter(s => s.deal_id).map(s => s.deal_id));
+    const settledSettlementIds = new Set(settledRecords.map(s => s.id));
     const userMap = new Map((users || []).map(u => [u.phone, u]));
 
     const supplierMap = new Map<string, {
@@ -75,15 +79,15 @@ export function useCommissions() {
       commission: number;
       lastDate: string;
       dealIds: string[];
+      settlementIds: string[];
       completedAt: string | null;
     }>();
 
     for (const deal of deals || []) {
+      if (settledDealIds.has(deal.id)) continue;
       const fee = Number(deal.platform_fee_per_pallet) || 1;
       const comm = deal.quantity * fee;
       const existing = supplierMap.get(deal.supplier_phone);
-
-      if (settledDealIds.has(deal.id)) continue;
 
       if (existing) {
         existing.pallets += deal.quantity;
@@ -101,7 +105,34 @@ export function useCommissions() {
           commission: comm,
           lastDate: deal.completed_at || deal.created_at,
           dealIds: [deal.id],
+          settlementIds: [],
           completedAt: deal.completed_at || null,
+        });
+      }
+    }
+
+    for (const pending of pendingRecords) {
+      if (!pending.deal_reference?.startsWith('sale_request:')) continue;
+      const phone = pending.supplier_phone;
+      const comm = Number(pending.total_commission) || Number(pending.commission_amount) || 0;
+      const pallets = Number(pending.pallet_count) || 0;
+      const existing = supplierMap.get(phone);
+
+      if (existing) {
+        existing.pallets += pallets;
+        existing.commission += comm;
+        existing.settlementIds.push(pending.id);
+        if (pending.created_at > existing.lastDate) existing.lastDate = pending.created_at;
+        if (!existing.completedAt) existing.completedAt = pending.created_at;
+      } else {
+        supplierMap.set(phone, {
+          phone,
+          pallets,
+          commission: comm,
+          lastDate: pending.created_at,
+          dealIds: [],
+          settlementIds: [pending.id],
+          completedAt: pending.created_at,
         });
       }
     }
@@ -126,6 +157,7 @@ export function useCommissions() {
         last_deal_date: s.lastDate,
         days_overdue: Math.max(0, daysSince - OVERDUE_DAYS),
         deal_ids: s.dealIds,
+        settlement_ids: s.settlementIds,
       };
 
       if (daysSince > OVERDUE_DAYS) {
@@ -138,7 +170,7 @@ export function useCommissions() {
     overdueList.sort((a, b) => b.days_overdue - a.days_overdue);
     dueList.sort((a, b) => b.commission_amount - a.commission_amount);
 
-    const settledList: SettledCommission[] = (settlements || []).map(s => {
+    const settledList: SettledCommission[] = settledRecords.map(s => {
       const user = userMap.get(s.supplier_phone);
       return {
         id: s.id,
@@ -146,7 +178,7 @@ export function useCommissions() {
         display_name: user?.display_name || s.supplier_phone,
         city: user?.city || '',
         pallet_count: s.pallet_count,
-        commission_amount: Number(s.commission_amount),
+        commission_amount: Number(s.total_commission) || Number(s.commission_amount),
         settlement_method: s.settlement_method as SettlementMethod,
         settled_by: s.settled_by,
         settled_at: s.settled_at,
@@ -336,7 +368,8 @@ export function useMarketStats() {
 export async function settleCommission(
   dealIds: string[],
   method: SettlementMethod,
-  staff: string
+  staff: string,
+  settlementIds?: string[]
 ): Promise<{ success: boolean; error?: string }> {
   for (const dealId of dealIds) {
     const { data } = await supabase.rpc('settle_supplier_commission', {
@@ -344,11 +377,22 @@ export async function settleCommission(
       p_method: method,
       p_staff: staff,
     });
-
     if (data && !data.success) {
       return { success: false, error: data.error };
     }
   }
+
+  for (const sid of settlementIds || []) {
+    const { data } = await supabase.rpc('settle_commission_by_id', {
+      p_settlement_id: sid,
+      p_method: method,
+      p_staff: staff,
+    });
+    if (data && !data.success) {
+      return { success: false, error: data.error };
+    }
+  }
+
   return { success: true };
 }
 
