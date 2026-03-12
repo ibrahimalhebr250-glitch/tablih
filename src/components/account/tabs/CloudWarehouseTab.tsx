@@ -74,10 +74,12 @@ function InventoryCard({ batch }: { batch: InventoryBatch }) {
 }
 
 function PurchaseCard({ item }: { item: BuyerInventoryItem }) {
+  const sourceLabel = item.inventory_source === 'purchase_transfer' ? 'شراء مباشر' : item.inventory_source === 'deal_transfer' ? 'صفقة' : 'شراء';
+  const dateStr = new Date(item.acquired_at || item.created_at).toLocaleDateString('ar-SA', { day: 'numeric', month: 'short', year: 'numeric' });
   return (
     <div className="bg-white rounded-2xl border border-[#bbf7d0] shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2.5" style={{ background: 'linear-gradient(135deg, #f0fdf4, #ecfdf5)', borderBottom: '1px solid #bbf7d0' }}>
-        <span className="text-[10px] text-emerald-600 font-bold">مشتريات</span>
+        <span className="text-[10px] text-emerald-600 font-bold">{sourceLabel}</span>
         <div className="flex items-center gap-1">
           <Cloud className="w-3 h-3 text-emerald-600" />
           <span className="text-[10px] text-emerald-700 font-bold">مستودع سحابي</span>
@@ -96,15 +98,23 @@ function PurchaseCard({ item }: { item: BuyerInventoryItem }) {
           <span className="text-[12px] font-bold text-[#1a2f3e]">{item.city}</span>
           <span className="text-[11px] text-[#7a9aab]">المدينة</span>
         </div>
-        <div className="border-t border-[#f0f6fa] pt-2.5">
-          <div className="flex items-center justify-center bg-emerald-50 rounded-xl py-2.5">
-            <span className="text-[18px] font-black text-emerald-700">{item.quantity.toLocaleString()}</span>
-            <span className="text-[11px] text-emerald-600 mr-1.5">طبلية</span>
+        <div className="border-t border-[#f0f6fa] pt-2.5 grid grid-cols-2 gap-2">
+          <div className="flex flex-col items-center bg-emerald-50 rounded-xl py-2">
+            <span className="text-[17px] font-black text-emerald-700">{item.quantity.toLocaleString()}</span>
+            <span className="text-[9px] text-emerald-600 mt-0.5">إجمالي</span>
+          </div>
+          <div className="flex flex-col items-center bg-blue-50 rounded-xl py-2">
+            <span className="text-[17px] font-black text-blue-700">{(item.quantity_available ?? item.quantity).toLocaleString()}</span>
+            <span className="text-[9px] text-blue-600 mt-0.5">متاح</span>
           </div>
         </div>
-        <p className="text-[10px] text-[#9ab0bf] text-center">
-          {new Date(item.created_at).toLocaleDateString('ar-SA', { day: 'numeric', month: 'short', year: 'numeric' })}
-        </p>
+        {item.unit_price > 0 && (
+          <div className="flex items-center justify-between bg-[#0f2535] rounded-xl px-3 py-2">
+            <span className="text-[13px] font-black text-white">{item.unit_price.toLocaleString()} ر.س / طبلية</span>
+            <span className="text-[10px] text-white/50">سعر الشراء</span>
+          </div>
+        )}
+        <p className="text-[10px] text-[#9ab0bf] text-center">{dateStr}</p>
       </div>
     </div>
   );

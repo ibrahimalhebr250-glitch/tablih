@@ -27,8 +27,13 @@ export interface BuyerInventoryItem {
   quality: string;
   city: string;
   quantity: number;
-  source: string | null;
-  deal_id: string | null;
+  quantity_available: number;
+  unit_price: number;
+  total_paid: number;
+  original_supplier_phone: string;
+  inventory_source: string | null;
+  original_deal_id: string | null;
+  acquired_at: string;
   created_at: string;
 }
 
@@ -85,7 +90,7 @@ export function useAccountData(phone: string) {
 
       supabase
         .from('buyer_inventory')
-        .select('id, buyer_phone, pallet_type, size, quality, city, quantity, source, deal_id, created_at')
+        .select('id, buyer_phone, pallet_type, size, quality, city, quantity, quantity_available, unit_price, total_paid, original_supplier_phone, inventory_source, original_deal_id, acquired_at, created_at')
         .eq('buyer_phone', phone)
         .order('created_at', { ascending: false }),
 
