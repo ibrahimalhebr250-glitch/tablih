@@ -1,326 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, SlidersHorizontal, X, Package, ShoppingBag, RefreshCw, ChevronDown, MapPin, Star, Layers } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Search, SlidersHorizontal, X, Package, RefreshCw, ChevronDown } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from '../../lib/i18n';
-import SupplyDetailSheet from './SupplyDetailSheet';
-import DemandDetailSheet from './DemandDetailSheet';
-import AuthPromptSheet from './AuthPromptSheet';
-import SaleRequestSheet from './SaleRequestSheet';
-
-interface SupplyCard {
-  id: string;
-  phone: string;
-  pallet_type: string;
-  size: string;
-  quality: string;
-  pallet_condition: string;
-  available_quantity: number;
-  price_per_pallet: number;
-  city: string;
-  description: string;
-  image_urls: string[];
-  created_at: string;
-  trust_rating?: number;
-  kind: 'supply';
-}
-
-interface DemandCard {
-  id: string;
-  phone: string;
-  pallet_type: string;
-  size: string;
-  quality: string;
-  quantity: number;
-  city: string;
-  accept_close_quality: boolean;
-  accept_close_city: boolean;
-  accept_partial_delivery: boolean;
-  created_at: string;
-  trust_rating?: number;
-  kind: 'demand';
-}
-
-type MarketItem = SupplyCard | DemandCard;
-
-const QUALITY_BASE: Record<string, { bg: string; text: string; accent: string; key: string }> = {
-  A: { bg: '#dcfce7', text: '#15803d', accent: '#16a34a', key: 'qualityA' },
-  B: { bg: '#dbeafe', text: '#1d4ed8', accent: '#2563eb', key: 'qualityB' },
-  C: { bg: '#fff7ed', text: '#c2410c', accent: '#ea580c', key: 'qualityC' },
-  Scrap: { bg: '#f3f4f6', text: '#6b7280', accent: '#9ca3af', key: 'qualityScrap' },
-};
-
-const PALLET_TYPE_ICONS: Record<string, string> = {
-  'بلاستيك': '🔵',
-  'خشب': '🟤',
-  'معدن': '⚙️',
-  'كارتون': '📦',
-};
-
-const DEMAND_PALLET_IMAGES = [
-  'https://images.pexels.com/photos/6169668/pexels-photo-6169668.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop',
-  'https://images.pexels.com/photos/4481259/pexels-photo-4481259.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop',
-  'https://images.pexels.com/photos/1797428/pexels-photo-1797428.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop',
-  'https://images.pexels.com/photos/906494/pexels-photo-906494.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop',
-  'https://images.pexels.com/photos/1267338/pexels-photo-1267338.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop',
-  'https://images.pexels.com/photos/5025660/pexels-photo-5025660.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop',
-];
-
-function useTimeAgo() {
-  const { t } = useTranslation();
-  return (dateStr: string): string => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return t('time.now');
-    if (mins < 60) return t('time.minutesAgo').replace('{{count}}', String(mins));
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return t('time.hoursAgo').replace('{{count}}', String(hrs));
-    return t('time.daysAgo').replace('{{count}}', String(Math.floor(hrs / 24)));
-  };
-}
-
-function SupplyCardItem({ card, onClick, onSaleRequest }: { card: SupplyCard; onClick: () => void; onSaleRequest: (card: SupplyCard) => void }) {
-  const { t } = useTranslation();
-  const qBase = QUALITY_BASE[card.quality] || QUALITY_BASE['C'];
-  const qc = { ...qBase, label: t(`market.${qBase.key}`) };
-  const img = card.image_urls?.[0];
-
-  return (
-    <div
-      className="w-full text-right"
-      style={{
-        background: 'white',
-        borderRadius: 20,
-        border: '1.5px solid rgba(21,128,61,0.15)',
-        overflow: 'hidden',
-        boxShadow: '0 2px 12px rgba(21,128,61,0.08)',
-      }}
-    >
-      <button onClick={onClick} className="w-full text-right active:opacity-90 transition-opacity">
-        {img ? (
-          <div className="relative w-full" style={{ aspectRatio: '16/9', background: '#f3f4f6' }}>
-            <img src={img} alt="" className="w-full h-full object-cover" />
-            <div
-              className="absolute inset-0"
-              style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, transparent 40%, rgba(0,0,0,0.45) 100%)' }}
-            />
-            <div
-              className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black"
-              style={{ background: 'rgba(21,128,61,0.88)', color: 'white', backdropFilter: 'blur(4px)' }}
-            >
-              <Package className="w-2.5 h-2.5" />
-              عرض مورّد
-            </div>
-            <div
-              className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
-              style={{ background: 'rgba(255,255,255,0.92)', color: qc.text, backdropFilter: 'blur(4px)' }}
-            >
-              {qc.label}
-            </div>
-            {card.price_per_pallet > 0 && (
-              <div
-                className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
-                style={{ background: 'rgba(0,0,0,0.6)', color: 'white', backdropFilter: 'blur(4px)' }}
-              >
-                {card.price_per_pallet} ر.س
-              </div>
-            )}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-[20px] font-black text-white leading-none" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
-                {card.available_quantity.toLocaleString()}
-              </span>
-              <span className="text-[9px] font-semibold text-white/80">{t('market.pallets')}</span>
-            </div>
-          </div>
-        ) : (
-          <div
-            className="w-full relative flex items-center justify-center overflow-hidden"
-            style={{ aspectRatio: '16/9', background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' }}
-          >
-            <div className="flex flex-col items-center justify-center gap-1 z-10">
-              <div
-                className="w-10 h-10 rounded-2xl flex items-center justify-center"
-                style={{ background: 'rgba(21,128,61,0.12)', border: '2px solid rgba(21,128,61,0.2)' }}
-              >
-                <Package className="w-5 h-5 text-green-700" />
-              </div>
-              <span className="text-[18px] font-black text-green-800">{card.available_quantity.toLocaleString()}</span>
-              <span className="text-[9px] text-green-600/70">{t('market.pallets')}</span>
-            </div>
-            <div
-              className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black"
-              style={{ background: 'rgba(21,128,61,0.88)', color: 'white' }}
-            >
-              <Package className="w-2.5 h-2.5" />
-              عرض مورّد
-            </div>
-            <div
-              className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
-              style={{ background: qc.bg, color: qc.text }}
-            >
-              {qc.label}
-            </div>
-          </div>
-        )}
-        <div className="px-3 pt-3 pb-2">
-          <p className="text-[13px] font-black text-gray-900 leading-tight truncate">{card.pallet_type}</p>
-          <div className="flex items-center justify-between mt-1.5">
-            <div className="flex items-center gap-1">
-              <MapPin className="w-2.5 h-2.5 flex-shrink-0 text-gray-400" />
-              <span className="text-[11px] text-gray-500 truncate">{card.city}</span>
-            </div>
-            {card.price_per_pallet > 0 ? (
-              <span className="px-2 py-0.5 rounded-lg text-[10px] font-black flex-shrink-0" style={{ background: '#f0fdf4', color: '#15803d' }}>
-                {card.price_per_pallet} ر.س
-              </span>
-            ) : (
-              <span className="px-2 py-0.5 rounded-lg text-[10px] font-semibold flex-shrink-0" style={{ background: '#f3f4f6', color: '#6b7280' }}>
-                سعر قابل للتفاوض
-              </span>
-            )}
-          </div>
-          {card.trust_rating != null && (
-            <div className="flex items-center gap-0.5 mt-1.5">
-              {[1,2,3,4,5].map((s) => (
-                <Star
-                  key={s}
-                  className="w-2.5 h-2.5"
-                  style={{
-                    fill: s <= Math.round(card.trust_rating!) ? '#f59e0b' : 'none',
-                    color: s <= Math.round(card.trust_rating!) ? '#f59e0b' : '#d1d5db',
-                    strokeWidth: 1.5,
-                  }}
-                />
-              ))}
-              <span className="text-[10px] font-bold text-amber-600 mr-0.5">{card.trust_rating.toFixed(1)}</span>
-            </div>
-          )}
-        </div>
-      </button>
-
-      <div className="px-3 pb-3">
-        <button
-          onClick={(e) => { e.stopPropagation(); onSaleRequest(card); }}
-          className="w-full py-2.5 rounded-xl flex items-center justify-center gap-1.5 font-black text-[12px] text-white transition-all active:scale-[0.97]"
-          style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', boxShadow: '0 4px 12px rgba(22,163,74,0.3)' }}
-        >
-          <ShoppingBag className="w-3.5 h-3.5" />
-          عرض بيع طبليات
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function DemandCardItem({ card, onClick, index = 0 }: { card: DemandCard; onClick: () => void; index?: number }) {
-  const { t } = useTranslation();
-  const timeAgo = useTimeAgo();
-  const qBase = QUALITY_BASE[card.quality] || QUALITY_BASE['C'];
-  const qc = { ...qBase, label: t(`market.${qBase.key}`) };
-  const palletImg = DEMAND_PALLET_IMAGES[index % DEMAND_PALLET_IMAGES.length];
-  const flexTags = [
-    card.accept_close_quality && { label: t('market.flexible'), icon: <Star className="w-2.5 h-2.5" /> },
-    card.accept_close_city && { label: t('market.nearbyCity'), icon: <MapPin className="w-2.5 h-2.5" /> },
-    card.accept_partial_delivery && { label: t('market.partial'), icon: <Layers className="w-2.5 h-2.5" /> },
-  ].filter(Boolean) as { label: string; icon: JSX.Element }[];
-
-  return (
-    <button
-      onClick={onClick}
-      className="w-full text-right transition-all active:scale-[0.98] hover:shadow-md"
-      style={{
-        background: 'white',
-        borderRadius: 20,
-        border: '1.5px solid rgba(234,88,12,0.15)',
-        overflow: 'hidden',
-        boxShadow: '0 2px 12px rgba(234,88,12,0.08)',
-      }}
-    >
-      <div className="relative w-full" style={{ aspectRatio: '16/9', background: '#fff7ed' }}>
-        <img src={palletImg} alt="" className="w-full h-full object-cover" />
-        <div
-          className="absolute inset-0"
-          style={{ background: 'linear-gradient(to bottom, rgba(154,52,18,0.45) 0%, rgba(154,52,18,0.25) 50%, rgba(154,52,18,0.55) 100%)' }}
-        />
-
-        <div
-          className="absolute top-2 right-2 px-2.5 py-1 rounded-full text-[10px] font-black flex items-center gap-1"
-          style={{ background: 'rgba(255,255,255,0.92)', color: '#c2410c', backdropFilter: 'blur(4px)' }}
-        >
-          <ShoppingBag className="w-2.5 h-2.5" />
-          {t('market.purchaseRequest')}
-        </div>
-
-        <div
-          className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black"
-          style={{ background: qc.bg, color: qc.text }}
-        >
-          {qc.label}
-        </div>
-
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-          <span className="text-[22px] font-black text-white leading-none" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
-            {card.quantity.toLocaleString()}
-          </span>
-          <span className="text-[10px] font-semibold text-white/80">
-            {t('market.pallets')}
-          </span>
-        </div>
-
-        {flexTags.length > 0 && (
-          <div className="absolute bottom-2 right-2 left-2 flex gap-1 justify-end">
-            {flexTags.slice(0, 2).map((tag, i) => (
-              <span
-                key={i}
-                className="flex items-center gap-0.5 px-2 py-0.5 rounded-lg text-[9px] font-bold whitespace-nowrap"
-                style={{
-                  background: 'rgba(0,0,0,0.4)',
-                  color: 'rgba(255,255,255,0.95)',
-                  backdropFilter: 'blur(6px)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                }}
-              >
-                {tag.icon}
-                {tag.label}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="p-3">
-        <p className="text-[13px] font-black text-gray-900 leading-tight truncate">{card.pallet_type}</p>
-        <div className="flex items-center justify-between mt-1.5">
-          <div className="flex items-center gap-1">
-            <MapPin className="w-2.5 h-2.5 flex-shrink-0 text-gray-400" />
-            <span className="text-[11px] text-gray-500 truncate">{card.city}</span>
-          </div>
-          <span
-            className="px-2 py-0.5 rounded-lg text-[10px] font-black flex-shrink-0"
-            style={{ background: '#fff7ed', color: '#c2410c' }}
-          >
-            {timeAgo(card.created_at)}
-          </span>
-        </div>
-        {card.trust_rating != null && (
-          <div className="flex items-center gap-0.5 mt-1.5">
-            {[1,2,3,4,5].map((s) => (
-              <Star
-                key={s}
-                className="w-2.5 h-2.5"
-                style={{
-                  fill: s <= Math.round(card.trust_rating!) ? '#f59e0b' : 'none',
-                  color: s <= Math.round(card.trust_rating!) ? '#f59e0b' : '#d1d5db',
-                  strokeWidth: 1.5,
-                }}
-              />
-            ))}
-            <span className="text-[10px] font-bold text-amber-600 mr-0.5">{card.trust_rating.toFixed(1)}</span>
-          </div>
-        )}
-      </div>
-    </button>
-  );
-}
 
 interface MarketSectionProps {
   onCreateOrder?: () => void;
@@ -339,162 +20,56 @@ export default function MarketSection({
   isAuthenticated,
   userPhone,
   sessionPhone,
-  onShowAuth,
-  onAuthRequired,
-  onDetailSheetChange,
-  onGoToDeals,
-  onLoginRequired,
 }: MarketSectionProps) {
   const { t } = useTranslation();
-  const resolvedPhone = sessionPhone ?? (isAuthenticated && userPhone ? userPhone : null);
 
-  const [items, setItems] = useState<MarketItem[]>([]);
+  const [supplyCount, setSupplyCount] = useState(0);
+  const [demandCount, setDemandCount] = useState(0);
+  const [allPalletTypes, setAllPalletTypes] = useState<string[]>([]);
+  const [allCities, setAllCities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
   const [tab, setTab] = useState<'all' | 'supply' | 'demand'>('all');
   const [search, setSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filterType, setFilterType] = useState('');
   const [filterCity, setFilterCity] = useState('');
   const [filterQuality, setFilterQuality] = useState('');
-  const [selectedSupply, setSelectedSupply] = useState<SupplyCard | null>(null);
-  const [selectedDemand, setSelectedDemand] = useState<DemandCard | null>(null);
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
-  const [saleRequestCard, setSaleRequestCard] = useState<SupplyCard | null>(null);
 
-  const prevSheetOpen = useRef(false);
-
-  useEffect(() => {
-    const nowOpen = !!(selectedSupply || selectedDemand);
-    if (nowOpen !== prevSheetOpen.current) {
-      prevSheetOpen.current = nowOpen;
-      onDetailSheetChange?.(nowOpen);
-    }
-  }, [selectedSupply, selectedDemand, onDetailSheetChange]);
-
-
-  useEffect(() => {
-    const phone = sessionPhone || userPhone;
-    if (!isAuthenticated || !phone) return;
-    const rawMarket = sessionStorage.getItem('pending_market_request');
-    if (!rawMarket) return;
-    try {
-      const pending = JSON.parse(rawMarket);
-      if (pending.inventory_batch_id) {
-        sessionStorage.removeItem('pending_market_request');
-        supabase.rpc('create_order_from_market_offer', {
-          p_buyer_phone: phone,
-          p_inventory_batch_id: pending.inventory_batch_id,
-          p_quantity: pending.quantity || 1,
-          p_buyer_message: null,
-        });
-      }
-    } catch {
-      sessionStorage.removeItem('pending_market_request');
-    }
-  }, [isAuthenticated, sessionPhone, userPhone]);
-
-  const loadItems = useCallback(async () => {
+  const loadCounts = useCallback(async () => {
     setLoading(true);
     try {
       const [supplyRes, demandRes] = await Promise.all([
         supabase
           .from('inventory_batches')
-          .select('id, phone, pallet_type, size, quality, pallet_condition, quantity_available, price_per_pallet, city, description, image_url, created_at, publish_to_market')
+          .select('id, pallet_type, city')
           .eq('publish_to_market', true)
           .eq('status', 'active')
-          .gt('quantity_available', 0)
-          .order('created_at', { ascending: false })
-          .limit(60),
+          .gt('quantity_available', 0),
         supabase
           .from('orders')
-          .select('id, phone, pallet_type, size, quality, quantity, city, accept_close_quality, accept_close_city, accept_partial_delivery, created_at, status')
-          .in('status', ['pending', 'unmatched', 'partially_matched'])
-          .order('created_at', { ascending: false })
-          .limit(60),
+          .select('id, pallet_type, city')
+          .in('status', ['pending', 'unmatched', 'partially_matched']),
       ]);
 
-      const batchIds = (supplyRes.data || []).map((r: any) => r.id);
-      let imagesByBatch: Record<string, string[]> = {};
-      if (batchIds.length > 0) {
-        const { data: imgs } = await supabase
-          .from('inventory_images')
-          .select('batch_id, url, is_primary, sort_order')
-          .in('batch_id', batchIds)
-          .order('sort_order', { ascending: true });
-        if (imgs) {
-          for (const img of imgs) {
-            if (!imagesByBatch[img.batch_id]) imagesByBatch[img.batch_id] = [];
-            if (img.is_primary) {
-              imagesByBatch[img.batch_id].unshift(img.url);
-            } else {
-              imagesByBatch[img.batch_id].push(img.url);
-            }
-          }
-        }
-      }
+      const supplyData = supplyRes.data || [];
+      const demandData = demandRes.data || [];
 
-      const allPhones = [
-        ...(supplyRes.data || []).map((r: any) => r.phone),
-        ...(demandRes.data || []).map((r: any) => r.phone),
-      ].filter(Boolean);
-      const uniquePhones = [...new Set(allPhones)];
+      setSupplyCount(supplyData.length);
+      setDemandCount(demandData.length);
 
-      let trustByPhone: Record<string, number> = {};
-      if (uniquePhones.length > 0) {
-        const { data: usersData } = await supabase
-          .from('platform_users')
-          .select('phone, trust_rating')
-          .in('phone', uniquePhones);
-        if (usersData) {
-          for (const u of usersData) {
-            if (u.trust_rating != null) trustByPhone[u.phone] = u.trust_rating;
-          }
-        }
-      }
+      const types = [...new Set([
+        ...supplyData.map((r: any) => r.pallet_type),
+        ...demandData.map((r: any) => r.pallet_type),
+      ])].filter(Boolean) as string[];
 
-      const supplyItems: SupplyCard[] = (supplyRes.data || []).map((r: any) => {
-        const imgs = imagesByBatch[r.id] || (r.image_url ? [r.image_url] : []);
-        return {
-          id: r.id,
-          phone: r.phone,
-          pallet_type: r.pallet_type,
-          size: r.size,
-          quality: r.quality,
-          pallet_condition: r.pallet_condition,
-          available_quantity: r.quantity_available,
-          price_per_pallet: r.price_per_pallet || 0,
-          city: r.city,
-          description: r.description || '',
-          image_urls: imgs,
-          created_at: r.created_at,
-          trust_rating: trustByPhone[r.phone],
-          kind: 'supply',
-        };
-      });
+      const cities = [...new Set([
+        ...supplyData.map((r: any) => r.city),
+        ...demandData.map((r: any) => r.city),
+      ])].filter(Boolean) as string[];
 
-      const demandItems: DemandCard[] = (demandRes.data || []).map((r: any) => ({
-        id: r.id,
-        phone: r.phone,
-        pallet_type: r.pallet_type,
-        size: r.size,
-        quality: r.quality,
-        quantity: r.quantity,
-        city: r.city,
-        accept_close_quality: r.accept_close_quality,
-        accept_close_city: r.accept_close_city,
-        accept_partial_delivery: r.accept_partial_delivery,
-        created_at: r.created_at,
-        trust_rating: trustByPhone[r.phone],
-        kind: 'demand',
-      }));
-
-      const merged: MarketItem[] = [];
-      const maxLen = Math.max(supplyItems.length, demandItems.length);
-      for (let i = 0; i < maxLen; i++) {
-        if (supplyItems[i]) merged.push(supplyItems[i]);
-        if (demandItems[i]) merged.push(demandItems[i]);
-      }
-      setItems(merged);
+      setAllPalletTypes(types);
+      setAllCities(cities);
     } catch (e) {
       console.error('Market load error:', e);
     } finally {
@@ -503,46 +78,17 @@ export default function MarketSection({
   }, []);
 
   useEffect(() => {
-    loadItems();
+    loadCounts();
     const channel = supabase
       .channel('market_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_batches' }, loadItems)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadItems)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_batches' }, loadCounts)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadCounts)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [loadItems]);
+  }, [loadCounts]);
 
-  const handleSupplyClick = useCallback((card: SupplyCard) => {
-    setSelectedSupply(card);
-  }, []);
-
-  const handleDemandClick = useCallback((card: DemandCard) => {
-    setSelectedDemand(card);
-  }, []);
-
-  const handleSaleRequest = useCallback((card: SupplyCard) => {
-    if (!resolvedPhone) {
-      onLoginRequired?.();
-      return;
-    }
-    setSaleRequestCard(card);
-  }, [resolvedPhone, onLoginRequired]);
-
-  const baseItems = tab === 'all' ? items : tab === 'supply' ? items.filter(i => i.kind === 'supply') : items.filter(i => i.kind === 'demand');
-  const allPalletTypes = [...new Set(baseItems.map((i) => i.pallet_type))].filter(Boolean);
-  const allCities = [...new Set(baseItems.map((i) => i.city))].filter(Boolean);
-
-  const filtered = baseItems.filter((item) => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || item.pallet_type.toLowerCase().includes(q) || item.city.toLowerCase().includes(q) || item.quality.toLowerCase().includes(q);
-    const matchType = !filterType || item.pallet_type === filterType;
-    const matchCity = !filterCity || item.city === filterCity;
-    const matchQuality = !filterQuality || item.quality === filterQuality;
-    return matchSearch && matchType && matchCity && matchQuality;
-  });
-
-  const supplyCount = items.filter(i => i.kind === 'supply').length;
-  const demandCount = items.filter(i => i.kind === 'demand').length;
+  const totalCount = supplyCount + demandCount;
+  const displayCount = tab === 'all' ? totalCount : tab === 'supply' ? supplyCount : demandCount;
 
   return (
     <div className="min-h-screen" style={{ background: '#f5f7fa', direction: 'rtl' }}>
@@ -566,6 +112,7 @@ export default function MarketSection({
               </button>
             )}
           </div>
+
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="w-10 h-10 flex items-center justify-center rounded-xl transition-all active:scale-95 relative"
@@ -585,12 +132,13 @@ export default function MarketSection({
               </span>
             )}
           </button>
+
           <button
-            onClick={loadItems}
+            onClick={loadCounts}
             className="w-10 h-10 flex items-center justify-center rounded-xl transition-all active:scale-95"
             style={{ background: 'white', border: '1.5px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}
           >
-            <RefreshCw className="w-4 h-4 text-gray-500" />
+            <RefreshCw className={`w-4 h-4 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
@@ -632,7 +180,7 @@ export default function MarketSection({
                   style={{ background: '#f8fafc', border: '1.5px solid rgba(0,0,0,0.08)' }}
                 >
                   <option value="">{t('common.all')}</option>
-                  {['A', 'B', 'C', 'Scrap'].map(q => <option key={q} value={q}>{t(`market.${QUALITY_BASE[q]?.key || 'qualityC'}`)}</option>)}
+                  {['A', 'B', 'C', 'Scrap'].map(q => <option key={q} value={q}>{q}</option>)}
                 </select>
                 <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
               </div>
@@ -653,14 +201,14 @@ export default function MarketSection({
           className="flex items-center gap-1 p-1 rounded-2xl"
           style={{ background: 'rgba(0,0,0,0.06)' }}
         >
-          {[
-            { key: 'all', label: t('common.all'), count: items.length },
+          {([
+            { key: 'all', label: t('common.all'), count: totalCount },
             { key: 'supply', label: t('marketplace.supply'), count: supplyCount },
             { key: 'demand', label: t('marketplace.demand'), count: demandCount },
-          ].map(({ key, label, count }) => (
+          ] as const).map(({ key, label, count }) => (
             <button
               key={key}
-              onClick={() => setTab(key as typeof tab)}
+              onClick={() => setTab(key)}
               className="flex-1 py-2 rounded-xl text-[13px] font-bold transition-all"
               style={{
                 background: tab === key ? 'white' : 'transparent',
@@ -686,85 +234,21 @@ export default function MarketSection({
       </div>
 
       <div className="px-4 pb-6">
-        {loading ? (
-          <div className="grid grid-cols-2 gap-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="animate-pulse rounded-2xl overflow-hidden"
-                style={{ background: 'white', border: '1.5px solid rgba(0,0,0,0.07)' }}
-              >
-                <div className="w-full bg-gray-100" style={{ aspectRatio: '16/9' }} />
-                <div className="p-3 space-y-2">
-                  <div className="h-3 bg-gray-100 rounded-lg w-3/4" />
-                  <div className="h-2.5 bg-gray-100 rounded-lg w-1/2" />
-                </div>
-              </div>
-            ))}
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div
+            className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5"
+            style={{ background: '#f0fdf4', border: '2px solid #bbf7d0' }}
+          >
+            <Package className="w-10 h-10 text-green-400" />
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-              style={{ background: '#f3f4f6' }}
-            >
-              <Package className="w-8 h-8 text-gray-300" />
-            </div>
-            <p className="text-[15px] font-bold text-gray-500">{t('marketplace.noResults')}</p>
-            <p className="text-[12px] text-gray-400 mt-1">{t('common.filter')}</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {filtered.map((item, idx) =>
-              item.kind === 'supply' ? (
-                <SupplyCardItem
-                  key={item.id}
-                  card={item as SupplyCard}
-                  onClick={() => handleSupplyClick(item as SupplyCard)}
-                  onSaleRequest={handleSaleRequest}
-                />
-              ) : (
-                <DemandCardItem key={item.id} card={item as DemandCard} onClick={() => handleDemandClick(item as DemandCard)} index={idx} />
-              )
-            )}
-          </div>
-        )}
+          <p className="text-[17px] font-black text-gray-700 mb-2">
+            {loading ? 'جاري التحميل...' : `${displayCount} ${tab === 'supply' ? 'عرض مورّد' : tab === 'demand' ? 'طلب شراء' : 'عرض وطلب'}`}
+          </p>
+          <p className="text-[13px] text-gray-400 leading-relaxed max-w-[260px]">
+            سيتم عرض البطاقات هنا بعد اكتمال بناء النظام الجديد
+          </p>
+        </div>
       </div>
-
-      {selectedSupply && (
-        <SupplyDetailSheet
-          card={selectedSupply}
-          sessionPhone={resolvedPhone}
-          onClose={() => setSelectedSupply(null)}
-          onLoginRequired={onLoginRequired}
-        />
-      )}
-      {selectedDemand && (
-        <DemandDetailSheet
-          card={selectedDemand}
-          sessionPhone={resolvedPhone}
-          onClose={() => setSelectedDemand(null)}
-          onLoginRequired={onLoginRequired}
-        />
-      )}
-      {showAuthPrompt && (
-        <AuthPromptSheet
-          onClose={() => setShowAuthPrompt(false)}
-          onRegister={() => {
-            setShowAuthPrompt(false);
-            onShowAuth?.();
-            onAuthRequired?.();
-          }}
-        />
-      )}
-
-      {saleRequestCard && (
-        <SaleRequestSheet
-          card={saleRequestCard}
-          onClose={() => setSaleRequestCard(null)}
-          onSuccess={() => setSaleRequestCard(null)}
-        />
-      )}
     </div>
   );
 }
