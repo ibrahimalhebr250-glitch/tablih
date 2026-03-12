@@ -2,14 +2,23 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   MapPin, Package, Star, Layers, Tag, Award, Building2,
   CheckCircle2, ArrowLeftCircle, ChevronLeft, Calendar, ZoomIn,
-  ShoppingBag, Store, LogIn, AlertTriangle, Truck
+  ShoppingBag, Store, Truck
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { sessionManager } from '../../lib/sessionManager';
 import { FullscreenGallery } from './ImageGallery';
 import BuyRequestSheet from './BuyRequestSheet';
 import SupplyOfferSheet from './SupplyOfferSheet';
+import AuthSheet from '../account/AuthSheet';
 import type { SupplyCardData, DemandCardData } from './PalletCards';
+
+async function hashPin(pin: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(pin + 'tbl_salt_2024');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
 
 type Card = SupplyCardData | DemandCardData;
 
@@ -85,7 +94,9 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired }: Pr
   const [imgError, setImgError] = useState<Record<number, boolean>>({});
   const [showBuySheet, setShowBuySheet] = useState(false);
   const [showOfferSheet, setShowOfferSheet] = useState(false);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [showAuthSheet, setShowAuthSheet] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'buy' | 'offer' | null>(null);
+  const [authError, setAuthError] = useState('');
   const [requestSent, setRequestSent] = useState(false);
   const [offerSent, setOfferSent] = useState(false);
 
@@ -152,11 +163,9 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired }: Pr
   const handleBuyAction = () => {
     const token = sessionManager.getSessionToken();
     if (!token) {
-      if (supplyCard) {
-        onLoginRequired?.(supplyCard);
-      } else {
-        setShowLoginPrompt(true);
-      }
+      setAuthError('');
+      setPendingAction('buy');
+      setShowAuthSheet(true);
       return;
     }
     setShowBuySheet(true);
@@ -165,10 +174,88 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired }: Pr
   const handleOfferAction = () => {
     const token = sessionManager.getSessionToken();
     if (!token) {
-      setShowLoginPrompt(true);
+      setAuthError('');
+      setPendingAction('offer');
+      setShowAuthSheet(true);
       return;
     }
     setShowOfferSheet(true);
+  };
+
+  const handleAuthLogin = async (phone: string, pin: string) => {
+    setAuthError('');
+    const formattedPhone = phone.startsWith('0') ? phone : `0${phone}`;
+    const { data: user } = await supabase
+      .from('platform_users')
+      .select('*')
+      .eq('phone', formattedPhone)
+      .maybeSingle();
+    if (!user) {
+      const msg = 'رقم الجوال غير مسجل. يرجى إنشاء حساب جديد.';
+      setAuthError(msg);
+      throw new Error(msg);
+    }
+    const pinHashed = await hashPin(pin);
+    if (user.pin_hash !== pinHashed) {
+      const msg = 'الرقم السري غير صحيح.';
+      setAuthError(msg);
+      throw new Error(msg);
+    }
+    await sessionManager.createSession({
+      phone: formattedPhone,
+      user_type: user.user_type === 'company' ? 'supplier' : user.user_type || 'buyer',
+      user_name: user.display_name || user.name || formattedPhone,
+    });
+    setShowAuthSheet(false);
+    setTimeout(() => {
+      if (pendingAction === 'buy') setShowBuySheet(true);
+      else if (pendingAction === 'offer') setShowOfferSheet(true);
+      setPendingAction(null);
+    }, 100);
+  };
+
+  const handleAuthRegister = async (data: { phone: string; name: string; userType: 'company' | 'individual'; pin: string }) => {
+    setAuthError('');
+    const formattedPhone = data.phone.startsWith('0') ? data.phone : `0${data.phone}`;
+    const { data: existing } = await supabase
+      .from('platform_users')
+      .select('id')
+      .eq('phone', formattedPhone)
+      .maybeSingle();
+    if (existing) {
+      const msg = 'رقم الجوال مسجل مسبقاً. يرجى تسجيل الدخول.';
+      setAuthError(msg);
+      throw new Error(msg);
+    }
+    const pinHashed = await hashPin(data.pin);
+    const { data: newUser, error } = await supabase
+      .from('platform_users')
+      .insert({
+        phone: formattedPhone,
+        display_name: data.name,
+        company_name: data.userType === 'company' ? data.name : '',
+        user_type: data.userType,
+        pin_hash: pinHashed,
+        last_active: new Date().toISOString(),
+      })
+      .select('*')
+      .maybeSingle();
+    if (error || !newUser) {
+      const msg = error?.code === '23505' ? 'رقم الجوال مسجل مسبقاً. يرجى تسجيل الدخول.' : 'حدث خطأ أثناء التسجيل.';
+      setAuthError(msg);
+      throw new Error(msg);
+    }
+    await sessionManager.createSession({
+      phone: formattedPhone,
+      user_type: data.userType === 'company' ? 'supplier' : 'buyer',
+      user_name: data.name,
+    });
+    setShowAuthSheet(false);
+    setTimeout(() => {
+      if (pendingAction === 'buy') setShowBuySheet(true);
+      else if (pendingAction === 'offer') setShowOfferSheet(true);
+      setPendingAction(null);
+    }, 100);
   };
 
   const supplyCard = isSupply ? (card as SupplyCardData) : null;
@@ -596,55 +683,15 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired }: Pr
         />
       )}
 
-      {showLoginPrompt && (
-        <div
-          className="fixed inset-0 z-[80] flex items-end justify-center"
-          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
-          onClick={() => setShowLoginPrompt(false)}
-        >
-          <div
-            className="w-full rounded-t-3xl overflow-hidden px-5 pt-6 pb-10"
-            style={{ background: 'white', maxWidth: 480, boxShadow: '0 -8px 40px rgba(0,0,0,0.2)', direction: 'rtl' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex flex-col items-center gap-4 text-center">
-              <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{ background: '#dcfce7' }}
-              >
-                <LogIn className="w-8 h-8 text-green-600" />
-              </div>
-              <div>
-                <h3 className="text-[18px] font-black text-gray-900 mb-1">سجّل دخولك للمتابعة</h3>
-                <p className="text-[13px] text-gray-500 leading-relaxed">
-                  يجب تسجيل الدخول لإرسال طلب شراء إلى المورد.
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl w-full" style={{ background: '#fff7ed', border: '1px solid #fed7aa' }}>
-                <AlertTriangle className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                <span className="text-[12px] text-orange-700">بعد تسجيل الدخول، ارجع لهذا الإعلان وأرسل طلبك.</span>
-              </div>
-              <button
-                onClick={() => {
-                  setShowLoginPrompt(false);
-                  onLoginRequired?.();
-                }}
-                className="w-full py-3.5 rounded-2xl text-[15px] font-black text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 6px 20px rgba(5,150,105,0.35)' }}
-              >
-                <LogIn className="w-5 h-5" />
-                تسجيل الدخول
-              </button>
-              <button
-                onClick={() => setShowLoginPrompt(false)}
-                className="w-full py-3 rounded-2xl text-[14px] font-bold text-gray-500 transition-all active:scale-[0.98]"
-                style={{ background: '#f3f4f6' }}
-              >
-                إلغاء
-              </button>
-            </div>
-          </div>
-        </div>
+      {showAuthSheet && (
+        <AuthSheet
+          onRegisterComplete={handleAuthRegister}
+          onLoginComplete={handleAuthLogin}
+          onClose={() => { setShowAuthSheet(false); setPendingAction(null); }}
+          title={pendingAction === 'offer' ? 'سجّل دخولك لتقديم العرض' : 'سجّل دخولك للمتابعة'}
+          subtitle={pendingAction === 'offer' ? 'قدّم عرض توريد للمشتري مباشرةً بعد الدخول' : 'أرسل طلب الشراء للمورد مباشرةً بعد الدخول'}
+          externalError={authError}
+        />
       )}
     </>
   );
