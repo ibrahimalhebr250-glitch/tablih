@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ArrowRight, Plus, Package, MapPin, CreditCard as Edit3, Pause, Play, Trash2, RefreshCw, Wrench, DollarSign, Image as ImageIcon, X, ImagePlus, ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import {
+  ArrowRight, Plus, Package, MapPin, CreditCard as Edit3, Pause, Play, Trash2,
+  RefreshCw, Wrench, DollarSign, Image as ImageIcon, X, ImagePlus,
+  ChevronLeft, ChevronRight, Star, AlertTriangle, Check, Pencil
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { InventoryListing, BatchStatus } from '../../types/inventory';
 import { CONDITION_LABELS, QUALITY_LABELS } from '../../types/inventory';
@@ -19,6 +23,17 @@ interface BatchImage {
   sort_order: number;
 }
 
+interface EditForm {
+  pallet_type: string;
+  size: string;
+  quality: string;
+  pallet_condition: string;
+  quantity: number;
+  price_per_pallet: number;
+  city: string;
+  description: string;
+}
+
 const STATUS_CONFIG: Record<BatchStatus, { label: string; color: string; bg: string; border: string }> = {
   active: { label: 'نشط', color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' },
   reserved: { label: 'محجوز', color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' },
@@ -34,6 +49,20 @@ const QUALITY_STYLE: Record<string, { text: string; bg: string; border: string }
   Scrap: { text: '#6B7280', bg: '#F3F4F6', border: '#E5E7EB' },
 };
 
+const PALLET_TYPES = ['خشبية', 'بلاستيكية'];
+const PALLET_SIZES = ['120×100', '110×110', '120×80', '80×60', 'أخرى'];
+const QUALITIES: { value: string; label: string }[] = [
+  { value: 'A', label: 'A - ممتازة' },
+  { value: 'B', label: 'B - جيدة' },
+  { value: 'C', label: 'C - خفيفة' },
+  { value: 'Scrap', label: 'خردة' },
+];
+const CONDITIONS: { value: string; label: string }[] = [
+  { value: 'new', label: 'جديدة' },
+  { value: 'used', label: 'مستعملة' },
+  { value: 'repairable', label: 'قابلة للإصلاح' },
+];
+
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
@@ -47,12 +76,18 @@ export default function SupplierInventory({ phone, onClose, onAddInventory }: Pr
   const [listings, setListings] = useState<InventoryListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | BatchStatus>('all');
-  const [editingQty, setEditingQty] = useState<string | null>(null);
-  const [newQty, setNewQty] = useState(0);
   const [imageManager, setImageManager] = useState<{ batchId: string; images: BatchImage[] } | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [activeGalleryIdx, setActiveGalleryIdx] = useState(0);
   const imgInputRef = useRef<HTMLInputElement>(null);
+
+  const [editingListing, setEditingListing] = useState<InventoryListing | null>(null);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editSuccess, setEditSuccess] = useState(false);
+
+  const [deleteConfirm, setDeleteConfirm] = useState<InventoryListing | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchListings = useCallback(async () => {
     setLoading(true);
@@ -120,19 +155,56 @@ export default function SupplierInventory({ phone, onClose, onAddInventory }: Pr
     fetchListings();
   };
 
-  const deleteListing = async (id: string) => {
-    await supabase.from('inventory_batches').delete().eq('id', id);
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    setDeleting(true);
+    await supabase.from('inventory_batches').delete().eq('id', deleteConfirm.id);
+    setDeleting(false);
+    setDeleteConfirm(null);
     fetchListings();
   };
 
-  const updateQuantity = async (id: string) => {
-    if (newQty < 1) return;
+  const openEdit = (listing: InventoryListing) => {
+    setEditingListing(listing);
+    setEditForm({
+      pallet_type: listing.pallet_type,
+      size: listing.size,
+      quality: listing.quality,
+      pallet_condition: listing.pallet_condition,
+      quantity: listing.available_quantity,
+      price_per_pallet: listing.price_per_pallet,
+      city: listing.city,
+      description: listing.description,
+    });
+    setEditSuccess(false);
+  };
+
+  const saveEdit = async () => {
+    if (!editingListing || !editForm) return;
+    setEditSaving(true);
     await supabase
       .from('inventory_batches')
-      .update({ quantity: newQty, available_quantity: newQty, quantity_available: newQty })
-      .eq('id', id);
-    setEditingQty(null);
-    fetchListings();
+      .update({
+        pallet_type: editForm.pallet_type,
+        size: editForm.size,
+        quality: editForm.quality,
+        pallet_condition: editForm.pallet_condition,
+        quantity: editForm.quantity,
+        available_quantity: editForm.quantity,
+        quantity_available: editForm.quantity,
+        price_per_pallet: editForm.price_per_pallet,
+        city: editForm.city,
+        description: editForm.description,
+      })
+      .eq('id', editingListing.id);
+    setEditSaving(false);
+    setEditSuccess(true);
+    setTimeout(() => {
+      setEditingListing(null);
+      setEditForm(null);
+      setEditSuccess(false);
+      fetchListings();
+    }, 900);
   };
 
   const openImageManager = async (batchId: string) => {
@@ -210,7 +282,6 @@ export default function SupplierInventory({ phone, onClose, onAddInventory }: Pr
   };
 
   const filtered = filter === 'all' ? listings : listings.filter((l) => l.status === filter);
-
   const counts: Record<string, number> = { all: listings.length };
   for (const l of listings) counts[l.status] = (counts[l.status] || 0) + 1;
 
@@ -238,7 +309,7 @@ export default function SupplierInventory({ phone, onClose, onAddInventory }: Pr
         </header>
 
         <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar" dir="rtl">
-              {(['all', 'active', 'draft', 'paused', 'reserved', 'sold'] as const).map((f) => {
+          {(['all', 'active', 'draft', 'paused', 'reserved', 'sold'] as const).map((f) => {
             const isActive = filter === f;
             const label = f === 'all' ? 'الكل' : STATUS_CONFIG[f].label;
             const count = counts[f] || 0;
@@ -247,15 +318,11 @@ export default function SupplierInventory({ phone, onClose, onAddInventory }: Pr
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-bold transition-all whitespace-nowrap ${
-                  isActive
-                    ? 'bg-[#1a4a5e] text-white shadow-sm'
-                    : 'bg-white text-[#4a6a7a] border border-gray-200'
+                  isActive ? 'bg-[#1a4a5e] text-white shadow-sm' : 'bg-white text-[#4a6a7a] border border-gray-200'
                 }`}
               >
                 {label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
-                }`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
                   {count}
                 </span>
               </button>
@@ -288,7 +355,6 @@ export default function SupplierInventory({ phone, onClose, onAddInventory }: Pr
                 const qs = QUALITY_STYLE[listing.quality] ?? QUALITY_STYLE.B;
                 const condLabel = CONDITION_LABELS[listing.pallet_condition as PalletCondition]?.ar ?? listing.pallet_condition;
                 const qualLabel = QUALITY_LABELS[listing.quality as PalletQuality]?.ar ?? listing.quality;
-                const isEditing = editingQty === listing.id;
 
                 return (
                   <div key={listing.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm" dir="rtl">
@@ -360,31 +426,6 @@ export default function SupplierInventory({ phone, onClose, onAddInventory }: Pr
                       </div>
                     </div>
 
-                    {isEditing && (
-                      <div className="px-3.5 pb-3 flex items-center gap-2">
-                        <input
-                          type="number"
-                          value={newQty}
-                          onChange={(e) => setNewQty(parseInt(e.target.value, 10) || 0)}
-                          className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-[13px] font-bold text-[#1a4a5e] text-right outline-none"
-                          min={1}
-                          autoFocus
-                        />
-                        <button
-                          onClick={() => updateQuantity(listing.id)}
-                          className="px-4 py-2 rounded-xl bg-[#27AE60] text-white text-[12px] font-bold"
-                        >
-                          حفظ
-                        </button>
-                        <button
-                          onClick={() => setEditingQty(null)}
-                          className="px-3 py-2 rounded-xl bg-gray-100 text-[12px] font-bold text-gray-500"
-                        >
-                          إلغاء
-                        </button>
-                      </div>
-                    )}
-
                     <div className="flex items-center border-t border-gray-100 divide-x divide-gray-100">
                       <button
                         onClick={() => openImageManager(listing.id)}
@@ -394,11 +435,11 @@ export default function SupplierInventory({ phone, onClose, onAddInventory }: Pr
                         الصور ({listing.image_urls.length})
                       </button>
                       <button
-                        onClick={() => { setEditingQty(listing.id); setNewQty(listing.available_quantity); }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold text-[#4a6a7a] hover:bg-gray-50 transition-colors"
+                        onClick={() => openEdit(listing)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold text-[#1a4a5e] hover:bg-[#f0f6fa] transition-colors"
                       >
-                        <Edit3 className="w-3 h-3" />
-                        الكمية
+                        <Pencil className="w-3 h-3" />
+                        تعديل
                       </button>
                       {(listing.status === 'active' || listing.status === 'paused') && (
                         <button
@@ -413,7 +454,7 @@ export default function SupplierInventory({ phone, onClose, onAddInventory }: Pr
                         </button>
                       )}
                       <button
-                        onClick={() => deleteListing(listing.id)}
+                        onClick={() => setDeleteConfirm(listing)}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold text-red-400 hover:bg-red-50 transition-colors"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -423,8 +464,8 @@ export default function SupplierInventory({ phone, onClose, onAddInventory }: Pr
                   </div>
                 );
               })}
-          </div>
-        )}
+            </div>
+          )}
         </div>
 
         <button
@@ -434,6 +475,278 @@ export default function SupplierInventory({ phone, onClose, onAddInventory }: Pr
           <RefreshCw className="w-4 h-4 text-[#1a4a5e]" />
         </button>
       </div>
+
+      {editingListing && editForm && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          onClick={() => { setEditingListing(null); setEditForm(null); }}
+        >
+          <div
+            className="relative bg-white rounded-t-3xl lg:rounded-3xl lg:max-w-[560px] w-full overflow-hidden"
+            style={{ maxHeight: '90vh' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-center pt-3 pb-0 lg:hidden">
+              <div className="w-10 h-1 bg-gray-200 rounded-full" />
+            </div>
+
+            <div
+              className="flex items-center justify-between px-5 py-4 border-b border-gray-100"
+              style={{ background: 'linear-gradient(135deg, #0f2535, #1a3d56)' }}
+            >
+              <button
+                onClick={() => { setEditingListing(null); setEditForm(null); }}
+                className="w-8 h-8 bg-white/15 hover:bg-white/25 rounded-xl flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+              <div className="text-center">
+                <h3 className="text-[15px] font-bold text-white">تعديل المخزون</h3>
+                <p className="text-[11px] text-white/60 mt-0.5">{editingListing.pallet_type} · {editingListing.city}</p>
+              </div>
+              <div className="w-8" />
+            </div>
+
+            <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 130px)' }}>
+              <div className="px-5 py-4 space-y-4" dir="rtl">
+
+                <div>
+                  <label className="block text-[12px] font-bold text-gray-600 mb-2">نوع الطبلية</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PALLET_TYPES.map(t => (
+                      <button
+                        key={t}
+                        onClick={() => setEditForm(f => f ? { ...f, pallet_type: t } : f)}
+                        className="py-2.5 rounded-xl text-[13px] font-bold transition-all"
+                        style={{
+                          background: editForm.pallet_type === t ? '#1a4a5e' : '#f8fafc',
+                          color: editForm.pallet_type === t ? 'white' : '#4a6a7a',
+                          border: editForm.pallet_type === t ? '1.5px solid #1a4a5e' : '1.5px solid #e2e8f0',
+                        }}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-bold text-gray-600 mb-2">المقاس</label>
+                  <div className="flex flex-wrap gap-2">
+                    {PALLET_SIZES.map(s => (
+                      <button
+                        key={s}
+                        onClick={() => setEditForm(f => f ? { ...f, size: s } : f)}
+                        className="px-3 py-2 rounded-xl text-[12px] font-bold transition-all"
+                        style={{
+                          background: editForm.size === s ? '#1a4a5e' : '#f8fafc',
+                          color: editForm.size === s ? 'white' : '#4a6a7a',
+                          border: editForm.size === s ? '1.5px solid #1a4a5e' : '1.5px solid #e2e8f0',
+                        }}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-bold text-gray-600 mb-2">الجودة</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {QUALITIES.map(q => (
+                      <button
+                        key={q.value}
+                        onClick={() => setEditForm(f => f ? { ...f, quality: q.value } : f)}
+                        className="py-2.5 rounded-xl text-[12px] font-bold transition-all"
+                        style={{
+                          background: editForm.quality === q.value ? '#1a4a5e' : '#f8fafc',
+                          color: editForm.quality === q.value ? 'white' : '#4a6a7a',
+                          border: editForm.quality === q.value ? '1.5px solid #1a4a5e' : '1.5px solid #e2e8f0',
+                        }}
+                      >
+                        {q.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-bold text-gray-600 mb-2">الحالة</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {CONDITIONS.map(c => (
+                      <button
+                        key={c.value}
+                        onClick={() => setEditForm(f => f ? { ...f, pallet_condition: c.value } : f)}
+                        className="py-2.5 rounded-xl text-[11px] font-bold transition-all"
+                        style={{
+                          background: editForm.pallet_condition === c.value ? '#1a4a5e' : '#f8fafc',
+                          color: editForm.pallet_condition === c.value ? 'white' : '#4a6a7a',
+                          border: editForm.pallet_condition === c.value ? '1.5px solid #1a4a5e' : '1.5px solid #e2e8f0',
+                        }}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[12px] font-bold text-gray-600 mb-2">الكمية المتاحة</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={editForm.quantity}
+                        onChange={(e) => setEditForm(f => f ? { ...f, quantity: parseInt(e.target.value) || 0 } : f)}
+                        min={0}
+                        className="w-full px-3 py-3 rounded-xl border text-[13px] font-bold text-[#1a4a5e] text-right outline-none transition-colors"
+                        style={{ borderColor: '#e2e8f0', background: '#f8fafc' }}
+                        onFocus={(e) => e.target.style.borderColor = '#1a4a5e'}
+                        onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                      />
+                    </div>
+                    <div className="flex gap-1.5 mt-1.5">
+                      {[100, 500, 1000].map(n => (
+                        <button
+                          key={n}
+                          onClick={() => setEditForm(f => f ? { ...f, quantity: f.quantity + n } : f)}
+                          className="flex-1 py-1 rounded-lg text-[10px] font-bold bg-[#f0f6fa] text-[#1a4a5e] hover:bg-[#dde9f0] transition-colors"
+                        >
+                          +{n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-bold text-gray-600 mb-2">السعر (ر.س / طبلية)</label>
+                    <input
+                      type="number"
+                      value={editForm.price_per_pallet}
+                      onChange={(e) => setEditForm(f => f ? { ...f, price_per_pallet: parseFloat(e.target.value) || 0 } : f)}
+                      min={0}
+                      placeholder="0 = قابل للتفاوض"
+                      className="w-full px-3 py-3 rounded-xl border text-[13px] font-bold text-[#1a4a5e] text-right outline-none transition-colors"
+                      style={{ borderColor: '#e2e8f0', background: '#f8fafc' }}
+                      onFocus={(e) => e.target.style.borderColor = '#1a4a5e'}
+                      onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-bold text-gray-600 mb-2">المدينة</label>
+                  <input
+                    type="text"
+                    value={editForm.city}
+                    onChange={(e) => setEditForm(f => f ? { ...f, city: e.target.value } : f)}
+                    className="w-full px-3 py-3 rounded-xl border text-[13px] font-bold text-[#1a4a5e] text-right outline-none transition-colors"
+                    style={{ borderColor: '#e2e8f0', background: '#f8fafc' }}
+                    onFocus={(e) => e.target.style.borderColor = '#1a4a5e'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-bold text-gray-600 mb-2">الوصف (اختياري)</label>
+                  <textarea
+                    value={editForm.description}
+                    onChange={(e) => setEditForm(f => f ? { ...f, description: e.target.value } : f)}
+                    rows={3}
+                    placeholder="أضف وصفاً للمخزون..."
+                    className="w-full px-3 py-3 rounded-xl border text-[13px] text-[#1a4a5e] text-right outline-none transition-colors resize-none"
+                    style={{ borderColor: '#e2e8f0', background: '#f8fafc' }}
+                    onFocus={(e) => e.target.style.borderColor = '#1a4a5e'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                  />
+                </div>
+
+                <div className="pb-2">
+                  <button
+                    onClick={saveEdit}
+                    disabled={editSaving || editSuccess}
+                    className="w-full py-4 rounded-2xl text-[15px] font-black text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                    style={{
+                      background: editSuccess
+                        ? 'linear-gradient(135deg, #059669, #10b981)'
+                        : 'linear-gradient(135deg, #0f2535, #1a3d56)',
+                      opacity: editSaving ? 0.7 : 1,
+                      boxShadow: '0 4px 20px rgba(15,37,53,0.3)',
+                    }}
+                  >
+                    {editSuccess ? (
+                      <><Check className="w-5 h-5" /> تم الحفظ بنجاح</>
+                    ) : editSaving ? (
+                      <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> جاري الحفظ...</>
+                    ) : (
+                      <><Pencil className="w-4 h-4" /> حفظ التعديلات</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirm && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+          style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)' }}
+          onClick={() => setDeleteConfirm(null)}
+        >
+          <div
+            className="bg-white rounded-3xl overflow-hidden w-full max-w-[360px] shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col items-center px-6 pt-8 pb-6 text-center" dir="rtl">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+                style={{ background: '#FEF2F2', border: '2px solid #FECACA' }}
+              >
+                <AlertTriangle className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="text-[17px] font-black text-gray-900 mb-1">تأكيد الحذف</h3>
+              <p className="text-[13px] text-gray-500 mb-1">
+                هل أنت متأكد من حذف هذا المخزون؟
+              </p>
+              <div
+                className="flex items-center gap-2 px-4 py-2 rounded-xl mt-1 mb-5"
+                style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}
+              >
+                <Package className="w-4 h-4 text-[#1a4a5e]" />
+                <span className="text-[13px] font-bold text-[#1a4a5e]">{deleteConfirm.pallet_type}</span>
+                <span className="text-[11px] text-gray-400">·</span>
+                <span className="text-[12px] text-gray-500">{deleteConfirm.available_quantity} طبلية</span>
+                <span className="text-[11px] text-gray-400">·</span>
+                <span className="text-[12px] text-gray-500">{deleteConfirm.city}</span>
+              </div>
+              <p className="text-[11px] text-red-400 mb-5">لا يمكن التراجع عن هذه العملية</p>
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 py-3 rounded-xl text-[13px] font-bold text-gray-600 transition-colors"
+                  style={{ background: '#f3f4f6', border: '1px solid #e5e7eb' }}
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                  className="flex-1 py-3 rounded-xl text-[13px] font-black text-white transition-all active:scale-[0.97] flex items-center justify-center gap-1.5"
+                  style={{ background: 'linear-gradient(135deg, #dc2626, #ef4444)', opacity: deleting ? 0.7 : 1 }}
+                >
+                  {deleting ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <><Trash2 className="w-4 h-4" /> حذف نهائي</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {imageManager && (
         <div
