@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
   MapPin, Package, Wrench, ChevronLeft, ChevronRight, Warehouse, ImageOff,
-  Star, Home, X, TrendingDown, Award
+  Star, Home, X, TrendingDown, Award, ShoppingBag
 } from 'lucide-react';
 import TrustRatingBadge from '../shared/TrustRatingBadge';
 import VisitorRatingDialog from './VisitorRatingDialog';
 import { CommentsSection } from '../shared/CommentsSection';
 import { supabase } from '../../lib/supabase';
+import SaleRequestSheet from './SaleRequestSheet';
 
 interface SupplyCard {
   id: string;
@@ -83,11 +84,22 @@ interface Props {
   autoOpenDeal?: boolean;
 }
 
-export default function SupplyDetailSheet({ card, onClose }: Props) {
+export default function SupplyDetailSheet({ card, onClose, sessionPhone, onLoginRequired }: Props) {
   const [imgIndex, setImgIndex] = useState(0);
   const [showRatingDialog, setShowRatingDialog] = useState(false);
   const [ratingSummary, setRatingSummary] = useState<{ average_rating: number; total_ratings: number } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showSaleRequest, setShowSaleRequest] = useState(false);
+
+  const isMine = sessionPhone && sessionPhone === card.phone;
+
+  const handleSaleButton = () => {
+    if (!sessionPhone) {
+      onLoginRequired?.();
+      return;
+    }
+    setShowSaleRequest(true);
+  };
 
   useEffect(() => { loadRatingSummary(); }, [card.phone]);
 
@@ -185,6 +197,16 @@ export default function SupplyDetailSheet({ card, onClose }: Props) {
             )}
 
             <div className="hidden md:block px-4 mt-4 pb-4 space-y-3">
+              {!isMine && (
+                <button
+                  onClick={handleSaleButton}
+                  className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 font-black text-[14px] text-white transition-all active:scale-[0.98]"
+                  style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', boxShadow: '0 6px 20px rgba(22,163,74,0.35)' }}
+                >
+                  <ShoppingBag className="w-5 h-5" />
+                  عرض بيع طبليات
+                </button>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={onClose} className="flex flex-col items-center justify-center py-3 rounded-2xl" style={{ background: 'linear-gradient(135deg, #1a4a5e, #2c5f73)', boxShadow: '0 4px 12px rgba(26,74,94,0.25)' }}>
                   <Home className="w-5 h-5 text-white mb-1" />
@@ -310,7 +332,17 @@ export default function SupplyDetailSheet({ card, onClose }: Props) {
           </div>
         </div>
 
-        <div className="md:hidden flex-shrink-0 px-4 pb-5 pt-3" style={{ background: 'linear-gradient(to top, #ffffff 0%, #f8fafb 100%)', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+        <div className="md:hidden flex-shrink-0 px-4 pb-5 pt-3 space-y-2" style={{ background: 'linear-gradient(to top, #ffffff 0%, #f8fafb 100%)', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+          {!isMine && (
+            <button
+              onClick={handleSaleButton}
+              className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-black text-[15px] text-white transition-all active:scale-[0.98]"
+              style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', boxShadow: '0 6px 20px rgba(22,163,74,0.35)' }}
+            >
+              <ShoppingBag className="w-5 h-5" />
+              عرض بيع طبليات
+            </button>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <button onClick={onClose} className="flex flex-col items-center justify-center py-3 rounded-2xl" style={{ background: 'linear-gradient(135deg, #1a4a5e, #2c5f73)', boxShadow: '0 4px 12px rgba(26,74,94,0.25)' }}>
               <Home className="w-5 h-5 text-white mb-1" />
@@ -333,6 +365,14 @@ export default function SupplyDetailSheet({ card, onClose }: Props) {
           itemType="supply"
           itemId={card.id}
           onRatingSubmitted={() => { setShowRatingDialog(false); loadRatingSummary(); setRefreshKey(prev => prev + 1); }}
+        />
+      )}
+
+      {showSaleRequest && (
+        <SaleRequestSheet
+          card={card}
+          onClose={() => setShowSaleRequest(false)}
+          onSuccess={() => { setShowSaleRequest(false); onClose(); }}
         />
       )}
     </div>

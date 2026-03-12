@@ -10,8 +10,8 @@ import {
   X,
   Handshake,
   Cloud,
-  MessageSquare,
   DollarSign,
+  ShoppingBag,
 } from 'lucide-react';
 import type { AppSession } from '../../types/session';
 import { useTranslation } from '../../lib/i18n';
@@ -21,11 +21,12 @@ import SettingsTab from './tabs/SettingsTab';
 import AccountEditSheet from './AccountEditSheet';
 import CloudWarehouseTab from './tabs/CloudWarehouseTab';
 import MyDealsTab from './tabs/MyDealsTab';
-import NegotiationRequestsTab from './tabs/NegotiationRequestsTab';
 import CommissionsTab from './tabs/CommissionsTab';
+import SaleRequestsTab from './tabs/SaleRequestsTab';
 import { useAccountData } from '../../hooks/useAccountData';
+import { useSupplierSaleRequests, useBuyerSaleRequests } from '../../hooks/useSaleRequests';
 
-type AccountTab = 'warehouse' | 'deals' | 'negotiations' | 'commissions' | 'settings';
+type AccountTab = 'warehouse' | 'deals' | 'commissions' | 'settings' | 'sale_requests';
 
 interface Props {
   session: AppSession;
@@ -54,12 +55,15 @@ export default function AccountPage({ session, onClose, onLogout, initialTab }: 
     commissions,
     pendingCommissions,
     totalPendingCommission,
-    negotiationRequests,
     getCounterpartyName,
-    acceptNegotiation,
-    rejectNegotiation,
     refresh,
   } = useAccountData(phone);
+
+  const { requests: supplierSaleReqs } = useSupplierSaleRequests(phone);
+  const { requests: buyerSaleReqs } = useBuyerSaleRequests(phone);
+  const pendingSaleRequests = supplierSaleReqs.filter(r => r.status === 'pending_supplier').length;
+  const activeBuyerRequests = buyerSaleReqs.filter(r => !['completed', 'failed', 'rejected'].includes(r.status)).length;
+  const saleRequestsBadge = pendingSaleRequests + activeBuyerRequests;
 
   const isCompany = localSession.profile.user_type === 'company';
   const displayName = isCompany
@@ -73,14 +77,14 @@ export default function AccountPage({ session, onClose, onLogout, initialTab }: 
     inventory: inventory.reduce((s, b) => s + (b.quantity_available ?? b.quantity ?? 0), 0),
     purchases: purchases.reduce((s, p) => s + p.quantity, 0),
     activeDeals: marketCardDeals.filter(d => !['completed', 'cancelled'].includes(d.status)).length,
-    orders: negotiationRequests.length,
+    orders: marketCardDeals.filter(d => !['completed', 'cancelled'].includes(d.status)).length,
   };
 
   const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Settings; badge?: number }[] = [
     { key: 'warehouse', label: 'مستودعي', icon: Cloud },
-    { key: 'deals', label: 'صفقاتي', icon: Handshake, badge: marketCardDeals.filter(d => !['completed', 'cancelled'].includes(d.status)).length },
-    { key: 'negotiations', label: 'التفاوض', icon: MessageSquare, badge: negotiationRequests.length },
-    { key: 'commissions', label: 'العمولات', icon: DollarSign, badge: pendingCommissions.length },
+    { key: 'sale_requests', label: 'طلبات البيع', icon: ShoppingBag, badge: saleRequestsBadge || undefined },
+    { key: 'deals', label: 'صفقاتي', icon: Handshake, badge: marketCardDeals.filter(d => !['completed', 'cancelled'].includes(d.status)).length || undefined },
+    { key: 'commissions', label: 'العمولات', icon: DollarSign, badge: pendingCommissions.length || undefined },
     { key: 'settings', label: t('account.settings'), icon: Settings },
   ];
 
@@ -111,22 +115,14 @@ export default function AccountPage({ session, onClose, onLogout, initialTab }: 
             loading={loading}
           />
         );
+      case 'sale_requests':
+        return <SaleRequestsTab phone={phone} />;
       case 'deals':
         return (
           <MyDealsTab
             deals={marketCardDeals}
             myPhone={phone}
             getCounterpartyName={getCounterpartyName}
-            loading={loading}
-          />
-        );
-      case 'negotiations':
-        return (
-          <NegotiationRequestsTab
-            requests={negotiationRequests}
-            getCounterpartyName={getCounterpartyName}
-            onAccept={acceptNegotiation}
-            onReject={rejectNegotiation}
             loading={loading}
           />
         );
