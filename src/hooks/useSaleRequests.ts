@@ -18,7 +18,7 @@ export interface SaleRequest {
   supplier_agreed_commission: boolean;
   created_at: string;
   updated_at: string;
-  image_urls?: string[];
+  image_url?: string | null;
   buyer_display_name?: string;
   buyer_company_name?: string;
 }
