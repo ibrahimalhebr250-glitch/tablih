@@ -122,14 +122,22 @@ function SupplierRequestCard({ req, onAccept, onReject, onStartContact, onComple
   const [showPledge, setShowPledge] = useState(false);
   const [pledgeMode, setPledgeMode] = useState<'accept' | 'contact'>('accept');
   const [err, setErr] = useState<string | null>(null);
+  const [completedDetails, setCompletedDetails] = useState<{ quantity: number; commission: number } | null>(null);
 
   const cfg = STATUS_CONFIG[req.status] || STATUS_CONFIG.pending_supplier;
   const Icon = cfg.icon;
 
-  const act = async (fn: () => Promise<{ success: boolean; error?: string }>) => {
+  const act = async (fn: () => Promise<{ success: boolean; error?: string; details?: { quantity_transferred?: number; commission_recorded?: number } }>, isComplete = false) => {
     setLoading(true); setErr(null);
     const res = await fn();
-    if (!res.success) setErr(res.error || 'حدث خطأ');
+    if (!res.success) {
+      setErr(res.error || 'حدث خطأ');
+    } else if (isComplete && res.details) {
+      setCompletedDetails({
+        quantity: res.details.quantity_transferred ?? req.requested_quantity,
+        commission: res.details.commission_recorded ?? req.commission_per_pallet * req.requested_quantity,
+      });
+    }
     setLoading(false);
   };
 
@@ -229,6 +237,25 @@ function SupplierRequestCard({ req, onAccept, onReject, onStartContact, onComple
             </div>
           )}
 
+          {completedDetails && req.status === 'completed' && (
+            <div className="mt-2 rounded-2xl p-3 space-y-2" style={{ background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)', border: '1px solid #bbf7d0' }}>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <p className="text-[13px] font-black text-green-800">اكتملت العملية بنجاح</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl p-2 text-center" style={{ background: 'rgba(255,255,255,0.7)' }}>
+                  <p className="text-[10px] text-green-600">تم نقل للمشتري</p>
+                  <p className="text-[14px] font-black text-green-800">{completedDetails.quantity} طبلية</p>
+                </div>
+                <div className="rounded-xl p-2 text-center" style={{ background: 'rgba(255,255,255,0.7)' }}>
+                  <p className="text-[10px] text-green-600">عمولة معلقة</p>
+                  <p className="text-[14px] font-black text-green-800">{completedDetails.commission} ريال</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="mt-3 space-y-2">
             {req.status === 'pending_supplier' && (
               <div className="grid grid-cols-2 gap-2">
@@ -283,7 +310,7 @@ function SupplierRequestCard({ req, onAccept, onReject, onStartContact, onComple
                     {loading ? <Loader className="w-4 h-4 animate-spin mx-auto" /> : 'فشل التسليم'}
                   </button>
                   <button
-                    onClick={() => act(() => onComplete(req.id))}
+                    onClick={() => act(() => onComplete(req.id), true)}
                     disabled={loading}
                     className="py-2.5 rounded-xl text-[13px] font-bold text-white transition-all active:scale-[0.97] disabled:opacity-50 flex items-center justify-center gap-1"
                     style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', boxShadow: '0 4px 12px rgba(22,163,74,0.3)' }}
