@@ -46,7 +46,13 @@ export default function SupplyOfferSheet({ card, onClose, onSuccess, onGoToInven
   const [done, setDone] = useState(false);
 
   const quality = QUALITY_MAP[card.quality] || { label: card.quality, color: '#374151', bg: '#f3f4f6' };
-  const maxQty = selectedBatch ? Math.min(selectedBatch.available_quantity, card.quantity) : card.quantity;
+  const isPartialAllowed = card.accept_partial_delivery;
+  const maxQty = selectedBatch
+    ? (isPartialAllowed
+        ? selectedBatch.available_quantity
+        : Math.min(selectedBatch.available_quantity, card.quantity))
+    : card.quantity;
+  const isPartialOffer = selectedBatch ? selectedBatch.available_quantity < card.quantity : false;
   const totalPrice = parseFloat(pricePerPallet) > 0 ? parseFloat(pricePerPallet) * qty : 0;
 
   useEffect(() => {
@@ -69,15 +75,19 @@ export default function SupplyOfferSheet({ card, onClose, onSuccess, onGoToInven
       const list = (data || []) as InventoryBatch[];
       setBatches(list);
 
+      const normalizeType = (s: string) => s?.toLowerCase().trim() ?? '';
       const matching = list.find(b =>
-        b.pallet_type?.toLowerCase().trim() === card.pallet_type?.toLowerCase().trim()
+        normalizeType(b.pallet_type) === normalizeType(card.pallet_type)
       );
       if (matching) {
         setSelectedBatch(matching);
         if (matching.price_per_pallet > 0) {
           setPricePerPallet(String(matching.price_per_pallet));
         }
-        setQty(Math.min(matching.available_quantity, card.quantity));
+        const offerQty = card.accept_partial_delivery
+          ? matching.available_quantity
+          : Math.min(matching.available_quantity, card.quantity);
+        setQty(offerQty);
       }
       setLoadingBatches(false);
     };
@@ -87,7 +97,10 @@ export default function SupplyOfferSheet({ card, onClose, onSuccess, onGoToInven
   const handleSelectBatch = (batch: InventoryBatch) => {
     setSelectedBatch(batch);
     setShowBatchPicker(false);
-    setQty(Math.min(batch.available_quantity, card.quantity));
+    const offerQty = card.accept_partial_delivery
+      ? batch.available_quantity
+      : Math.min(batch.available_quantity, card.quantity);
+    setQty(offerQty);
     if (batch.price_per_pallet > 0) {
       setPricePerPallet(String(batch.price_per_pallet));
     } else {
@@ -203,6 +216,21 @@ export default function SupplyOfferSheet({ card, onClose, onSuccess, onGoToInven
                   سيصل عرضك للمشتري وبإمكانه الموافقة وإتمام الصفقة.
                 </p>
               </div>
+
+              {isPartialAllowed && (
+                <div
+                  className="rounded-2xl p-3 flex items-start gap-2"
+                  style={{ background: '#f0fdf4', border: '1px solid #86efac' }}
+                >
+                  <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-[12px] font-black text-green-800">المشتري يقبل التوريد الجزئي</p>
+                    <p className="text-[11px] text-green-600 mt-0.5 leading-relaxed">
+                      يمكنك تقديم عرض بالكمية المتوفرة عندك حتى لو كانت أقل من الكمية المطلوبة
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div
                 className="rounded-2xl overflow-hidden"
@@ -382,14 +410,21 @@ export default function SupplyOfferSheet({ card, onClose, onSuccess, onGoToInven
                 <>
                   <div
                     className="rounded-2xl overflow-hidden"
-                    style={{ border: '1.5px solid rgba(0,0,0,0.07)' }}
+                    style={{ border: isPartialOffer && isPartialAllowed ? '1.5px solid #86efac' : '1.5px solid rgba(0,0,0,0.07)' }}
                   >
                     <div
                       className="px-4 py-2.5 flex items-center gap-2"
-                      style={{ background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}
+                      style={{ background: isPartialOffer && isPartialAllowed ? '#f0fdf4' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}
                     >
-                      <Layers className="w-4 h-4 text-gray-400" />
-                      <span className="text-[12px] font-black text-gray-600">الكمية التي تعرضها</span>
+                      <Layers className={`w-4 h-4 ${isPartialOffer && isPartialAllowed ? 'text-green-500' : 'text-gray-400'}`} />
+                      <span className={`text-[12px] font-black ${isPartialOffer && isPartialAllowed ? 'text-green-700' : 'text-gray-600'}`}>
+                        الكمية التي تعرضها
+                        {isPartialOffer && isPartialAllowed && (
+                          <span className="mr-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#dcfce7', color: '#15803d' }}>
+                            توريد جزئي
+                          </span>
+                        )}
+                      </span>
                     </div>
                     <div className="px-4 py-4">
                       <div className="flex items-center justify-between">
@@ -435,7 +470,11 @@ export default function SupplyOfferSheet({ card, onClose, onSuccess, onGoToInven
                       <div className="flex justify-between mt-1">
                         <span className="text-[10px] text-gray-400">1</span>
                         <span className="text-[10px] text-gray-400">
-                          الحد الأقصى: {maxQty} ({qty >= card.quantity ? 'يغطي الطلب كاملاً' : `${card.quantity - qty} طبلية ناقصة`})
+                          {qty >= card.quantity
+                            ? 'يغطي الطلب كاملاً'
+                            : isPartialAllowed
+                              ? `توريد جزئي · ${card.quantity - qty} طبلية ناقصة من ${card.quantity}`
+                              : `الحد الأقصى: ${maxQty}`}
                         </span>
                       </div>
                     </div>
