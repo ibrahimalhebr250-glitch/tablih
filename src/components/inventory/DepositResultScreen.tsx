@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, Copy, Plus, Home, CloudCog, Sparkles, Bell, ArrowRight, Package, TrendingUp, Check } from 'lucide-react';
+import { CheckCircle, Copy, Plus, Home, CloudCog, Sparkles, ArrowRight, Package, TrendingUp, Check, Eye, Zap, Settings } from 'lucide-react';
 
 interface Props {
   batchRef: string | null;
@@ -153,36 +153,51 @@ export default function DepositResultScreen({
           <div className="space-y-3 mb-4">
             <div
               className="rounded-2xl p-4"
-              style={{ background: 'linear-gradient(135deg, #0f2535, #1a3d56)', boxShadow: '0 4px 20px rgba(15,37,53,0.2)' }}
-            >
-              <div className="flex items-start gap-3" dir="rtl">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-                  <Bell className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-[13px] font-black text-white mb-1">إشعارات فورية</p>
-                  <p className="text-[11px] text-white/60 leading-relaxed">
-                    ستتلقى إشعاراً مباشراً فور اهتمام أي مشترٍ بعرضك وطلبه إنشاء صفقة
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="rounded-2xl p-4"
               style={{ background: 'white', border: '1.5px solid #e2edf5' }}
             >
-              <div className="space-y-2.5">
+              <p className="text-[11px] font-black text-[#7a9aab] uppercase tracking-wider mb-3 text-right">ماذا يحدث الآن؟</p>
+              <div className="space-y-3">
                 {[
-                  { icon: Package, text: 'الدفعة ظاهرة في صفحة السوق للمشترين' },
-                  { icon: TrendingUp, text: 'النظام يطابق تلقائياً مع الطلبات المناسبة' },
-                  { icon: CheckCircle, text: 'يمكنك إدارة الدفعة من مستودعك السحابي' },
-                ].map(({ icon: Icon, text }, i) => (
-                  <div key={i} className="flex items-center gap-2.5" dir="rtl">
-                    <div className="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-3.5 h-3.5 text-emerald-600" />
+                  {
+                    icon: Eye,
+                    title: 'دفعتك ظاهرة في السوق',
+                    desc: 'المشترون يمكنهم مشاهدة عرضك والتواصل معك مباشرةً',
+                    color: '#059669',
+                    bg: '#d1fae5',
+                  },
+                  {
+                    icon: Zap,
+                    title: 'المشترون يرسلون لك عروض شراء',
+                    desc: 'عند اهتمام مشترٍ بدفعتك سيصلك طلبه في قسم صفقاتي',
+                    color: '#d97706',
+                    bg: '#fef3c7',
+                  },
+                  {
+                    icon: Settings,
+                    title: 'إدارة الدفعة من مستودعك',
+                    desc: 'يمكنك تعديل الكمية أو إخفاء الدفعة من حسابي ← مستودعي السحابي',
+                    color: '#2563eb',
+                    bg: '#dbeafe',
+                  },
+                  {
+                    icon: TrendingUp,
+                    title: 'متابعة الصفقات',
+                    desc: 'جميع صفقاتك وحالاتها تجدها في قسم صفقاتي في حسابك',
+                    color: '#7c3aed',
+                    bg: '#ede9fe',
+                  },
+                ].map(({ icon: Icon, title, desc, color, bg }, i) => (
+                  <div key={i} className="flex items-start gap-3" dir="rtl">
+                    <div
+                      className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ background: bg }}
+                    >
+                      <Icon className="w-4 h-4" style={{ color }} />
                     </div>
-                    <span className="text-[12px] text-[#4a6a7e]">{text}</span>
+                    <div>
+                      <p className="text-[12px] font-black text-[#1a2f3e]">{title}</p>
+                      <p className="text-[11px] text-[#7a9aab] leading-relaxed mt-0.5">{desc}</p>
+                    </div>
                   </div>
                 ))}
               </div>
