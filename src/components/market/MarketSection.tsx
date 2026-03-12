@@ -206,6 +206,7 @@ export default function MarketSection({
           setSelectedCard(null);
           onGoToInventory?.();
         }}
+        userPhone={userPhone || sessionPhone || undefined}
       />
     );
   }

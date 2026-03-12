@@ -35,6 +35,7 @@ interface Props {
   onClose: () => void;
   onLoginRequired?: (card?: SupplyCardData) => void;
   onGoToInventory?: () => void;
+  userPhone?: string;
 }
 
 const QUALITY_MAP: Record<string, { label: string; color: string; bg: string; dot: string }> = {
@@ -86,7 +87,7 @@ function StarDisplay({ rating, count }: { rating: number; count: number }) {
   );
 }
 
-export default function PalletDetailsPage({ card, onClose, onLoginRequired, onGoToInventory }: Props) {
+export default function PalletDetailsPage({ card, onClose, onLoginRequired, onGoToInventory, userPhone }: Props) {
   const [profile, setProfile] = useState<SellerProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
@@ -161,9 +162,12 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired, onGo
     setFullscreenOpen(true);
   };
 
+  const isLoggedIn = () => {
+    return !!userPhone || !!sessionManager.getSessionToken();
+  };
+
   const handleBuyAction = () => {
-    const token = sessionManager.getSessionToken();
-    if (!token) {
+    if (!isLoggedIn()) {
       setAuthError('');
       setPendingAction('buy');
       setShowAuthSheet(true);
@@ -173,8 +177,7 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired, onGo
   };
 
   const handleOfferAction = () => {
-    const token = sessionManager.getSessionToken();
-    if (!token) {
+    if (!isLoggedIn()) {
       setAuthError('');
       setPendingAction('offer');
       setShowAuthSheet(true);
