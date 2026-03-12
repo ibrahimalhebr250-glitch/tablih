@@ -443,87 +443,74 @@ function App() {
       {/* ── Mobile Layout ── */}
       <div className="lg:hidden min-h-screen" style={{ background: 'linear-gradient(180deg, #c3d1e0 0%, #cdd9e6 30%, #d5e1ea 50%, #cdd9e6 70%, #c3d1e0 100%)' }}>
         {session ? (
-          <>
-            <TopNavigation
-              session={session}
-              currentView={getCurrentNavView()}
-              onNavigate={handleNavigation}
-              onLogout={handleLogout}
-            />
-            <div className="overflow-y-auto" style={{ height: 'calc(100vh - 56px)', paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
-              <Suspense fallback={<LoadingFallback />}>
-                <div key={mainView} className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                  {mainView === 'marketplace' ? (
-                    <>
-                      <HeroSection />
-                      <MarketSection
-                        onCreateOrder={openOrder}
-                        onAddInventory={openInventory}
-                        isAuthenticated={true}
-                        userPhone={session?.profile?.phone}
-                        onShowAuth={() => openAuth('none')}
-                        onDetailSheetChange={setIsDetailSheetOpen}
-                        onGoToDeals={() => setModal('buyerDeals')}
-                        onLoginRequired={openAuthForDeal}
-                        onGoToInventory={openInventory}
-                      />
-                    </>
-                  ) : (
-                    <OperationalDashboard
-                      session={session}
-                      onAddInventory={openInventory}
-                      onCreateOrder={openOrder}
-                      onOpenSupplierDeals={() => setModal('supplierDeals')}
-                      onOpenBuyerDeals={() => setModal('buyerDeals')}
-                      refreshRef={dashboardRefresh}
-                    />
-                  )}
-                </div>
-              </Suspense>
-            </div>
-            {!isDetailSheetOpen && (
-              <BottomNavigation
-                onAddInventory={openInventory}
-                onCreateOrder={openOrder}
-                onOpenAccount={() => { setAccountInitialTab(undefined); setModal('account'); }}
-              />
-            )}
-          </>
+          <TopNavigation
+            session={session}
+            currentView={getCurrentNavView()}
+            onNavigate={handleNavigation}
+            onLogout={handleLogout}
+          />
         ) : (
-          <>
-            <Header
-              session={session}
-              onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
-              onOpenSupplierDeals={() => setModal('supplierDeals')}
-              onOpenBuyerDeals={() => setModal('buyerDeals')}
-              onOpenSupplierInventory={() => setModal('supplierInventory')}
-              onOpenPurchasedInventory={() => setModal('account')}
-              onOpenDashboard={() => setMainView('dashboard')}
-              onLogout={handleLogout}
-            />
-            <div className="overflow-y-auto" style={{ height: 'calc(100vh - 65px)', paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
-              <Suspense fallback={<LoadingFallback />}>
+          <Header
+            session={session}
+            onOpenAdmin={() => adminStaff ? setModal('admin') : setModal('adminLogin')}
+            onOpenSupplierDeals={() => setModal('supplierDeals')}
+            onOpenBuyerDeals={() => setModal('buyerDeals')}
+            onOpenSupplierInventory={() => setModal('supplierInventory')}
+            onOpenPurchasedInventory={() => setModal('account')}
+            onOpenDashboard={() => setMainView('dashboard')}
+            onLogout={handleLogout}
+          />
+        )}
+        <div
+          className="overflow-y-auto"
+          style={{
+            height: session ? 'calc(100vh - 56px)' : 'calc(100vh - 65px)',
+            paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
+          }}
+        >
+          <Suspense fallback={<LoadingFallback />}>
+            {mainView === 'marketplace' ? (
+              <>
                 <HeroSection />
                 <MarketSection
                   onCreateOrder={openOrder}
                   onAddInventory={openInventory}
-                  isAuthenticated={false}
+                  isAuthenticated={!!session}
+                  userPhone={session?.profile?.phone}
                   onShowAuth={() => openAuth('none')}
                   onDetailSheetChange={setIsDetailSheetOpen}
-                  onGoToDeals={() => openAuth('none')}
+                  onGoToDeals={session ? () => setModal('buyerDeals') : () => openAuth('none')}
                   onLoginRequired={openAuthForDeal}
                   onGoToInventory={openInventory}
                 />
-              </Suspense>
-            </div>
-            {!isDetailSheetOpen && (
-              <BottomNavigation
-                onAddInventory={openInventory}
-                onCreateOrder={openOrder}
-                onOpenAccount={() => openAuth('none')}
-              />
-            )}
-          </>
+              </>
+            ) : session ? (
+              <div key={mainView} className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <OperationalDashboard
+                  session={session}
+                  onAddInventory={openInventory}
+                  onCreateOrder={openOrder}
+                  onOpenSupplierDeals={() => setModal('supplierDeals')}
+                  onOpenBuyerDeals={() => setModal('buyerDeals')}
+                  refreshRef={dashboardRefresh}
+                />
+              </div>
+            ) : null}
+          </Suspense>
+        </div>
+        {!isDetailSheetOpen && (
+          <BottomNavigation
+            onAddInventory={openInventory}
+            onCreateOrder={openOrder}
+            onOpenAccount={() => {
+              if (session) {
+                setAccountInitialTab(undefined);
+                setModal('account');
+              } else {
+                openAuth('none');
+              }
+            }}
+          />
         )}
       </div>
 
