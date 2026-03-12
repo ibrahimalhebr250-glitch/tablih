@@ -61,23 +61,13 @@ export default function SupplyOfferSheet({ card, onClose, onSuccess, onGoToInven
       const token = sessionManager.getSessionToken();
       if (!token) { setLoadingBatches(false); return; }
 
-      const { data: sessionData } = await supabase.rpc('validate_session', { p_token: token });
-      if (!sessionData?.valid) { setLoadingBatches(false); return; }
+      const { data: rpcData } = await supabase.rpc('get_supplier_active_batches', { p_token: token });
 
-      const { data } = await supabase
-        .from('inventory_batches')
-        .select('id, pallet_type, size, quality, city, available_quantity, price_per_pallet, batch_ref')
-        .eq('phone', sessionData.phone)
-        .eq('status', 'active')
-        .gt('available_quantity', 0)
-        .order('created_at', { ascending: false });
-
-      const list = (data || []) as InventoryBatch[];
+      const list = (rpcData || []) as InventoryBatch[];
       setBatches(list);
 
-      const normalizeType = (s: string) => s?.toLowerCase().trim() ?? '';
       const matching = list.find(b =>
-        normalizeType(b.pallet_type) === normalizeType(card.pallet_type)
+        normalizePalletType(b.pallet_type) === normalizePalletType(card.pallet_type)
       );
       if (matching) {
         setSelectedBatch(matching);
