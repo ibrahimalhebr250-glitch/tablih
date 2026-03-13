@@ -2,13 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   MapPin, Package, Star, Layers, Tag, Award, Building2,
   CheckCircle2, ArrowLeftCircle, ChevronLeft, Calendar, ZoomIn,
-  ShoppingBag, Store, Truck
+  ShoppingBag, Store
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { sessionManager } from '../../lib/sessionManager';
 import { FullscreenGallery } from './ImageGallery';
 import BuyRequestSheet from './BuyRequestSheet';
-import SupplyOfferSheet from './SupplyOfferSheet';
 import AuthSheet from '../account/AuthSheet';
 import type { SupplyCardData, DemandCardData } from './PalletCards';
 
@@ -95,12 +94,9 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired, onGo
   const [currentImage, setCurrentImage] = useState(0);
   const [imgError, setImgError] = useState<Record<number, boolean>>({});
   const [showBuySheet, setShowBuySheet] = useState(false);
-  const [showOfferSheet, setShowOfferSheet] = useState(false);
   const [showAuthSheet, setShowAuthSheet] = useState(false);
-  const [pendingAction, setPendingAction] = useState<'buy' | 'offer' | null>(null);
   const [authError, setAuthError] = useState('');
   const [requestSent, setRequestSent] = useState(false);
-  const [offerSent, setOfferSent] = useState(false);
 
   const isSupply = card.kind === 'supply';
   const images = isSupply ? (card as SupplyCardData).image_urls : [];
@@ -169,21 +165,10 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired, onGo
   const handleBuyAction = () => {
     if (!isLoggedIn()) {
       setAuthError('');
-      setPendingAction('buy');
       setShowAuthSheet(true);
       return;
     }
     setShowBuySheet(true);
-  };
-
-  const handleOfferAction = () => {
-    if (!isLoggedIn()) {
-      setAuthError('');
-      setPendingAction('offer');
-      setShowAuthSheet(true);
-      return;
-    }
-    setShowOfferSheet(true);
   };
 
   const handleAuthLogin = async (phone: string, pin: string) => {
@@ -212,9 +197,7 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired, onGo
     });
     setShowAuthSheet(false);
     setTimeout(() => {
-      if (pendingAction === 'buy') setShowBuySheet(true);
-      else if (pendingAction === 'offer') setShowOfferSheet(true);
-      setPendingAction(null);
+      setShowBuySheet(true);
     }, 100);
   };
 
@@ -256,9 +239,7 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired, onGo
     });
     setShowAuthSheet(false);
     setTimeout(() => {
-      if (pendingAction === 'buy') setShowBuySheet(true);
-      else if (pendingAction === 'offer') setShowOfferSheet(true);
-      setPendingAction(null);
+      setShowBuySheet(true);
     }, 100);
   };
 
@@ -611,7 +592,7 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired, onGo
           className="shrink-0 px-4 pb-6 pt-3 safe-bottom"
           style={{ background: 'white', borderTop: '1px solid #f1f5f9', boxShadow: '0 -4px 20px rgba(0,0,0,0.08)' }}
         >
-          {isSupply ? (
+          {isSupply && (
             requestSent ? (
               <div
                 className="w-full py-4 rounded-2xl text-[15px] font-black text-center flex items-center justify-center gap-2"
@@ -633,26 +614,6 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired, onGo
                 طلب شراء طبليات
               </button>
             )
-          ) : offerSent ? (
-            <div
-              className="w-full py-4 rounded-2xl text-[15px] font-black text-center flex items-center justify-center gap-2"
-              style={{ background: '#ffedd5', color: '#c2410c' }}
-            >
-              <CheckCircle2 className="w-5 h-5" />
-              تم إرسال عرضك بنجاح
-            </div>
-          ) : (
-            <button
-              onClick={handleOfferAction}
-              className="w-full py-4 rounded-2xl text-[16px] font-black text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-              style={{
-                background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
-                boxShadow: '0 4px 20px rgba(234,88,12,0.4)',
-              }}
-            >
-              <Truck className="w-5 h-5" />
-              عرض توريد طبليات
-            </button>
           )}
         </div>
       </div>
@@ -676,25 +637,13 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired, onGo
         />
       )}
 
-      {showOfferSheet && demandCard && (
-        <SupplyOfferSheet
-          card={demandCard}
-          onClose={() => setShowOfferSheet(false)}
-          onSuccess={() => {
-            setShowOfferSheet(false);
-            setOfferSent(true);
-          }}
-          onGoToInventory={onGoToInventory}
-        />
-      )}
-
       {showAuthSheet && (
         <AuthSheet
           onRegisterComplete={handleAuthRegister}
           onLoginComplete={handleAuthLogin}
-          onClose={() => { setShowAuthSheet(false); setPendingAction(null); }}
-          title={pendingAction === 'offer' ? 'سجّل دخولك لتقديم العرض' : 'سجّل دخولك للمتابعة'}
-          subtitle={pendingAction === 'offer' ? 'قدّم عرض توريد للمشتري مباشرةً بعد الدخول' : 'أرسل طلب الشراء للمورد مباشرةً بعد الدخول'}
+          onClose={() => setShowAuthSheet(false)}
+          title="سجّل دخولك للمتابعة"
+          subtitle="أرسل طلب الشراء للمورد مباشرةً بعد الدخول"
           externalError={authError}
         />
       )}
