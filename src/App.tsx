@@ -172,7 +172,7 @@ function App() {
         p_session_id: sessionId,
         p_phone: null,
         p_user_agent: ua,
-      }).catch(() => {});
+      }).then(() => {}, () => {});
     });
 
     analytics.trackPageView('/', 'منصة باليت');
