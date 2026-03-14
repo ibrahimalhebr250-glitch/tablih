@@ -12,12 +12,14 @@ import {
   Cloud,
   DollarSign,
   ShoppingBag,
+  MessageSquare,
 } from 'lucide-react';
 import type { AppSession } from '../../types/session';
 import { useTranslation } from '../../lib/i18n';
 import { getTrustConfig } from '../shared/TrustRatingBadge';
 import AccountSummaryCards from './AccountSummaryCards';
 import SettingsTab from './tabs/SettingsTab';
+import NegotiationRequestsTab from './tabs/NegotiationRequestsTab';
 import AccountEditSheet from './AccountEditSheet';
 import CloudWarehouseTab from './tabs/CloudWarehouseTab';
 import CommissionsTab from './tabs/CommissionsTab';
@@ -25,7 +27,7 @@ import SaleRequestsTab from './tabs/SaleRequestsTab';
 import { useAccountData } from '../../hooks/useAccountData';
 import { useSupplierSaleRequests, useBuyerSaleRequests } from '../../hooks/useSaleRequests';
 
-type AccountTab = 'warehouse' | 'commissions' | 'settings' | 'sale_requests';
+type AccountTab = 'warehouse' | 'negotiations' | 'commissions' | 'settings' | 'sale_requests';
 
 interface Props {
   session: AppSession;
@@ -55,7 +57,10 @@ export default function AccountPage({ session, onClose, onLogout, initialTab, sa
     commissions,
     pendingCommissions,
     totalPendingCommission,
+    negotiationRequests,
     getCounterpartyName,
+    acceptNegotiation,
+    rejectNegotiation,
     refresh,
   } = useAccountData(phone);
 
@@ -82,6 +87,7 @@ export default function AccountPage({ session, onClose, onLogout, initialTab, sa
 
   const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Settings; badge?: number }[] = [
     { key: 'warehouse', label: 'مستودعي', icon: Cloud },
+    { key: 'negotiations', label: 'طلبات التفاوض', icon: MessageSquare, badge: negotiationRequests.length || undefined },
     { key: 'sale_requests', label: 'بيع و شراء', icon: ShoppingBag, badge: saleRequestsBadge || undefined },
     { key: 'commissions', label: 'العمولات', icon: DollarSign, badge: pendingCommissions.length || undefined },
     { key: 'settings', label: t('account.settings'), icon: Settings },
@@ -111,6 +117,16 @@ export default function AccountPage({ session, onClose, onLogout, initialTab, sa
             unpublishedInventory={unpublishedInventory}
             reservedInventory={reservedInventory}
             purchases={purchases}
+            loading={loading}
+          />
+        );
+      case 'negotiations':
+        return (
+          <NegotiationRequestsTab
+            requests={negotiationRequests}
+            getCounterpartyName={getCounterpartyName}
+            onAccept={acceptNegotiation}
+            onReject={rejectNegotiation}
             loading={loading}
           />
         );

@@ -109,8 +109,8 @@ export function useAccountData(phone: string) {
 
       supabase
         .from('negotiation_requests')
-        .select('id, inventory_batch_id, supplier_phone, buyer_phone, requested_quantity, offer_price_per_pallet, status, created_at')
-        .eq('supplier_phone', phone)
+        .select('id, inventory_batch_id, supplier_phone, buyer_phone, requested_quantity, offer_price_per_pallet, pallet_type, size, quality, city, status, created_at')
+        .eq('buyer_phone', phone)
         .eq('status', 'pending')
         .order('created_at', { ascending: false }),
     ]);
@@ -136,31 +136,7 @@ export function useAccountData(phone: string) {
     setCommissions(mappedComm);
 
     const negData = (negRes.data ?? []) as NegotiationRequest[];
-
-    if (negData.length > 0) {
-      const batchIds = [...new Set(negData.map(n => n.inventory_batch_id).filter(Boolean))];
-      const { data: batches } = await supabase
-        .from('inventory_batches')
-        .select('id, batch_id, pallet_type, size, quality, city')
-        .in('id', batchIds);
-
-      const batchMap: Record<string, { batch_id: string; pallet_type: string; size: string; quality: string; city: string }> = {};
-      for (const b of batches ?? []) {
-        batchMap[b.id] = b;
-      }
-
-      const enriched = negData.map(n => ({
-        ...n,
-        batch_id: batchMap[n.inventory_batch_id]?.batch_id,
-        pallet_type: batchMap[n.inventory_batch_id]?.pallet_type,
-        size: batchMap[n.inventory_batch_id]?.size,
-        quality: batchMap[n.inventory_batch_id]?.quality,
-        city: batchMap[n.inventory_batch_id]?.city,
-      }));
-      setNegotiationRequests(enriched);
-    } else {
-      setNegotiationRequests([]);
-    }
+    setNegotiationRequests(negData);
 
     const phones = new Set<string>();
     for (const d of fetchedDeals) {
@@ -168,7 +144,7 @@ export function useAccountData(phone: string) {
       if (d.supplier_phone && d.supplier_phone !== phone) phones.add(d.supplier_phone);
     }
     for (const n of negData) {
-      if (n.buyer_phone) phones.add(n.buyer_phone);
+      if (n.supplier_phone && n.supplier_phone !== phone) phones.add(n.supplier_phone);
     }
 
     if (phones.size > 0) {
@@ -200,9 +176,15 @@ export function useAccountData(phone: string) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_batches', filter: `phone=eq.${phone}` }, fetchAll)
       .subscribe();
 
+    const negChannel = supabase
+      .channel(`account-neg-${phone}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'negotiation_requests', filter: `buyer_phone=eq.${phone}` }, fetchAll)
+      .subscribe();
+
     return () => {
       supabase.removeChannel(dealsChannel);
       supabase.removeChannel(invChannel);
+      supabase.removeChannel(negChannel);
     };
   }, [fetchAll, phone]);
 
@@ -224,26 +206,25 @@ export function useAccountData(phone: string) {
   const pendingCommissions = commissions.filter(c => c.status === 'pending');
   const totalPendingCommission = pendingCommissions.reduce((sum, c) => sum + (c.total_commission ?? 0), 0);
 
-  const acceptNegotiation = useCallback(async (requestId: string, batchId: string, quantity: number, buyerPhone: string) => {
+  const acceptNegotiation = useCallback(async (requestId: string, quantity: number) => {
     const { data, error } = await supabase.rpc('accept_negotiation_and_create_deal', {
       p_request_id: requestId,
-      p_supplier_phone: phone,
-      p_batch_id: batchId,
+      p_buyer_phone: phone,
       p_quantity: quantity,
-      p_buyer_phone: buyerPhone,
     });
     if (error) return { success: false, error: error.message };
-    if (!data?.success) return { success: false, error: data?.error ?? 'فشلت العملية' };
+    const result = data as { success: boolean; error?: string; deal_ref?: string } | null;
+    if (!result?.success) return { success: false, error: result?.error ?? 'فشلت العملية' };
     await fetchAll();
-    return { success: true };
+    return { success: true, deal_ref: result.deal_ref };
   }, [phone, fetchAll]);
 
   const rejectNegotiation = useCallback(async (requestId: string) => {
     const { error } = await supabase
       .from('negotiation_requests')
-      .update({ status: 'rejected' })
+      .update({ status: 'rejected', updated_at: new Date().toISOString() })
       .eq('id', requestId)
-      .eq('supplier_phone', phone);
+      .eq('buyer_phone', phone);
     if (error) return { success: false, error: error.message };
     await fetchAll();
     return { success: true };
