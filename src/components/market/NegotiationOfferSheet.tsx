@@ -225,19 +225,31 @@ export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Prop
                   <button
                     onClick={() => setQty(q => Math.max(1, q - 1))}
                     disabled={qty <= 1}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 disabled:opacity-30"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 flex-shrink-0"
                     style={{ background: qty <= 1 ? '#f1f5f9' : '#fff7ed', border: '1.5px solid #fed7aa' }}
                   >
                     <Minus className="w-4 h-4 text-orange-600" />
                   </button>
-                  <div className="flex-1 text-center">
-                    <span className="text-[28px] font-black text-gray-800">{qty}</span>
-                    <span className="text-[13px] text-gray-500 mr-1">طبلية</span>
+                  <div className="flex-1 flex items-center justify-center gap-1">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={qty}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/[^0-9]/g, '');
+                        if (raw === '') { setQty(1); return; }
+                        const n = parseInt(raw, 10);
+                        if (!isNaN(n)) setQty(Math.min(100, Math.max(1, n)));
+                      }}
+                      className="w-16 text-center text-[28px] font-black text-gray-800 bg-transparent outline-none"
+                      dir="ltr"
+                    />
+                    <span className="text-[13px] text-gray-500">طبلية</span>
                   </div>
                   <button
                     onClick={() => setQty(q => Math.min(100, q + 1))}
                     disabled={qty >= 100}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 disabled:opacity-30"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 flex-shrink-0"
                     style={{ background: qty >= 100 ? '#f1f5f9' : '#fff7ed', border: '1.5px solid #fed7aa' }}
                   >
                     <Plus className="w-4 h-4 text-orange-600" />
