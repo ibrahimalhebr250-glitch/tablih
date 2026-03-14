@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   X, Package, MapPin, Layers,
   Minus, Plus, CheckCircle2, Loader, AlertTriangle,
-  Handshake, ChevronDown, MessageSquare, Phone
+  Handshake, ChevronDown, MessageSquare
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { sessionManager } from '../../lib/sessionManager';
 import type { DemandCardData } from './PalletCards';
 
 interface Props {
@@ -29,31 +30,62 @@ const CITIES = [
 export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Props) {
   const quality = QUALITY_MAP[card.quality] || { label: card.quality, color: '#374151', bg: '#f3f4f6' };
 
-  const [supplierPhone, setSupplierPhone] = useState('');
-  const [qty, setQty] = useState(Math.min(card.quantity, 100));
+  const [sessionPhone, setSessionPhone] = useState<string | null>(null);
+  const [qtyInput, setQtyInput] = useState(String(card.quantity));
+  const [qty, setQty] = useState(card.quantity);
   const [city, setCity] = useState(card.city || CITIES[0]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  const formatPhone = (val: string) => {
-    return val.replace(/[^0-9]/g, '').slice(0, 10);
+  useEffect(() => {
+    sessionManager.validateSession().then((res) => {
+      if (res.success && res.data?.phone) {
+        setSessionPhone(res.data.phone);
+      }
+    });
+  }, []);
+
+  const handleQtyInputChange = (val: string) => {
+    const cleaned = val.replace(/[^0-9]/g, '');
+    setQtyInput(cleaned);
+    const n = parseInt(cleaned, 10);
+    if (!isNaN(n) && n >= 1) {
+      setQty(n);
+    }
+  };
+
+  const handleQtyBlur = () => {
+    const n = parseInt(qtyInput, 10);
+    if (isNaN(n) || n < 1) {
+      setQty(1);
+      setQtyInput('1');
+    } else {
+      setQty(n);
+      setQtyInput(String(n));
+    }
+  };
+
+  const adjustQty = (delta: number) => {
+    const next = Math.max(1, qty + delta);
+    setQty(next);
+    setQtyInput(String(next));
   };
 
   const handleSubmit = async () => {
-    if (!supplierPhone || supplierPhone.length < 9) {
-      setError('يرجى إدخال رقم جوال صحيح');
+    if (!sessionPhone) {
+      setError('يرجى تسجيل الدخول أولاً');
       return;
     }
-    if (qty < 1 || qty > 100) {
-      setError('الكمية يجب أن تكون بين 1 و 100');
+    if (qty < 1) {
+      setError('الكمية يجب أن تكون 1 على الأقل');
       return;
     }
     setLoading(true);
     setError(null);
 
     try {
-      const formattedPhone = supplierPhone.startsWith('0') ? supplierPhone : `0${supplierPhone}`;
+      const formattedPhone = sessionPhone.startsWith('0') ? sessionPhone : `0${sessionPhone}`;
 
       const { data, error: rpcErr } = await supabase.rpc('create_negotiation_request', {
         p_supplier_phone: formattedPhone,
@@ -191,39 +223,15 @@ export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Prop
 
               <div className="space-y-1.5">
                 <label className="text-[12px] font-black text-gray-700 flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-orange-500" />
-                  رقم جوالك
-                </label>
-                <div
-                  className="flex items-center gap-2 rounded-2xl px-4 py-3"
-                  style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0' }}
-                >
-                  <span className="text-[14px] font-bold text-gray-400" dir="ltr">+966</span>
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    value={supplierPhone}
-                    onChange={(e) => setSupplierPhone(formatPhone(e.target.value))}
-                    placeholder="05XXXXXXXX"
-                    className="flex-1 text-[14px] font-bold text-gray-800 bg-transparent outline-none text-left"
-                    dir="ltr"
-                    maxLength={10}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[12px] font-black text-gray-700 flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5 text-orange-500" />
                   الكمية التي ستوردها
-                  <span className="text-[10px] font-normal text-gray-400">(1 - 100)</span>
                 </label>
                 <div
                   className="flex items-center gap-3 rounded-2xl px-4 py-3"
                   style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0' }}
                 >
                   <button
-                    onClick={() => setQty(q => Math.max(1, q - 1))}
+                    onClick={() => adjustQty(-1)}
                     disabled={qty <= 1}
                     className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 flex-shrink-0"
                     style={{ background: qty <= 1 ? '#f1f5f9' : '#fff7ed', border: '1.5px solid #fed7aa' }}
@@ -234,23 +242,19 @@ export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Prop
                     <input
                       type="text"
                       inputMode="numeric"
-                      value={qty}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/[^0-9]/g, '');
-                        if (raw === '') { setQty(1); return; }
-                        const n = parseInt(raw, 10);
-                        if (!isNaN(n)) setQty(Math.min(100, Math.max(1, n)));
-                      }}
-                      className="w-16 text-center text-[28px] font-black text-gray-800 bg-transparent outline-none"
+                      value={qtyInput}
+                      onChange={(e) => handleQtyInputChange(e.target.value)}
+                      onBlur={handleQtyBlur}
+                      onFocus={(e) => e.target.select()}
+                      className="w-20 text-center text-[28px] font-black text-gray-800 bg-transparent outline-none border-b-2 border-transparent focus:border-orange-400 transition-colors"
                       dir="ltr"
                     />
                     <span className="text-[13px] text-gray-500">طبلية</span>
                   </div>
                   <button
-                    onClick={() => setQty(q => Math.min(100, q + 1))}
-                    disabled={qty >= 100}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 flex-shrink-0"
-                    style={{ background: qty >= 100 ? '#f1f5f9' : '#fff7ed', border: '1.5px solid #fed7aa' }}
+                    onClick={() => adjustQty(1)}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 flex-shrink-0"
+                    style={{ background: '#fff7ed', border: '1.5px solid #fed7aa' }}
                   >
                     <Plus className="w-4 h-4 text-orange-600" />
                   </button>
@@ -315,7 +319,7 @@ export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Prop
           >
             <button
               onClick={handleSubmit}
-              disabled={loading || qty < 1 || !supplierPhone}
+              disabled={loading || qty < 1}
               className="w-full py-4 rounded-2xl text-[16px] font-black text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60"
               style={{
                 background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
