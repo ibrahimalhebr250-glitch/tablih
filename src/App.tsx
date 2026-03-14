@@ -14,8 +14,6 @@ import type { AdminStaffData } from './components/admin/AdminLoginSheet';
 const OrderBuilder = lazy(() => import('./components/order/OrderBuilder'));
 const InventoryBuilder = lazy(() => import('./components/inventory/InventoryBuilder'));
 const OperationalDashboard = lazy(() => import('./components/dashboard/OperationalDashboard'));
-const PhoneRegistration = lazy(() => import('./components/account/PhoneRegistration'));
-const LoginPage = lazy(() => import('./components/account/LoginPage'));
 const SupplierDealsPage = lazy(() => import('./components/deals/supplier/SupplierDealsPage'));
 const BuyerDealsPage = lazy(() => import('./components/deals/buyer/BuyerDealsPage'));
 const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
@@ -32,7 +30,7 @@ function PendingBuySheet({ card, onClose, onSuccess }: { card: SupplyCardData; o
   return <BuyRequestSheet card={card} onClose={onClose} onSuccess={onSuccess} />;
 }
 
-type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'registration' | 'login' | 'auth' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'account';
+type ModalView = 'none' | 'orderBuilder' | 'inventoryBuilder' | 'auth' | 'supplierDeals' | 'buyerDeals' | 'admin' | 'adminLogin' | 'supplierInventory' | 'account';
 type MainView = 'marketplace' | 'dashboard';
 
 const LoadingFallback = () => (
@@ -271,7 +269,7 @@ function App() {
     pendingAfterAuth.current = afterModal;
     setAuthError('');
     setLoginError('');
-    setModal('login');
+    setModal('auth');
   };
 
   const openAuthForDeal = (card?: import('./components/market/PalletCards').SupplyCardData) => {
@@ -562,23 +560,6 @@ function App() {
               externalError={authError || loginError}
             />
           </Suspense>
-        )}
-
-        {modal === 'registration' && (
-          <PhoneRegistration
-            onComplete={handleRegisterComplete}
-            onClose={() => { pendingAfterAuth.current = null; setModal('none'); setAuthError(''); }}
-            onSwitchToLogin={() => { setModal('login'); setLoginError(''); }}
-          />
-        )}
-
-        {modal === 'login' && (
-          <LoginPage
-            externalError={loginError}
-            onComplete={handleLoginComplete}
-            onClose={() => { pendingAfterAuth.current = null; setModal('none'); setLoginError(''); }}
-            onSwitchToRegister={() => { setModal('registration'); setAuthError(''); }}
-          />
         )}
 
         {modal === 'supplierDeals' && session && (

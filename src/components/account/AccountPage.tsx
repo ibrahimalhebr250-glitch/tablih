@@ -17,7 +17,6 @@ import {
 import type { AppSession } from '../../types/session';
 import { useTranslation } from '../../lib/i18n';
 import { getTrustConfig } from '../shared/TrustRatingBadge';
-import AccountSummaryCards from './AccountSummaryCards';
 import SettingsTab from './tabs/SettingsTab';
 import NegotiationRequestsTab from './tabs/NegotiationRequestsTab';
 import AccountEditSheet from './AccountEditSheet';
@@ -78,12 +77,7 @@ export default function AccountPage({ session, onClose, onLogout, initialTab, sa
   const trustConfig = getTrustConfig(3);
   const TrustIcon = trustConfig.icon;
 
-  const stats = {
-    inventory: inventory.reduce((s, b) => s + (b.quantity_available ?? b.quantity ?? 0), 0),
-    purchases: purchases.reduce((s, p) => s + p.quantity, 0),
-    activeDeals: marketCardDeals.filter(d => !['completed', 'cancelled'].includes(d.status)).length,
-    orders: marketCardDeals.filter(d => !['completed', 'cancelled'].includes(d.status)).length,
-  };
+  const activeDealsCount = marketCardDeals.filter(d => !['completed', 'cancelled'].includes(d.status)).length;
 
   const TAB_CONFIG: { key: AccountTab; label: string; icon: typeof Settings; badge?: number }[] = [
     { key: 'warehouse', label: 'مستودعي', icon: Cloud },
@@ -227,22 +221,6 @@ export default function AccountPage({ session, onClose, onLogout, initialTab, sa
           </div>
         </div>
 
-        <div className="px-4 pb-4 flex-shrink-0">
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { label: 'مخزوني', value: stats.inventory, unit: 'طبلية', color: '#22c55e' },
-              { label: 'مشترياتي', value: stats.purchases, unit: 'طبلية', color: '#60a5fa' },
-              { label: 'صفقات نشطة', value: stats.activeDeals, unit: '', color: '#34d399' },
-              { label: 'طلبات تفاوض', value: stats.orders, unit: '', color: '#fbbf24' },
-            ].map(s => (
-              <div key={s.label} className="rounded-xl p-2.5" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <p className="text-[10px] text-white/40 mb-0.5">{s.label}</p>
-                <p className="text-[18px] font-black" style={{ color: s.color }}>{s.value.toLocaleString()}<span className="text-[10px] font-normal text-white/30 mr-1">{s.unit}</span></p>
-              </div>
-            ))}
-          </div>
-        </div>
-
         <nav className="flex-1 px-3 pb-4 space-y-1" dir="rtl">
           {TAB_CONFIG.map(tab => {
             const Icon = tab.icon;
@@ -342,9 +320,9 @@ export default function AccountPage({ session, onClose, onLogout, initialTab, sa
             <p className="text-[11px] text-[#7a9aab] mt-0.5">{displayName} — {localSession.profile.phone}</p>
           </div>
           <div className="flex items-center gap-2">
-            {stats.activeDeals > 0 && (
+            {activeDealsCount > 0 && (
               <span className="text-[11px] font-bold px-3 py-1 rounded-full" style={{ background: 'rgba(5,150,105,0.1)', color: '#059669', border: '1px solid rgba(5,150,105,0.2)' }}>
-                {stats.activeDeals} صفقة نشطة
+                {activeDealsCount} صفقة نشطة
               </span>
             )}
             {pendingCommissions.length > 0 && (
@@ -353,11 +331,6 @@ export default function AccountPage({ session, onClose, onLogout, initialTab, sa
               </span>
             )}
           </div>
-        </div>
-
-        {/* Mobile: Summary Cards */}
-        <div className="flex-shrink-0 -mt-1 md:hidden">
-          <AccountSummaryCards stats={stats} />
         </div>
 
         {/* Mobile: Tab Navigation */}
