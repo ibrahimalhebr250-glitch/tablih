@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import {
   X, Package, MapPin, Layers,
   Minus, Plus, CheckCircle2, Loader, AlertTriangle,
-  Handshake, ChevronDown, MessageSquare
+  Handshake, ChevronDown, MessageSquare, LogIn
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { sessionManager } from '../../lib/sessionManager';
+import { useSession } from '../../hooks/useSession';
+import AuthSheet from '../account/AuthSheet';
 import type { DemandCardData } from './PalletCards';
 
 interface Props {
@@ -30,7 +31,10 @@ const CITIES = [
 export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Props) {
   const quality = QUALITY_MAP[card.quality] || { label: card.quality, color: '#374151', bg: '#f3f4f6' };
 
-  const [sessionPhone, setSessionPhone] = useState<string | null>(null);
+  const { session, register, login } = useSession();
+
+  const [showAuth, setShowAuth] = useState(false);
+  const [authError, setAuthError] = useState('');
   const [qtyInput, setQtyInput] = useState(String(card.quantity));
   const [qty, setQty] = useState(card.quantity);
   const [city, setCity] = useState(card.city || CITIES[0]);
@@ -38,21 +42,19 @@ export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Prop
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  const isLoggedIn = !!session?.profile?.phone;
+
   useEffect(() => {
-    sessionManager.validateSession().then((res) => {
-      if (res.success && res.data?.phone) {
-        setSessionPhone(res.data.phone);
-      }
-    });
-  }, []);
+    if (isLoggedIn && showAuth) {
+      setShowAuth(false);
+    }
+  }, [isLoggedIn]);
 
   const handleQtyInputChange = (val: string) => {
     const cleaned = val.replace(/[^0-9]/g, '');
     setQtyInput(cleaned);
     const n = parseInt(cleaned, 10);
-    if (!isNaN(n) && n >= 1) {
-      setQty(n);
-    }
+    if (!isNaN(n) && n >= 1) setQty(n);
   };
 
   const handleQtyBlur = () => {
@@ -72,20 +74,12 @@ export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Prop
     setQtyInput(String(next));
   };
 
-  const handleSubmit = async () => {
-    if (!sessionPhone) {
-      setError('يرجى تسجيل الدخول أولاً');
-      return;
-    }
-    if (qty < 1) {
-      setError('الكمية يجب أن تكون 1 على الأقل');
-      return;
-    }
+  const submitOffer = async (phone: string) => {
     setLoading(true);
     setError(null);
 
     try {
-      const formattedPhone = sessionPhone.startsWith('0') ? sessionPhone : `0${sessionPhone}`;
+      const formattedPhone = phone.startsWith('0') ? phone : `0${phone}`;
 
       const { data, error: rpcErr } = await supabase.rpc('create_negotiation_request', {
         p_supplier_phone: formattedPhone,
@@ -114,6 +108,51 @@ export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Prop
       setLoading(false);
     }
   };
+
+  const handleSubmit = async () => {
+    if (!isLoggedIn) {
+      setShowAuth(true);
+      return;
+    }
+    await submitOffer(session!.profile!.phone);
+  };
+
+  const handleRegisterComplete = async (data: { phone: string; name: string; userType: 'company' | 'individual'; pin: string }) => {
+    setAuthError('');
+    const result = await register(data);
+    if (!result.success) {
+      setAuthError(result.error || 'فشل إنشاء الحساب');
+      return;
+    }
+    setShowAuth(false);
+    const formattedPhone = data.phone.startsWith('0') ? data.phone : `0${data.phone}`;
+    await submitOffer(formattedPhone);
+  };
+
+  const handleLoginComplete = async (phone: string, pin: string) => {
+    setAuthError('');
+    const result = await login(phone, pin);
+    if (!result.success) {
+      setAuthError(result.error || 'فشل تسجيل الدخول');
+      return;
+    }
+    setShowAuth(false);
+    const formattedPhone = phone.startsWith('0') ? phone : `0${phone}`;
+    await submitOffer(formattedPhone);
+  };
+
+  if (showAuth) {
+    return (
+      <AuthSheet
+        title="سجّل دخولك لإرسال عرضك"
+        subtitle="أنشئ حسابك أو سجّل دخولك وسيُرسل عرض التوريد تلقائياً"
+        onRegisterComplete={handleRegisterComplete}
+        onLoginComplete={handleLoginComplete}
+        onClose={() => setShowAuth(false)}
+        externalError={authError}
+      />
+    );
+  }
 
   return (
     <div
@@ -163,13 +202,40 @@ export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Prop
             </div>
           ) : (
             <>
+              {!isLoggedIn && (
+                <button
+                  onClick={() => setShowAuth(true)}
+                  className="w-full flex items-center justify-between rounded-2xl px-4 py-3 transition-all active:scale-[0.98]"
+                  style={{ background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)', border: '1.5px solid #fed7aa' }}
+                >
+                  <div className="flex items-center gap-2">
+                    <LogIn className="w-4 h-4 text-orange-500" />
+                    <span className="text-[13px] font-black text-orange-800">سجّل دخولك أو أنشئ حساباً</span>
+                  </div>
+                  <span className="text-[11px] text-orange-500 font-bold">مطلوب للإرسال</span>
+                </button>
+              )}
+
+              {isLoggedIn && (
+                <div
+                  className="flex items-center gap-2 rounded-2xl px-4 py-2.5"
+                  style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}
+                >
+                  <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-[12px] font-black text-green-800">{session!.profile!.display_name || session!.profile!.company_name}</p>
+                    <p className="text-[10px] text-green-600">{session!.profile!.phone}</p>
+                  </div>
+                </div>
+              )}
+
               <div
                 className="rounded-2xl p-4"
-                style={{ background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)', border: '1px solid #fed7aa' }}
+                style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', border: '1px solid #e2e8f0' }}
               >
                 <div className="flex items-center gap-2 mb-3">
-                  <Package className="w-4 h-4 text-orange-500" />
-                  <span className="text-[13px] font-black text-orange-800">تفاصيل طلب المشتري</span>
+                  <Package className="w-4 h-4 text-gray-500" />
+                  <span className="text-[13px] font-black text-gray-700">تفاصيل طلب المشتري</span>
                 </div>
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
@@ -295,7 +361,7 @@ export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Prop
               >
                 <MessageSquare className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
                 <p className="text-[11px] text-blue-700 leading-relaxed">
-                  سيصل عرضك للمشتري فوراً. في حال قبوله سيتم إنشاء صفقة تلقائياً.
+                  سيصل عرضك للمشتري فوراً. في حال قبوله سيتم إنشاء صفقة تلقائياً وستجدها في حسابك.
                 </p>
               </div>
 
@@ -322,16 +388,25 @@ export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Prop
               disabled={loading || qty < 1}
               className="w-full py-4 rounded-2xl text-[16px] font-black text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60"
               style={{
-                background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
-                boxShadow: '0 4px 20px rgba(234,88,12,0.35)',
+                background: isLoggedIn
+                  ? 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)'
+                  : 'linear-gradient(135deg, #374151 0%, #4b5563 100%)',
+                boxShadow: isLoggedIn
+                  ? '0 4px 20px rgba(234,88,12,0.35)'
+                  : '0 4px 20px rgba(55,65,81,0.25)',
               }}
             >
               {loading ? (
                 <Loader className="w-5 h-5 animate-spin" />
-              ) : (
+              ) : isLoggedIn ? (
                 <>
                   <Handshake className="w-5 h-5" />
                   إرسال عرض التوريد
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-5 h-5" />
+                  سجّل دخولك وأرسل العرض
                 </>
               )}
             </button>
