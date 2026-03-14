@@ -177,12 +177,6 @@ export default function PalletDetailsPage({ card, onClose, onLoginRequired, onGo
   };
 
   const handleOfferAction = () => {
-    if (!isLoggedIn()) {
-      setAuthError('');
-      setPendingAction('offer');
-      setShowAuthSheet(true);
-      return;
-    }
     setShowOfferSheet(true);
   };
 

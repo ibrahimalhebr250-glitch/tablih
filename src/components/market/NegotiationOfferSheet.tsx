@@ -2,10 +2,9 @@ import { useState } from 'react';
 import {
   X, Package, MapPin, Layers,
   Minus, Plus, CheckCircle2, Loader, AlertTriangle,
-  Handshake, ChevronDown, MessageSquare
+  Handshake, ChevronDown, MessageSquare, Phone
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { sessionManager } from '../../lib/sessionManager';
 import type { DemandCardData } from './PalletCards';
 
 interface Props {
@@ -30,13 +29,22 @@ const CITIES = [
 export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Props) {
   const quality = QUALITY_MAP[card.quality] || { label: card.quality, color: '#374151', bg: '#f3f4f6' };
 
+  const [supplierPhone, setSupplierPhone] = useState('');
   const [qty, setQty] = useState(Math.min(card.quantity, 100));
   const [city, setCity] = useState(card.city || CITIES[0]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  const formatPhone = (val: string) => {
+    return val.replace(/[^0-9]/g, '').slice(0, 10);
+  };
+
   const handleSubmit = async () => {
+    if (!supplierPhone || supplierPhone.length < 9) {
+      setError('يرجى إدخال رقم جوال صحيح');
+      return;
+    }
     if (qty < 1 || qty > 100) {
       setError('الكمية يجب أن تكون بين 1 و 100');
       return;
@@ -45,23 +53,17 @@ export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Prop
     setError(null);
 
     try {
-      const token = sessionManager.getSessionToken();
-      if (!token) {
-        setError('انتهت جلستك، يرجى تسجيل الدخول مجدداً');
-        setLoading(false);
-        return;
-      }
+      const formattedPhone = supplierPhone.startsWith('0') ? supplierPhone : `0${supplierPhone}`;
 
       const { data, error: rpcErr } = await supabase.rpc('create_negotiation_request', {
-        p_session_token: token,
+        p_supplier_phone: formattedPhone,
         p_order_id: card.id,
         p_requested_quantity: qty,
         p_city: city,
       });
 
       if (rpcErr) {
-        const msg = rpcErr.message || 'حدث خطأ، يرجى المحاولة مجدداً';
-        setError(msg);
+        setError(rpcErr.message || 'حدث خطأ، يرجى المحاولة مجدداً');
         setLoading(false);
         return;
       }
@@ -189,6 +191,29 @@ export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Prop
 
               <div className="space-y-1.5">
                 <label className="text-[12px] font-black text-gray-700 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-orange-500" />
+                  رقم جوالك
+                </label>
+                <div
+                  className="flex items-center gap-2 rounded-2xl px-4 py-3"
+                  style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0' }}
+                >
+                  <span className="text-[14px] font-bold text-gray-400" dir="ltr">+966</span>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={supplierPhone}
+                    onChange={(e) => setSupplierPhone(formatPhone(e.target.value))}
+                    placeholder="05XXXXXXXX"
+                    className="flex-1 text-[14px] font-bold text-gray-800 bg-transparent outline-none text-left"
+                    dir="ltr"
+                    maxLength={10}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-black text-gray-700 flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5 text-orange-500" />
                   الكمية التي ستوردها
                   <span className="text-[10px] font-normal text-gray-400">(1 - 100)</span>
@@ -278,7 +303,7 @@ export default function NegotiationOfferSheet({ card, onClose, onSuccess }: Prop
           >
             <button
               onClick={handleSubmit}
-              disabled={loading || qty < 1}
+              disabled={loading || qty < 1 || !supplierPhone}
               className="w-full py-4 rounded-2xl text-[16px] font-black text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60"
               style={{
                 background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
