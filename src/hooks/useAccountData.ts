@@ -237,7 +237,6 @@ export function useAccountData(phone: string) {
     unpublishedInventory,
     reservedInventory,
     purchases,
-    allDeals,
     marketCardDeals,
     commissions,
     pendingCommissions,
