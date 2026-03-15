@@ -83,7 +83,10 @@ function ListingCard({ listing, onRequest }: { listing: Listing; onRequest: (id:
   const gradBg    = palletTypeBg[listing.pallet_type] ?? 'from-[#1a4a5e] to-[#2a6a82]';
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+    <div
+      className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+      onClick={() => onRequest(listing.id)}
+    >
       <div className={`bg-gradient-to-br ${gradBg} p-4 flex items-center justify-between`}>
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
@@ -137,13 +140,10 @@ function ListingCard({ listing, onRequest }: { listing: Listing; onRequest: (id:
       </div>
 
       <div className="px-4 pb-4">
-        <button
-          onClick={() => onRequest(listing.id)}
-          className="w-full flex items-center justify-center gap-2 bg-[#1a4a5e] hover:bg-[#153d50] active:scale-[0.98] text-white rounded-xl py-2.5 text-sm font-bold transition-all"
-        >
+        <div className="w-full flex items-center justify-center gap-2 bg-[#1a4a5e] text-white rounded-xl py-2.5 text-sm font-bold">
           <ShoppingCart className="w-4 h-4" />
-          طلب الآن
-        </button>
+          عرض التفاصيل وطلب
+        </div>
       </div>
     </div>
   );

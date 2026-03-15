@@ -545,6 +545,12 @@ export default function SupplierRequests({ onBack }: Props) {
                               <Calendar className="w-3 h-3" />
                               {formatDate(req.created_at)}
                             </p>
+                            {req.status === 'accepted' && (
+                              <p className="text-[#1a4a5e] text-xs font-semibold flex items-center gap-1 mt-1">
+                                <Phone className="w-3 h-3" />
+                                {req.buyer_phone}
+                              </p>
+                            )}
                           </div>
                         </div>
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 ${st.bg} ${st.text}`}>
