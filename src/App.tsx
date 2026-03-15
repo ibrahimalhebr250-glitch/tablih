@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useSession } from './hooks/useSession';
 import Marketplace from './pages/Marketplace';
 import ListingDetails from './pages/ListingDetails';
+import SupplierRequests from './pages/SupplierRequests';
 
 type Page =
   | { name: 'marketplace' }
-  | { name: 'listing-details'; listingId: string };
+  | { name: 'listing-details'; listingId: string }
+  | { name: 'supplier-requests' };
 
 const LoadingScreen = () => (
   <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #d6e4f0 0%, #e0ecf6 50%, #d6e4f0 100%)' }}>
@@ -38,9 +40,18 @@ function App() {
     );
   }
 
+  if (page.name === 'supplier-requests') {
+    return (
+      <SupplierRequests
+        onBack={() => setPage({ name: 'marketplace' })}
+      />
+    );
+  }
+
   return (
     <Marketplace
       onSelectListing={(id) => setPage({ name: 'listing-details', listingId: id })}
+      onOpenSupplierDashboard={() => setPage({ name: 'supplier-requests' })}
     />
   );
 }

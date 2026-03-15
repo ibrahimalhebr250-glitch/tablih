@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MapPin, Package, Layers, Star, ShoppingCart, RefreshCw, AlertCircle, Box } from 'lucide-react';
+import { MapPin, Package, Layers, Star, ShoppingCart, RefreshCw, AlertCircle, Box, ClipboardList } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Listing {
@@ -118,9 +118,10 @@ function SkeletonCard() {
 
 interface Props {
   onSelectListing: (id: string) => void;
+  onOpenSupplierDashboard: () => void;
 }
 
-export default function Marketplace({ onSelectListing }: Props) {
+export default function Marketplace({ onSelectListing, onOpenSupplierDashboard }: Props) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -172,14 +173,23 @@ export default function Marketplace({ onSelectListing }: Props) {
               <p className="text-gray-400 text-[11px]">عروض الموردين</p>
             </div>
           </div>
-          <button
-            onClick={fetchListings}
-            disabled={loading}
-            className="flex items-center gap-1.5 text-xs text-[#1a4a5e] font-medium hover:bg-[#1a4a5e]/10 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            تحديث
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onOpenSupplierDashboard}
+              className="flex items-center gap-1.5 text-xs text-[#1a4a5e] font-medium hover:bg-[#1a4a5e]/10 px-3 py-1.5 rounded-lg transition-colors border border-[#1a4a5e]/20"
+            >
+              <ClipboardList className="w-3.5 h-3.5" />
+              لوحة المورد
+            </button>
+            <button
+              onClick={fetchListings}
+              disabled={loading}
+              className="flex items-center gap-1.5 text-xs text-[#1a4a5e] font-medium hover:bg-[#1a4a5e]/10 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              تحديث
+            </button>
+          </div>
         </div>
       </header>
 
