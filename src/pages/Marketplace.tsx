@@ -116,7 +116,11 @@ function SkeletonCard() {
   );
 }
 
-export default function Marketplace() {
+interface Props {
+  onSelectListing: (id: string) => void;
+}
+
+export default function Marketplace({ onSelectListing }: Props) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -143,7 +147,7 @@ export default function Marketplace() {
   }, []);
 
   function handleRequest(id: string) {
-    console.log('طلب الآن:', id);
+    onSelectListing(id);
   }
 
   return (

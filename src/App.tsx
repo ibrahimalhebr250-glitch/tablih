@@ -1,5 +1,11 @@
+import { useState } from 'react';
 import { useSession } from './hooks/useSession';
 import Marketplace from './pages/Marketplace';
+import ListingDetails from './pages/ListingDetails';
+
+type Page =
+  | { name: 'marketplace' }
+  | { name: 'listing-details'; listingId: string };
 
 const LoadingScreen = () => (
   <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #d6e4f0 0%, #e0ecf6 50%, #d6e4f0 100%)' }}>
@@ -19,10 +25,24 @@ const LoadingScreen = () => (
 
 function App() {
   const { loading } = useSession();
+  const [page, setPage] = useState<Page>({ name: 'marketplace' });
 
   if (loading) return <LoadingScreen />;
 
-  return <Marketplace />;
+  if (page.name === 'listing-details') {
+    return (
+      <ListingDetails
+        listingId={page.listingId}
+        onBack={() => setPage({ name: 'marketplace' })}
+      />
+    );
+  }
+
+  return (
+    <Marketplace
+      onSelectListing={(id) => setPage({ name: 'listing-details', listingId: id })}
+    />
+  );
 }
 
 export default App;
