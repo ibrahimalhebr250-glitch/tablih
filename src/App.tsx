@@ -1,16 +1,14 @@
 import { useState } from 'react';
 import { useSession } from './hooks/useSession';
-import Marketplace from './pages/Marketplace';
+import MarketplaceHome from './pages/MarketplaceHome';
 import ListingDetails from './pages/ListingDetails';
 import SupplierRequests from './pages/SupplierRequests';
-import SupplyRequestsMarketplace from './pages/SupplyRequestsMarketplace';
 import BuyerOffers from './pages/BuyerOffers';
 
 type Page =
   | { name: 'marketplace' }
   | { name: 'listing-details'; listingId: string }
   | { name: 'supplier-requests' }
-  | { name: 'supply-requests' }
   | { name: 'buyer-offers'; requestId: string };
 
 const LoadingScreen = () => (
@@ -52,15 +50,6 @@ function App() {
     );
   }
 
-  if (page.name === 'supply-requests') {
-    return (
-      <SupplyRequestsMarketplace
-        onBack={() => setPage({ name: 'marketplace' })}
-        onMakeOffer={(_requestId) => { }}
-      />
-    );
-  }
-
   if (page.name === 'buyer-offers') {
     return (
       <BuyerOffers
@@ -71,10 +60,9 @@ function App() {
   }
 
   return (
-    <Marketplace
+    <MarketplaceHome
       onSelectListing={(id) => setPage({ name: 'listing-details', listingId: id })}
       onOpenSupplierDashboard={() => setPage({ name: 'supplier-requests' })}
-      onOpenSupplyRequests={() => setPage({ name: 'supply-requests' })}
     />
   );
 }
