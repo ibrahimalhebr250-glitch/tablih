@@ -63,6 +63,7 @@ function App() {
     <MarketplaceHome
       onSelectListing={(id) => setPage({ name: 'listing-details', listingId: id })}
       onOpenSupplierDashboard={() => setPage({ name: 'supplier-requests' })}
+      onViewOffers={(requestId) => setPage({ name: 'buyer-offers', requestId })}
     />
   );
 }

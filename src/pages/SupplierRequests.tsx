@@ -216,10 +216,6 @@ export default function SupplierRequests({ onBack }: Props) {
       setLoginError('رقم الجوال غير مسجل في المنصة.');
       return;
     }
-    if (data.user_type !== 'supplier') {
-      setLoginError('هذا الحساب ليس حساب مورد.');
-      return;
-    }
 
     setSupplierId(data.id);
     fetchCommission();

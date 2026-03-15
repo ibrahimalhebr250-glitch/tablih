@@ -180,7 +180,7 @@ interface SupplyRequest {
   city?: { name: string } | null;
 }
 
-function SupplyCard({ req, onOffer }: { req: SupplyRequest; onOffer: () => void }) {
+function SupplyCard({ req, onOffer, onViewOffers }: { req: SupplyRequest; onOffer: () => void; onViewOffers: () => void }) {
   const cond      = conditionConfig[req.condition] ?? { label: req.condition, color: 'bg-gray-100 text-gray-600' };
   const typeLabel = palletTypeLabel[req.pallet_type] ?? req.pallet_type;
   const gradBg    = palletTypeBg[req.pallet_type] ?? 'from-[#1a4a5e] to-[#2a6a82]';
@@ -242,10 +242,17 @@ function SupplyCard({ req, onOffer }: { req: SupplyRequest; onOffer: () => void 
         )}
       </div>
 
-      <div className="border-t border-gray-100 px-4 py-3">
+      <div className="border-t border-gray-100 px-4 py-3 flex gap-2">
+        <button
+          onClick={onViewOffers}
+          className="flex-1 flex items-center justify-center gap-1.5 border border-[#1a4a5e]/30 text-[#1a4a5e] hover:bg-[#1a4a5e]/5 active:scale-[0.98] rounded-xl py-2.5 text-sm font-semibold transition-all"
+        >
+          <Package className="w-3.5 h-3.5" />
+          العروض
+        </button>
         <button
           onClick={onOffer}
-          className="w-full flex items-center justify-center gap-2 bg-[#1a4a5e] hover:bg-[#153d50] active:scale-[0.98] text-white rounded-xl py-2.5 text-sm font-bold transition-all"
+          className="flex-1 flex items-center justify-center gap-2 bg-[#1a4a5e] hover:bg-[#153d50] active:scale-[0.98] text-white rounded-xl py-2.5 text-sm font-bold transition-all"
         >
           <HandCoins className="w-4 h-4" />
           تقديم عرض
@@ -541,9 +548,10 @@ function FilterBar({ filter, onChange }: { filter: string; onChange: (v: string)
 interface Props {
   onSelectListing: (id: string) => void;
   onOpenSupplierDashboard: () => void;
+  onViewOffers: (requestId: string) => void;
 }
 
-export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboard }: Props) {
+export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboard, onViewOffers }: Props) {
   const { session } = useSession();
   const [tab, setTab] = useState<Tab>('listings');
 
@@ -731,7 +739,12 @@ export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboa
           {tab === 'supply' && !supLoading && !supError && requests.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {requests.map((r) => (
-                <SupplyCard key={r.id} req={r} onOffer={() => setActiveRequest(r)} />
+                <SupplyCard
+                  key={r.id}
+                  req={r}
+                  onOffer={() => setActiveRequest(r)}
+                  onViewOffers={() => onViewOffers(r.id)}
+                />
               ))}
             </div>
           )}
