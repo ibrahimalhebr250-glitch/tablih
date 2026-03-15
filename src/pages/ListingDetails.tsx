@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
   Box,
@@ -10,6 +10,12 @@ import {
   AlertCircle,
   RefreshCw,
   ShoppingBag,
+  User,
+  Phone,
+  Hash,
+  MessageSquare,
+  X,
+  Send,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -70,10 +76,72 @@ function DetailRow({
   );
 }
 
+function InputField({
+  icon,
+  label,
+  type = 'text',
+  placeholder,
+  value,
+  onChange,
+  required,
+  inputMode,
+  min,
+  max,
+  error,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  type?: string;
+  placeholder: string;
+  value: string | number;
+  onChange: (v: string) => void;
+  required?: boolean;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  min?: number;
+  max?: number;
+  error?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+        {label}
+        {required && <span className="text-red-500 text-xs">*</span>}
+      </label>
+      <div className={`flex items-center gap-2.5 bg-gray-50 border rounded-xl px-3.5 py-2.5 focus-within:ring-2 focus-within:ring-[#1a4a5e]/30 focus-within:border-[#1a4a5e] transition-all ${error ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
+        <span className="text-gray-400 shrink-0">{icon}</span>
+        <input
+          type={type}
+          inputMode={inputMode}
+          placeholder={placeholder}
+          value={value}
+          min={min}
+          max={max}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 bg-transparent outline-none text-sm text-gray-800 placeholder-gray-400"
+        />
+      </div>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
 export default function ListingDetails({ listingId, onBack }: Props) {
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [showForm, setShowForm] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const [buyerName, setBuyerName]   = useState('');
+  const [buyerPhone, setBuyerPhone] = useState('');
+  const [qty, setQty]               = useState('1');
+  const [message, setMessage]       = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const formRef = useRef<HTMLDivElement>(null);
 
   async function fetchListing() {
     setLoading(true);
@@ -97,6 +165,51 @@ export default function ListingDetails({ listingId, onBack }: Props) {
   useEffect(() => {
     fetchListing();
   }, [listingId]);
+
+  useEffect(() => {
+    if (showForm && formRef.current) {
+      setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+  }, [showForm]);
+
+  function validate() {
+    const errors: Record<string, string> = {};
+    if (!buyerName.trim()) errors.buyerName = 'الاسم مطلوب';
+    const phoneClean = buyerPhone.replace(/\s/g, '');
+    if (!phoneClean) errors.buyerPhone = 'رقم الجوال مطلوب';
+    else if (!/^05\d{8}$/.test(phoneClean)) errors.buyerPhone = 'رقم الجوال غير صحيح (مثال: 0512345678)';
+    const qtyNum = parseInt(qty, 10);
+    if (!qty || isNaN(qtyNum) || qtyNum < 1) errors.qty = 'الكمية يجب أن تكون 1 على الأقل';
+    else if (listing && qtyNum > listing.quantity) errors.qty = `الكمية لا تتجاوز ${listing.quantity} طبلية`;
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!validate()) return;
+
+    setSubmitting(true);
+    setSubmitError(null);
+
+    const { error: err } = await supabase.from('purchase_requests').insert({
+      listing_id:  listingId,
+      buyer_name:  buyerName.trim(),
+      buyer_phone: buyerPhone.replace(/\s/g, ''),
+      quantity:    parseInt(qty, 10),
+      message:     message.trim() || null,
+      request_type: 'quick',
+      status:      'pending',
+    });
+
+    setSubmitting(false);
+
+    if (err) {
+      setSubmitError('حدث خطأ أثناء إرسال الطلب، يرجى المحاولة مجدداً.');
+    } else {
+      setSubmitted(true);
+    }
+  }
 
   const condition = listing ? (conditionConfig[listing.condition] ?? { label: listing.condition, bg: 'bg-gray-50', text: 'text-gray-600', dot: 'bg-gray-400' }) : null;
   const palletType = listing ? (palletTypeLabel[listing.pallet_type] ?? listing.pallet_type) : '';
@@ -125,7 +238,7 @@ export default function ListingDetails({ listingId, onBack }: Props) {
         </div>
       </header>
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8 flex flex-col gap-5">
+      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8 flex flex-col gap-5 pb-32">
 
         {loading && (
           <div className="flex flex-col gap-4 animate-pulse">
@@ -141,7 +254,6 @@ export default function ListingDetails({ listingId, onBack }: Props) {
                 </div>
               ))}
             </div>
-            <div className="h-14 bg-gray-200 rounded-2xl mt-auto" />
           </div>
         )}
 
@@ -184,17 +296,8 @@ export default function ListingDetails({ listingId, onBack }: Props) {
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-2">
-              <DetailRow
-                icon={<Layers className="w-4 h-4" />}
-                label="المقاس"
-                value={listing.size}
-              />
-              <DetailRow
-                icon={<Package className="w-4 h-4" />}
-                label="الكمية المتوفرة"
-                value={`${listing.quantity} طبلية`}
-                highlight
-              />
+              <DetailRow icon={<Layers className="w-4 h-4" />} label="المقاس" value={listing.size} />
+              <DetailRow icon={<Package className="w-4 h-4" />} label="الكمية المتوفرة" value={`${listing.quantity} طبلية`} highlight />
               <DetailRow
                 icon={<Tag className="w-4 h-4" />}
                 label="السعر للطبلية"
@@ -206,11 +309,7 @@ export default function ListingDetails({ listingId, onBack }: Props) {
                 }
               />
               {listing.city_id && (
-                <DetailRow
-                  icon={<MapPin className="w-4 h-4" />}
-                  label="المدينة"
-                  value={listing.city_id}
-                />
+                <DetailRow icon={<MapPin className="w-4 h-4" />} label="المدينة" value={listing.city_id} />
               )}
               <DetailRow
                 icon={<CheckCircle className="w-4 h-4" />}
@@ -227,14 +326,128 @@ export default function ListingDetails({ listingId, onBack }: Props) {
             <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-amber-700 text-sm">
               سيتم التواصل مع المورد بعد إرسال الطلب لتأكيد التفاصيل وموعد التسليم.
             </div>
+
+            {showForm && !submitted && (
+              <div ref={formRef} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-gradient-to-r from-[#1a4a5e] to-[#2a6a82] px-5 py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                      <Send className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-white font-bold">إرسال طلب الشراء</span>
+                  </div>
+                  <button
+                    onClick={() => setShowForm(false)}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmit} noValidate className="p-5 flex flex-col gap-4">
+                  <InputField
+                    icon={<User className="w-4 h-4" />}
+                    label="الاسم"
+                    placeholder="أدخل اسمك الكامل"
+                    value={buyerName}
+                    onChange={setBuyerName}
+                    required
+                    error={fieldErrors.buyerName}
+                  />
+                  <InputField
+                    icon={<Phone className="w-4 h-4" />}
+                    label="رقم الجوال"
+                    type="tel"
+                    inputMode="tel"
+                    placeholder="05xxxxxxxx"
+                    value={buyerPhone}
+                    onChange={setBuyerPhone}
+                    required
+                    error={fieldErrors.buyerPhone}
+                  />
+                  <InputField
+                    icon={<Hash className="w-4 h-4" />}
+                    label="الكمية المطلوبة"
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="أدخل الكمية"
+                    value={qty}
+                    onChange={setQty}
+                    required
+                    min={1}
+                    max={listing.quantity}
+                    error={fieldErrors.qty}
+                  />
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                      <MessageSquare className="w-4 h-4 text-gray-400" />
+                      ملاحظات
+                      <span className="text-gray-400 font-normal text-xs">(اختياري)</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="أي تفاصيل إضافية تريد إبلاغ المورد بها..."
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      className="bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] transition-all resize-none"
+                    />
+                  </div>
+
+                  {submitError && (
+                    <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      {submitError}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full flex items-center justify-center gap-2 bg-[#1a4a5e] hover:bg-[#153d50] active:scale-[0.98] disabled:opacity-60 text-white rounded-2xl py-3.5 text-base font-bold transition-all duration-150 shadow-md mt-1"
+                  >
+                    {submitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        جارٍ الإرسال...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        إرسال الطلب
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {submitted && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-6 py-8 flex flex-col items-center gap-4 text-center shadow-sm">
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-emerald-600" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <p className="text-emerald-800 font-bold text-lg">تم إرسال طلبك بنجاح</p>
+                  <p className="text-emerald-600 text-sm">سيتم مراجعة طلبك والتواصل معك قريباً</p>
+                </div>
+                <button
+                  onClick={onBack}
+                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                  العودة للسوق
+                </button>
+              </div>
+            )}
           </>
         )}
       </main>
 
-      {!loading && !error && listing && (
+      {!loading && !error && listing && !showForm && !submitted && (
         <div className="sticky bottom-0 bg-white/90 backdrop-blur-md border-t border-gray-200 px-4 py-4">
           <div className="max-w-2xl mx-auto">
             <button
+              onClick={() => setShowForm(true)}
               className="w-full flex items-center justify-center gap-2 bg-[#1a4a5e] hover:bg-[#153d50] active:scale-[0.98] text-white rounded-2xl py-3.5 text-base font-bold transition-all duration-150 shadow-md"
             >
               <ShoppingBag className="w-5 h-5" />
