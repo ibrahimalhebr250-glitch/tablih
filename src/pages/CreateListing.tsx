@@ -168,7 +168,7 @@ interface Props {
 }
 
 export default function CreateListing({ onBack, onSuccess }: Props) {
-  const { session, register } = useSession();
+  const { session, loading: sessionLoading, register } = useSession();
 
   const [cities, setCities] = useState<City[]>([]);
   const [citiesLoading, setCitiesLoading] = useState(true);
@@ -240,6 +240,7 @@ export default function CreateListing({ onBack, onSuccess }: Props) {
 
   async function handleSubmit() {
     if (!validateListing()) return;
+    if (sessionLoading) return;
 
     if (session) {
       setSubmitLoading(true);
@@ -448,10 +449,10 @@ export default function CreateListing({ onBack, onSuccess }: Props) {
 
           <button
             onClick={handleSubmit}
-            disabled={submitLoading}
+            disabled={submitLoading || sessionLoading}
             className="w-full flex items-center justify-center gap-2.5 bg-[#1a4a5e] hover:bg-[#153d50] disabled:opacity-60 text-white py-4 rounded-2xl text-sm font-bold transition-all active:scale-[0.98] shadow-md"
           >
-            {submitLoading ? (
+            {(submitLoading || sessionLoading) ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <Box className="w-5 h-5" />
