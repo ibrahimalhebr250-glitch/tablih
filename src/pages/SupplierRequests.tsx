@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   MessageCircle,
   X,
+  AlertTriangle,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -76,6 +77,56 @@ function buildWhatsAppUrl(buyerPhone: string, buyerName: string, quantity: numbe
   return `https://wa.me/${intl}?text=${msg}`;
 }
 
+/* ─── Reject Confirm Modal ─── */
+interface RejectModalProps {
+  buyerName: string;
+  onConfirm: () => void;
+  onClose: () => void;
+  loading: boolean;
+}
+
+function RejectModal({ buyerName, onConfirm, onClose, loading }: RejectModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
+        <div className="bg-red-50 border-b border-red-100 px-6 py-5 flex items-start gap-3">
+          <div className="w-10 h-10 bg-red-100 rounded-2xl flex items-center justify-center shrink-0 mt-0.5">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+          </div>
+          <div>
+            <p className="font-bold text-gray-800 text-sm">تأكيد رفض الطلب</p>
+            <p className="text-gray-500 text-xs mt-1">هل أنت متأكد من رفض طلب <span className="font-semibold text-gray-700">{buyerName}</span>؟</p>
+          </div>
+        </div>
+        <div className="px-6 py-4 flex gap-2.5">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-2xl border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition-colors"
+          >
+            إلغاء
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold transition-all active:scale-[0.98]"
+          >
+            {loading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <XCircle className="w-4 h-4" />
+                رفض الطلب
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Commit Modal ─── */
 interface CommitModalProps {
   request: PurchaseRequest;
   commissionPerPallet: number;
@@ -92,7 +143,7 @@ function CommitModal({ request, commissionPerPallet, onConfirm, onClose, loading
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-[fadeSlideUp_0.25s_ease-out]">
+      <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
         <div className="bg-gradient-to-br from-[#1a4a5e] to-[#2a6a82] px-6 pt-6 pb-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -182,19 +233,22 @@ function CommitModal({ request, commissionPerPallet, onConfirm, onClose, loading
 }
 
 export default function SupplierRequests({ onBack }: Props) {
-  const [phone, setPhone]           = useState('');
-  const [supplierId, setSupplierId] = useState<string | null>(null);
-  const [loginError, setLoginError] = useState<string | null>(null);
+  const [phone, setPhone]               = useState('');
+  const [supplierId, setSupplierId]     = useState<string | null>(null);
+  const [loginError, setLoginError]     = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
 
-  const [requests, setRequests]       = useState<PurchaseRequest[]>([]);
-  const [loading, setLoading]         = useState(false);
-  const [fetchError, setFetchError]   = useState<string | null>(null);
-  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [requests, setRequests]         = useState<PurchaseRequest[]>([]);
+  const [loading, setLoading]           = useState(false);
+  const [fetchError, setFetchError]     = useState<string | null>(null);
 
   const [commissionPerPallet, setCommissionPerPallet] = useState<number>(0);
-  const [modalRequest, setModalRequest] = useState<PurchaseRequest | null>(null);
-  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [modalRequest, setModalRequest]               = useState<PurchaseRequest | null>(null);
+  const [confirmLoading, setConfirmLoading]           = useState(false);
+  const [justAcceptedId, setJustAcceptedId]           = useState<string | null>(null);
+
+  const [rejectTarget, setRejectTarget]   = useState<PurchaseRequest | null>(null);
+  const [rejectLoading, setRejectLoading] = useState(false);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -277,19 +331,21 @@ export default function SupplierRequests({ onBack }: Props) {
     if (supplierId) fetchRequests(supplierId);
   }, [supplierId]);
 
-  async function handleReject(requestId: string) {
-    setRejectingId(requestId);
+  async function handleConfirmReject() {
+    if (!rejectTarget) return;
+    setRejectLoading(true);
     const { error } = await supabase
       .from('purchase_requests')
       .update({ status: 'rejected' })
-      .eq('id', requestId);
+      .eq('id', rejectTarget.id);
 
     if (!error) {
       setRequests((prev) =>
-        prev.map((r) => (r.id === requestId ? { ...r, status: 'rejected' } : r))
+        prev.map((r) => (r.id === rejectTarget.id ? { ...r, status: 'rejected' } : r))
       );
     }
-    setRejectingId(null);
+    setRejectLoading(false);
+    setRejectTarget(null);
   }
 
   async function handleConfirmAccept() {
@@ -305,6 +361,7 @@ export default function SupplierRequests({ onBack }: Props) {
       setRequests((prev) =>
         prev.map((r) => (r.id === modalRequest.id ? { ...r, status: 'accepted' } : r))
       );
+      setJustAcceptedId(modalRequest.id);
     }
     setConfirmLoading(false);
     setModalRequest(null);
@@ -314,6 +371,15 @@ export default function SupplierRequests({ onBack }: Props) {
 
   return (
     <>
+      {rejectTarget && (
+        <RejectModal
+          buyerName={rejectTarget.buyer_name}
+          onConfirm={handleConfirmReject}
+          onClose={() => setRejectTarget(null)}
+          loading={rejectLoading}
+        />
+      )}
+
       {modalRequest && (
         <CommitModal
           request={modalRequest}
@@ -461,9 +527,9 @@ export default function SupplierRequests({ onBack }: Props) {
               </div>
 
               {requests.map((req) => {
-                const st = statusConfig[req.status] ?? statusConfig.pending;
+                const st      = statusConfig[req.status] ?? statusConfig.pending;
                 const listing = req.listing;
-                const isRejecting = rejectingId === req.id;
+                const isJustAccepted = justAcceptedId === req.id;
 
                 return (
                   <div key={req.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -527,35 +593,37 @@ export default function SupplierRequests({ onBack }: Props) {
                       <div className="border-t border-gray-100 px-5 py-3.5 flex gap-2.5">
                         <button
                           onClick={() => setModalRequest(req)}
-                          disabled={isRejecting}
-                          className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-bold transition-all"
+                          className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-xl py-2.5 text-sm font-bold transition-all"
                         >
                           <CheckCircle className="w-4 h-4" />
                           قبول الطلب
                         </button>
                         <button
-                          onClick={() => handleReject(req.id)}
-                          disabled={isRejecting}
-                          className="flex-1 flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 active:scale-[0.98] disabled:opacity-60 text-red-600 border border-red-200 rounded-xl py-2.5 text-sm font-bold transition-all"
+                          onClick={() => setRejectTarget(req)}
+                          className="flex-1 flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 active:scale-[0.98] text-red-600 border border-red-200 rounded-xl py-2.5 text-sm font-bold transition-all"
                         >
-                          {isRejecting ? (
-                            <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <>
-                              <XCircle className="w-4 h-4" />
-                              رفض الطلب
-                            </>
-                          )}
+                          <XCircle className="w-4 h-4" />
+                          رفض الطلب
                         </button>
                       </div>
                     )}
 
                     {req.status === 'accepted' && (
-                      <div className="border-t border-emerald-100 px-5 py-3.5 flex flex-col gap-2.5">
-                        <div className="flex items-center gap-2 text-sm text-emerald-700 font-medium">
-                          <CheckCircle className="w-4 h-4" />
-                          تم قبول الطلب
-                        </div>
+                      <div className="border-t border-emerald-100 bg-emerald-50 px-5 py-4 flex flex-col gap-3">
+                        {isJustAccepted && (
+                          <div className="flex items-center gap-2 bg-emerald-100 border border-emerald-200 rounded-xl px-3.5 py-2.5">
+                            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <p className="text-sm font-semibold text-emerald-800">
+                              تم قبول الطلب بنجاح، يمكنك الآن التواصل عبر واتساب
+                            </p>
+                          </div>
+                        )}
+                        {!isJustAccepted && (
+                          <div className="flex items-center gap-2 text-sm text-emerald-700 font-medium">
+                            <CheckCircle className="w-4 h-4" />
+                            تم قبول الطلب
+                          </div>
+                        )}
                         <a
                           href={buildWhatsAppUrl(req.buyer_phone, req.buyer_name, req.quantity)}
                           target="_blank"

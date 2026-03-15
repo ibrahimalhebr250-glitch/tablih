@@ -18,13 +18,14 @@ import {
   Clock,
   FileText,
   X,
+  User,
+  Phone,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSession } from '../hooks/useSession';
 
 type Tab = 'listings' | 'supply';
 
-/* ── shared config ── */
 const palletTypeLabel: Record<string, string> = {
   wooden:    'خشبية',
   plastic:   'بلاستيكية',
@@ -103,13 +104,13 @@ function ListingCard({ listing, onRequest }: { listing: Listing; onRequest: (id:
             <Layers className="w-3.5 h-3.5 text-[#1a4a5e] shrink-0" />
             <div>
               <p className="text-[10px] text-gray-400">المقاس</p>
-              <p className="text-xs font-bold text-gray-700">{listing.size}</p>
+              <p className="text-xs font-bold text-gray-700">{listing.size || '—'}</p>
             </div>
           </div>
           <div className="bg-gray-50 rounded-xl px-3 py-2.5 flex items-center gap-2">
             <Package className="w-3.5 h-3.5 text-[#1a4a5e] shrink-0" />
             <div>
-              <p className="text-[10px] text-gray-400">الكمية المتوفرة</p>
+              <p className="text-[10px] text-gray-400">الكمية</p>
               <p className="text-xs font-bold text-gray-700">{listing.quantity} طبلية</p>
             </div>
           </div>
@@ -208,7 +209,7 @@ function SupplyCard({ req, onOffer, onViewOffers }: { req: SupplyRequest; onOffe
             <Layers className="w-3.5 h-3.5 text-[#1a4a5e] shrink-0" />
             <div>
               <p className="text-[10px] text-gray-400">المقاس</p>
-              <p className="text-xs font-bold text-gray-700">{req.size}</p>
+              <p className="text-xs font-bold text-gray-700">{req.size || '—'}</p>
             </div>
           </div>
           <div className="bg-gray-50 rounded-xl px-3 py-2.5 flex items-center gap-2">
@@ -220,7 +221,7 @@ function SupplyCard({ req, onOffer, onViewOffers }: { req: SupplyRequest; onOffe
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2.5">
           {req.city && (
             <div className="flex items-center gap-1.5 text-xs text-gray-500">
               <MapPin className="w-3.5 h-3.5 text-[#1a4a5e] shrink-0" />
@@ -247,14 +248,14 @@ function SupplyCard({ req, onOffer, onViewOffers }: { req: SupplyRequest; onOffe
           onClick={onViewOffers}
           className="flex-1 flex items-center justify-center gap-1.5 border border-[#1a4a5e]/30 text-[#1a4a5e] hover:bg-[#1a4a5e]/5 active:scale-[0.98] rounded-xl py-2.5 text-sm font-semibold transition-all"
         >
-          <Package className="w-3.5 h-3.5" />
+          <HandCoins className="w-3.5 h-3.5" />
           العروض
         </button>
         <button
           onClick={onOffer}
           className="flex-1 flex items-center justify-center gap-2 bg-[#1a4a5e] hover:bg-[#153d50] active:scale-[0.98] text-white rounded-xl py-2.5 text-sm font-bold transition-all"
         >
-          <HandCoins className="w-4 h-4" />
+          <Send className="w-3.5 h-3.5" />
           تقديم عرض
         </button>
       </div>
@@ -271,6 +272,14 @@ interface OfferForm {
   price: string;
   delivery_time: string;
   notes: string;
+}
+
+interface FieldErrors {
+  supplier_name?: string;
+  supplier_phone?: string;
+  quantity?: string;
+  price?: string;
+  delivery_time?: string;
 }
 
 interface OfferModalProps {
@@ -293,37 +302,42 @@ function OfferModal({ request, sessionProfile, onClose, onSuccess }: OfferModalP
     delivery_time:  '',
     notes:          '',
   });
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError]           = useState<string | null>(null);
-  const [success, setSuccess]       = useState(false);
+  const [submitting, setSubmitting]   = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [success, setSuccess]         = useState(false);
 
   function setField(k: keyof OfferForm, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
-    setError(null);
+    setFieldErrors((e) => ({ ...e, [k]: undefined }));
+  }
+
+  function validate(): boolean {
+    const errors: FieldErrors = {};
+    if (!form.supplier_name.trim()) errors.supplier_name = 'يرجى إدخال اسمك';
+    const phone = form.supplier_phone.trim();
+    if (!phone) errors.supplier_phone = 'يرجى إدخال رقم الجوال';
+    else if (!/^05\d{8}$/.test(phone)) errors.supplier_phone = 'رقم الجوال غير صحيح (مثال: 05XXXXXXXX)';
+    const qty = parseInt(form.quantity, 10);
+    if (!form.quantity || isNaN(qty) || qty <= 0) errors.quantity = 'يرجى إدخال كمية صحيحة';
+    const price = parseFloat(form.price);
+    if (!form.price || isNaN(price) || price <= 0) errors.price = 'يرجى إدخال سعر صحيح';
+    if (!form.delivery_time.trim()) errors.delivery_time = 'يرجى تحديد مدة التوريد';
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
-    const name  = form.supplier_name.trim();
-    const phone = form.supplier_phone.trim();
-    const qty   = parseInt(form.quantity, 10);
-    const price = parseFloat(form.price);
-
-    if (!name)                          { setError('يرجى إدخال اسمك.'); return; }
-    if (!phone || !/^05\d{8}$/.test(phone)) { setError('يرجى إدخال رقم جوال صحيح (05XXXXXXXX).'); return; }
-    if (!form.quantity || isNaN(qty) || qty <= 0) { setError('يرجى إدخال كمية صحيحة.'); return; }
-    if (!form.price || isNaN(price) || price <= 0) { setError('يرجى إدخال سعر صحيح.'); return; }
-    if (!form.delivery_time.trim())     { setError('يرجى تحديد مدة التوريد.'); return; }
+    if (!validate()) return;
 
     setSubmitting(true);
     const { error: dbErr } = await supabase.from('supplier_offers').insert({
       supply_request_id: request.id,
       supplier_id:       sessionProfile?.id ?? null,
-      supplier_name:     name,
-      supplier_phone:    phone,
-      quantity:          qty,
-      price,
+      supplier_name:     form.supplier_name.trim(),
+      supplier_phone:    form.supplier_phone.trim(),
+      quantity:          parseInt(form.quantity, 10),
+      price:             parseFloat(form.price),
       delivery_time:     form.delivery_time.trim(),
       notes:             form.notes.trim() || null,
       status:            'pending',
@@ -331,7 +345,7 @@ function OfferModal({ request, sessionProfile, onClose, onSuccess }: OfferModalP
     setSubmitting(false);
 
     if (dbErr) {
-      setError('حدث خطأ أثناء إرسال العرض، يرجى المحاولة مجدداً.');
+      setFieldErrors({ supplier_name: 'حدث خطأ أثناء إرسال العرض، يرجى المحاولة مجدداً.' });
     } else {
       setSuccess(true);
     }
@@ -387,75 +401,86 @@ function OfferModal({ request, sessionProfile, onClose, onSuccess }: OfferModalP
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 py-4 overflow-y-auto flex-1">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 py-4 overflow-y-auto flex-1" noValidate>
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-gray-600">اسم المورد</label>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-gray-600 flex items-center gap-1">
+                    <User className="w-3 h-3 text-gray-400" />
+                    اسم المورد <span className="text-red-400">*</span>
+                  </label>
                   <input
                     type="text"
                     placeholder="الاسم"
                     value={form.supplier_name}
                     onChange={(e) => setField('supplier_name', e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] transition-all"
+                    className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] transition-all ${fieldErrors.supplier_name ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
                   />
+                  {fieldErrors.supplier_name && <p className="text-[10px] text-red-500">{fieldErrors.supplier_name}</p>}
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-gray-600">رقم الجوال</label>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-gray-600 flex items-center gap-1">
+                    <Phone className="w-3 h-3 text-gray-400" />
+                    رقم الجوال <span className="text-red-400">*</span>
+                  </label>
                   <input
                     type="tel"
                     placeholder="05XXXXXXXX"
                     value={form.supplier_phone}
                     onChange={(e) => setField('supplier_phone', e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] transition-all"
+                    className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] transition-all ${fieldErrors.supplier_phone ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
                     dir="ltr"
                   />
+                  {fieldErrors.supplier_phone && <p className="text-[10px] text-red-500">{fieldErrors.supplier_phone}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-gray-600 flex items-center gap-1">
                     <Package className="w-3.5 h-3.5 text-[#1a4a5e]" />
-                    الكمية المتوفرة
+                    الكمية <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
                     <input
                       type="number" min="1" placeholder="0"
                       value={form.quantity}
                       onChange={(e) => setField('quantity', e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] transition-all"
+                      className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] transition-all ${fieldErrors.quantity ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
                     />
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">طبلية</span>
                   </div>
+                  {fieldErrors.quantity && <p className="text-[10px] text-red-500">{fieldErrors.quantity}</p>}
                 </div>
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-gray-600 flex items-center gap-1">
                     <Banknote className="w-3.5 h-3.5 text-emerald-600" />
-                    السعر للطبلية
+                    السعر للطبلية <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
                     <input
                       type="number" min="0.01" step="0.01" placeholder="0.00"
                       value={form.price}
                       onChange={(e) => setField('price', e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] transition-all"
+                      className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] transition-all ${fieldErrors.price ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
                     />
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">ر.س</span>
                   </div>
+                  {fieldErrors.price && <p className="text-[10px] text-red-500">{fieldErrors.price}</p>}
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-gray-600 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-amber-500" />
-                  مدة التوريد
+                  مدة التوريد <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text" placeholder="مثال: خلال 3 أيام، أو فوري"
                   value={form.delivery_time}
                   onChange={(e) => setField('delivery_time', e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] transition-all"
+                  className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] transition-all ${fieldErrors.delivery_time ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
                 />
+                {fieldErrors.delivery_time && <p className="text-[10px] text-red-500">{fieldErrors.delivery_time}</p>}
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -471,13 +496,6 @@ function OfferModal({ request, sessionProfile, onClose, onSuccess }: OfferModalP
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a4a5e]/30 focus:border-[#1a4a5e] transition-all resize-none leading-relaxed"
                 />
               </div>
-
-              {error && (
-                <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
-                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                  <p className="text-xs text-red-600 font-medium">{error}</p>
-                </div>
-              )}
 
               <button
                 type="submit"
@@ -555,17 +573,15 @@ export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboa
   const { session } = useSession();
   const [tab, setTab] = useState<Tab>('listings');
 
-  /* listings state */
   const [listings, setListings]         = useState<Listing[]>([]);
   const [listLoading, setListLoading]   = useState(true);
   const [listError, setListError]       = useState<string | null>(null);
   const [listFilter, setListFilter]     = useState('all');
 
-  /* supply requests state */
-  const [requests, setRequests]         = useState<SupplyRequest[]>([]);
-  const [supLoading, setSupLoading]     = useState(true);
-  const [supError, setSupError]         = useState<string | null>(null);
-  const [supFilter, setSupFilter]       = useState('all');
+  const [requests, setRequests]           = useState<SupplyRequest[]>([]);
+  const [supLoading, setSupLoading]       = useState(true);
+  const [supError, setSupError]           = useState<string | null>(null);
+  const [supFilter, setSupFilter]         = useState('all');
   const [activeRequest, setActiveRequest] = useState<SupplyRequest | null>(null);
 
   async function fetchListings() {
@@ -612,7 +628,6 @@ export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboa
         dir="rtl"
         style={{ background: 'linear-gradient(135deg, #eef4f8 0%, #f5f9fc 55%, #eaf2f7 100%)' }}
       >
-        {/* ── Header ── */}
         <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
           <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 shrink-0">
@@ -639,7 +654,6 @@ export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboa
             </button>
           </div>
 
-          {/* ── Tabs ── */}
           <div className="max-w-6xl mx-auto px-4 flex gap-0 border-t border-gray-100">
             <TabButton
               active={tab === 'listings'}
@@ -658,10 +672,8 @@ export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboa
           </div>
         </header>
 
-        {/* ── Main ── */}
         <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6 flex flex-col gap-5">
 
-          {/* filter + refresh row */}
           <div className="flex items-center justify-between gap-3">
             <FilterBar
               filter={tab === 'listings' ? listFilter : supFilter}
@@ -684,7 +696,6 @@ export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboa
             </div>
           </div>
 
-          {/* error */}
           {hasError && !isLoading && (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center">
@@ -701,14 +712,12 @@ export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboa
             </div>
           )}
 
-          {/* skeleton */}
           {isLoading && !hasError && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, i) => <ListingSkeleton key={i} />)}
             </div>
           )}
 
-          {/* empty */}
           {!isLoading && !hasError && count === 0 && (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
               <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center">
@@ -726,7 +735,6 @@ export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboa
             </div>
           )}
 
-          {/* listings grid */}
           {tab === 'listings' && !listLoading && !listError && listings.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {listings.map((l) => (
@@ -735,7 +743,6 @@ export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboa
             </div>
           )}
 
-          {/* supply requests grid */}
           {tab === 'supply' && !supLoading && !supError && requests.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {requests.map((r) => (

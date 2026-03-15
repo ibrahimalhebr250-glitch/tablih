@@ -16,6 +16,8 @@ import {
   ChevronDown,
   ChevronUp,
   Box,
+  AlertTriangle,
+  CheckCircle,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -72,6 +74,56 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('ar-SA', {
     year: 'numeric', month: 'short', day: 'numeric',
   });
+}
+
+interface RejectModalProps {
+  supplierName: string;
+  onConfirm: () => void;
+  onClose: () => void;
+  loading: boolean;
+}
+
+function RejectModal({ supplierName, onConfirm, onClose, loading }: RejectModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
+        <div className="bg-red-50 border-b border-red-100 px-6 py-5 flex items-start gap-3">
+          <div className="w-10 h-10 bg-red-100 rounded-2xl flex items-center justify-center shrink-0 mt-0.5">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+          </div>
+          <div>
+            <p className="font-bold text-gray-800 text-sm">تأكيد رفض العرض</p>
+            <p className="text-gray-500 text-xs mt-1">
+              هل أنت متأكد من رفض عرض{' '}
+              <span className="font-semibold text-gray-700">{supplierName}</span>؟
+            </p>
+          </div>
+        </div>
+        <div className="px-6 py-5 flex gap-2.5">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="flex-1 py-3 rounded-2xl border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            تراجع
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-3 rounded-2xl text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50"
+          >
+            {loading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <XCircle className="w-4 h-4" />
+            )}
+            رفض العرض
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 interface CommitmentModalProps {
@@ -177,9 +229,10 @@ interface OfferCardProps {
   onReject: () => void;
   onAccept: () => void;
   actionLoading: boolean;
+  isJustAccepted: boolean;
 }
 
-function OfferCard({ offer, commission, onReject, onAccept, actionLoading }: OfferCardProps) {
+function OfferCard({ offer, commission, onReject, onAccept, actionLoading, isJustAccepted }: OfferCardProps) {
   const [expanded, setExpanded] = useState(false);
   const statusCfg = offerStatusConfig[offer.status] ?? offerStatusConfig.pending;
   const isPending = offer.status === 'pending';
@@ -191,7 +244,7 @@ function OfferCard({ offer, commission, onReject, onAccept, actionLoading }: Off
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 bg-[#1a4a5e]/10 rounded-xl flex items-center justify-center shrink-0">
-              <User className="w-4.5 h-4.5 text-[#1a4a5e]" />
+              <User className="w-4 h-4 text-[#1a4a5e]" />
             </div>
             <div>
               <p className="text-sm font-bold text-gray-800">{offer.supplier_name || 'مورد'}</p>
@@ -202,6 +255,15 @@ function OfferCard({ offer, commission, onReject, onAccept, actionLoading }: Off
             {statusCfg.label}
           </span>
         </div>
+
+        {isJustAccepted && (
+          <div className="flex items-center gap-2 bg-emerald-100 border border-emerald-200 rounded-xl px-3.5 py-2.5">
+            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+            <p className="text-sm font-semibold text-emerald-800">
+              تم قبول العرض بنجاح، يمكنك الآن التواصل عبر واتساب
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-gray-50 rounded-xl px-3 py-2.5 flex flex-col gap-0.5">
@@ -263,7 +325,11 @@ function OfferCard({ offer, commission, onReject, onAccept, actionLoading }: Off
                 disabled={actionLoading}
                 className="flex-1 flex items-center justify-center gap-1.5 bg-[#1a4a5e] hover:bg-[#153d50] disabled:opacity-50 text-white rounded-xl py-2.5 text-xs font-bold transition-all active:scale-[0.98]"
               >
-                <CheckCircle2 className="w-3.5 h-3.5" />
+                {actionLoading ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                )}
                 قبول العرض
               </button>
             </>
@@ -296,6 +362,9 @@ export default function BuyerOffers({ requestId, onBack }: Props) {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [commitOffer, setCommitOffer] = useState<SupplierOffer | null>(null);
+  const [justAcceptedId, setJustAcceptedId] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<SupplierOffer | null>(null);
+  const [rejectLoading, setRejectLoading] = useState(false);
 
   async function fetchData() {
     setLoading(true);
@@ -337,11 +406,13 @@ export default function BuyerOffers({ requestId, onBack }: Props) {
     fetchData();
   }, [requestId]);
 
-  async function handleReject(offer: SupplierOffer) {
-    setActionLoading(offer.id);
-    await supabase.from('supplier_offers').update({ status: 'rejected' }).eq('id', offer.id);
-    setOffers((prev) => prev.map((o) => o.id === offer.id ? { ...o, status: 'rejected' } : o));
-    setActionLoading(null);
+  async function handleConfirmReject() {
+    if (!rejectTarget) return;
+    setRejectLoading(true);
+    await supabase.from('supplier_offers').update({ status: 'rejected' }).eq('id', rejectTarget.id);
+    setOffers((prev) => prev.map((o) => o.id === rejectTarget.id ? { ...o, status: 'rejected' } : o));
+    setRejectLoading(false);
+    setRejectTarget(null);
   }
 
   async function handleAccept(offer: SupplierOffer) {
@@ -349,6 +420,7 @@ export default function BuyerOffers({ requestId, onBack }: Props) {
       setActionLoading(offer.id);
       await supabase.from('supplier_offers').update({ status: 'accepted' }).eq('id', offer.id);
       setOffers((prev) => prev.map((o) => o.id === offer.id ? { ...o, status: 'accepted' } : o));
+      setJustAcceptedId(offer.id);
       setActionLoading(null);
     }
     setCommitOffer({ ...offer, status: offer.status === 'pending' ? 'accepted' : offer.status });
@@ -480,7 +552,8 @@ export default function BuyerOffers({ requestId, onBack }: Props) {
                       offer={offer}
                       commission={commission}
                       actionLoading={actionLoading === offer.id}
-                      onReject={() => handleReject(offer)}
+                      isJustAccepted={justAcceptedId === offer.id}
+                      onReject={() => setRejectTarget(offer)}
                       onAccept={() => handleAccept(offer)}
                     />
                   ))}
@@ -490,6 +563,15 @@ export default function BuyerOffers({ requestId, onBack }: Props) {
           )}
         </main>
       </div>
+
+      {rejectTarget && (
+        <RejectModal
+          supplierName={rejectTarget.supplier_name || 'المورد'}
+          onConfirm={handleConfirmReject}
+          onClose={() => setRejectTarget(null)}
+          loading={rejectLoading}
+        />
+      )}
 
       {commitOffer && (
         <CommitmentModal
