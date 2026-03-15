@@ -14,6 +14,7 @@ import {
   Layers,
   Weight,
   ChevronDown,
+  LogIn,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSession } from '../hooks/useSession';
@@ -168,7 +169,7 @@ interface Props {
 }
 
 export default function CreateListing({ onBack, onSuccess }: Props) {
-  const { session, loading: sessionLoading, register } = useSession();
+  const { session, loading: sessionLoading, register, login } = useSession();
 
   const [cities, setCities] = useState<City[]>([]);
   const [citiesLoading, setCitiesLoading] = useState(true);
@@ -184,8 +185,11 @@ export default function CreateListing({ onBack, onSuccess }: Props) {
   const [fieldErrors, setFieldErrors] = useState<ListingFieldErrors>({});
 
   const [showRegister, setShowRegister] = useState(false);
+  const [authMode, setAuthMode] = useState<'register' | 'login'>('register');
   const [regForm, setRegForm] = useState<RegisterForm>({ name: '', phone: '', password: '', confirmPassword: '' });
+  const [loginForm, setLoginForm] = useState({ phone: '', password: '' });
   const [regErrors, setRegErrors] = useState<RegisterFieldErrors>({});
+  const [loginErrors, setLoginErrors] = useState<{ phone?: string; password?: string }>({});
   const [regLoading, setRegLoading] = useState(false);
   const [regError, setRegError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -241,15 +245,7 @@ export default function CreateListing({ onBack, onSuccess }: Props) {
   async function handleSubmit() {
     if (!validateListing()) return;
     if (sessionLoading) return;
-
-    if (session) {
-      setSubmitLoading(true);
-      const error = await saveListing(session.profile.id);
-      setSubmitLoading(false);
-      if (!error) setDone(true);
-    } else {
-      setShowRegister(true);
-    }
+    setShowRegister(true);
   }
 
   function setRegField(key: keyof RegisterForm, value: string) {
@@ -295,6 +291,41 @@ export default function CreateListing({ onBack, onSuccess }: Props) {
 
     if (error) {
       setRegError('تم إنشاء الحساب، لكن حدث خطأ أثناء حفظ العرض. يرجى المحاولة مرة أخرى.');
+      return;
+    }
+
+    setShowRegister(false);
+    setDone(true);
+  }
+
+  function validateLogin(): boolean {
+    const errors: { phone?: string; password?: string } = {};
+    const phone = loginForm.phone.trim();
+    if (!phone) errors.phone = 'يرجى إدخال رقم الجوال';
+    else if (!/^05\d{8}$/.test(phone)) errors.phone = 'رقم الجوال غير صحيح (مثال: 05XXXXXXXX)';
+    if (!loginForm.password) errors.password = 'يرجى إدخال كلمة المرور';
+    setLoginErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
+  async function handleLoginAndSave() {
+    if (!validateLogin()) return;
+    setRegLoading(true);
+    setRegError(null);
+
+    const result = await login(loginForm.phone.trim(), loginForm.password);
+
+    if (!result.success || !result.session) {
+      setRegError(result.error ?? 'بيانات الدخول غير صحيحة. يرجى المحاولة مرة أخرى.');
+      setRegLoading(false);
+      return;
+    }
+
+    const error = await saveListing(result.session.profile.id);
+    setRegLoading(false);
+
+    if (error) {
+      setRegError('تم تسجيل الدخول، لكن حدث خطأ أثناء حفظ العرض. يرجى المحاولة مرة أخرى.');
       return;
     }
 
@@ -472,14 +503,26 @@ export default function CreateListing({ onBack, onSuccess }: Props) {
                   <Box className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-white font-bold text-sm">حفظ عرض الطبليات</p>
-                  <p className="text-white/60 text-xs mt-0.5">أنشئ حساباً لحفظ عرضك ومتابعة الطلبات</p>
+                  <p className="text-white font-bold text-sm">نشر عرض الطبليات</p>
+                  <p className="text-white/60 text-xs mt-0.5">
+                    {authMode === 'register' ? 'أنشئ حساباً لنشر عرضك ومتابعة الطلبات' : 'سجّل دخولك لنشر عرضك'}
+                  </p>
                 </div>
               </div>
-              <div className="mt-4 bg-white/10 rounded-2xl px-4 py-3">
-                <p className="text-white/80 text-xs leading-relaxed">
-                  لحفظ عرض الطبليات في السوق ومتابعة الطلبات القادمة، يرجى إنشاء حساب سريع.
-                </p>
+
+              <div className="mt-4 flex bg-white/10 rounded-xl p-1 gap-1">
+                <button
+                  onClick={() => { setAuthMode('register'); setRegError(null); }}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${authMode === 'register' ? 'bg-white text-[#1a4a5e] shadow' : 'text-white/70 hover:text-white'}`}
+                >
+                  حساب جديد
+                </button>
+                <button
+                  onClick={() => { setAuthMode('login'); setRegError(null); }}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${authMode === 'login' ? 'bg-white text-[#1a4a5e] shadow' : 'text-white/70 hover:text-white'}`}
+                >
+                  تسجيل دخول
+                </button>
               </div>
             </div>
 
@@ -490,113 +533,158 @@ export default function CreateListing({ onBack, onSuccess }: Props) {
                 </div>
               )}
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-gray-400" />
-                  الاسم
-                </label>
-                <input
-                  type="text"
-                  value={regForm.name}
-                  onChange={(e) => setRegField('name', e.target.value)}
-                  placeholder="الاسم الكامل"
-                  dir="rtl"
-                  className={`w-full bg-gray-50 border rounded-xl px-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 transition-all ${
-                    regErrors.name ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:ring-[#1a4a5e]/20 focus:border-[#1a4a5e]'
-                  }`}
-                />
-                {regErrors.name && <p className="text-xs text-red-500">{regErrors.name}</p>}
-              </div>
+              {authMode === 'register' ? (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-gray-400" />
+                      الاسم
+                    </label>
+                    <input
+                      type="text"
+                      value={regForm.name}
+                      onChange={(e) => setRegField('name', e.target.value)}
+                      placeholder="الاسم الكامل"
+                      dir="rtl"
+                      className={`w-full bg-gray-50 border rounded-xl px-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                        regErrors.name ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:ring-[#1a4a5e]/20 focus:border-[#1a4a5e]'
+                      }`}
+                    />
+                    {regErrors.name && <p className="text-xs text-red-500">{regErrors.name}</p>}
+                  </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-gray-400" />
-                  رقم الجوال
-                </label>
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  value={regForm.phone}
-                  onChange={(e) => setRegField('phone', e.target.value)}
-                  placeholder="05XXXXXXXX"
-                  dir="ltr"
-                  className={`w-full bg-gray-50 border rounded-xl px-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 transition-all text-right ${
-                    regErrors.phone ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:ring-[#1a4a5e]/20 focus:border-[#1a4a5e]'
-                  }`}
-                />
-                {regErrors.phone && <p className="text-xs text-red-500">{regErrors.phone}</p>}
-              </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-gray-400" />
+                      رقم الجوال
+                    </label>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      value={regForm.phone}
+                      onChange={(e) => setRegField('phone', e.target.value)}
+                      placeholder="05XXXXXXXX"
+                      dir="ltr"
+                      className={`w-full bg-gray-50 border rounded-xl px-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 transition-all text-right ${
+                        regErrors.phone ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:ring-[#1a4a5e]/20 focus:border-[#1a4a5e]'
+                      }`}
+                    />
+                    {regErrors.phone && <p className="text-xs text-red-500">{regErrors.phone}</p>}
+                  </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-gray-400" />
-                  كلمة المرور
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={regForm.password}
-                    onChange={(e) => setRegField('password', e.target.value)}
-                    placeholder="6 أحرف على الأقل"
-                    dir="ltr"
-                    className={`w-full bg-gray-50 border rounded-xl px-4 py-3 pl-10 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 transition-all ${
-                      regErrors.password ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:ring-[#1a4a5e]/20 focus:border-[#1a4a5e]'
-                    }`}
-                  />
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-gray-400" />
+                      كلمة المرور
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={regForm.password}
+                        onChange={(e) => setRegField('password', e.target.value)}
+                        placeholder="6 أحرف على الأقل"
+                        dir="ltr"
+                        className={`w-full bg-gray-50 border rounded-xl px-4 py-3 pl-10 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                          regErrors.password ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:ring-[#1a4a5e]/20 focus:border-[#1a4a5e]'
+                        }`}
+                      />
+                      <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {regErrors.password && <p className="text-xs text-red-500">{regErrors.password}</p>}
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-gray-400" />
+                      تأكيد كلمة المرور
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirm ? 'text' : 'password'}
+                        value={regForm.confirmPassword}
+                        onChange={(e) => setRegField('confirmPassword', e.target.value)}
+                        placeholder="أعد إدخال كلمة المرور"
+                        dir="ltr"
+                        className={`w-full bg-gray-50 border rounded-xl px-4 py-3 pl-10 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                          regErrors.confirmPassword ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:ring-[#1a4a5e]/20 focus:border-[#1a4a5e]'
+                        }`}
+                      />
+                      <button type="button" onClick={() => setShowConfirm((v) => !v)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {regErrors.confirmPassword && <p className="text-xs text-red-500">{regErrors.confirmPassword}</p>}
+                  </div>
+
                   <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={handleRegisterAndSave}
+                    disabled={regLoading}
+                    className="w-full flex items-center justify-center gap-2 bg-[#1a4a5e] hover:bg-[#153d50] disabled:opacity-60 text-white py-3.5 rounded-2xl text-sm font-bold transition-all active:scale-[0.98] mt-1"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {regLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                    إنشاء الحساب ونشر العرض
                   </button>
-                </div>
-                {regErrors.password && <p className="text-xs text-red-500">{regErrors.password}</p>}
-              </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-gray-400" />
-                  تأكيد كلمة المرور
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirm ? 'text' : 'password'}
-                    value={regForm.confirmPassword}
-                    onChange={(e) => setRegField('confirmPassword', e.target.value)}
-                    placeholder="أعد إدخال كلمة المرور"
-                    dir="ltr"
-                    className={`w-full bg-gray-50 border rounded-xl px-4 py-3 pl-10 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 transition-all ${
-                      regErrors.confirmPassword ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:ring-[#1a4a5e]/20 focus:border-[#1a4a5e]'
-                    }`}
-                  />
+                  <p className="text-center text-xs text-gray-400 pb-1">
+                    بالتسجيل، أنت توافق على شروط استخدام المنصة
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-gray-400" />
+                      رقم الجوال
+                    </label>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      value={loginForm.phone}
+                      onChange={(e) => { setLoginForm((p) => ({ ...p, phone: e.target.value })); setLoginErrors((p) => ({ ...p, phone: undefined })); setRegError(null); }}
+                      placeholder="05XXXXXXXX"
+                      dir="ltr"
+                      className={`w-full bg-gray-50 border rounded-xl px-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 transition-all text-right ${
+                        loginErrors.phone ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:ring-[#1a4a5e]/20 focus:border-[#1a4a5e]'
+                      }`}
+                    />
+                    {loginErrors.phone && <p className="text-xs text-red-500">{loginErrors.phone}</p>}
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-gray-400" />
+                      كلمة المرور
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={loginForm.password}
+                        onChange={(e) => { setLoginForm((p) => ({ ...p, password: e.target.value })); setLoginErrors((p) => ({ ...p, password: undefined })); setRegError(null); }}
+                        placeholder="أدخل كلمة المرور"
+                        dir="ltr"
+                        className={`w-full bg-gray-50 border rounded-xl px-4 py-3 pl-10 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                          loginErrors.password ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:ring-[#1a4a5e]/20 focus:border-[#1a4a5e]'
+                        }`}
+                      />
+                      <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {loginErrors.password && <p className="text-xs text-red-500">{loginErrors.password}</p>}
+                  </div>
+
                   <button
-                    type="button"
-                    onClick={() => setShowConfirm((v) => !v)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={handleLoginAndSave}
+                    disabled={regLoading}
+                    className="w-full flex items-center justify-center gap-2 bg-[#1a4a5e] hover:bg-[#153d50] disabled:opacity-60 text-white py-3.5 rounded-2xl text-sm font-bold transition-all active:scale-[0.98] mt-1"
                   >
-                    {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {regLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <LogIn className="w-4 h-4" />}
+                    تسجيل الدخول ونشر العرض
                   </button>
-                </div>
-                {regErrors.confirmPassword && <p className="text-xs text-red-500">{regErrors.confirmPassword}</p>}
-              </div>
-
-              <button
-                onClick={handleRegisterAndSave}
-                disabled={regLoading}
-                className="w-full flex items-center justify-center gap-2 bg-[#1a4a5e] hover:bg-[#153d50] disabled:opacity-60 text-white py-3.5 rounded-2xl text-sm font-bold transition-all active:scale-[0.98] mt-1"
-              >
-                {regLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <CheckCircle className="w-4 h-4" />
-                )}
-                حفظ العرض وإنشاء الحساب
-              </button>
-
-              <p className="text-center text-xs text-gray-400 pb-1">
-                بالتسجيل، أنت توافق على شروط استخدام المنصة
-              </p>
+                </>
+              )}
             </div>
           </div>
         </div>
