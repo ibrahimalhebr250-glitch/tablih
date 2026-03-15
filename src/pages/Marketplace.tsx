@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MapPin, Package, Layers, Star, ShoppingCart, RefreshCw, AlertCircle, Box, ClipboardList } from 'lucide-react';
+import { MapPin, Package, Layers, Star, ShoppingCart, RefreshCw, AlertCircle, Box, ClipboardList, ShoppingBag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Listing {
@@ -119,9 +119,10 @@ function SkeletonCard() {
 interface Props {
   onSelectListing: (id: string) => void;
   onOpenSupplierDashboard: () => void;
+  onOpenSupplyRequests: () => void;
 }
 
-export default function Marketplace({ onSelectListing, onOpenSupplierDashboard }: Props) {
+export default function Marketplace({ onSelectListing, onOpenSupplierDashboard, onOpenSupplyRequests }: Props) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -174,6 +175,13 @@ export default function Marketplace({ onSelectListing, onOpenSupplierDashboard }
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={onOpenSupplyRequests}
+              className="flex items-center gap-1.5 text-xs text-[#1a4a5e] font-medium hover:bg-[#1a4a5e]/10 px-3 py-1.5 rounded-lg transition-colors border border-[#1a4a5e]/20"
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              طلبات التوريد
+            </button>
             <button
               onClick={onOpenSupplierDashboard}
               className="flex items-center gap-1.5 text-xs text-[#1a4a5e] font-medium hover:bg-[#1a4a5e]/10 px-3 py-1.5 rounded-lg transition-colors border border-[#1a4a5e]/20"
