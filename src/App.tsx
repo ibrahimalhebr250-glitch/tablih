@@ -4,12 +4,14 @@ import MarketplaceHome from './pages/MarketplaceHome';
 import ListingDetails from './pages/ListingDetails';
 import SupplierRequests from './pages/SupplierRequests';
 import BuyerOffers from './pages/BuyerOffers';
+import CreateListing from './pages/CreateListing';
 
 type Page =
   | { name: 'marketplace' }
   | { name: 'listing-details'; listingId: string }
   | { name: 'supplier-requests' }
-  | { name: 'buyer-offers'; requestId: string };
+  | { name: 'buyer-offers'; requestId: string }
+  | { name: 'create-listing' };
 
 const LoadingScreen = () => (
   <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #d6e4f0 0%, #e0ecf6 50%, #d6e4f0 100%)' }}>
@@ -59,11 +61,21 @@ function App() {
     );
   }
 
+  if (page.name === 'create-listing') {
+    return (
+      <CreateListing
+        onBack={() => setPage({ name: 'marketplace' })}
+        onSuccess={() => setPage({ name: 'marketplace' })}
+      />
+    );
+  }
+
   return (
     <MarketplaceHome
       onSelectListing={(id) => setPage({ name: 'listing-details', listingId: id })}
       onOpenSupplierDashboard={() => setPage({ name: 'supplier-requests' })}
       onViewOffers={(requestId) => setPage({ name: 'buyer-offers', requestId })}
+      onCreateListing={() => setPage({ name: 'create-listing' })}
     />
   );
 }

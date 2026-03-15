@@ -20,6 +20,7 @@ import {
   X,
   User,
   Phone,
+  Plus,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSession } from '../hooks/useSession';
@@ -567,9 +568,10 @@ interface Props {
   onSelectListing: (id: string) => void;
   onOpenSupplierDashboard: () => void;
   onViewOffers: (requestId: string) => void;
+  onCreateListing: () => void;
 }
 
-export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboard, onViewOffers }: Props) {
+export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboard, onViewOffers, onCreateListing }: Props) {
   const { session } = useSession();
   const [tab, setTab] = useState<Tab>('listings');
 
@@ -645,13 +647,22 @@ export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboa
               </div>
             </div>
 
-            <button
-              onClick={onOpenSupplierDashboard}
-              className="flex items-center gap-1.5 text-xs text-[#1a4a5e] font-medium hover:bg-[#1a4a5e]/10 px-3 py-1.5 rounded-lg transition-colors border border-[#1a4a5e]/20"
-            >
-              <ClipboardList className="w-3.5 h-3.5" />
-              لوحة المورد
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onCreateListing}
+                className="flex items-center gap-1.5 text-xs text-white font-bold bg-[#1a4a5e] hover:bg-[#153d50] px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                نشر عرض
+              </button>
+              <button
+                onClick={onOpenSupplierDashboard}
+                className="flex items-center gap-1.5 text-xs text-[#1a4a5e] font-medium hover:bg-[#1a4a5e]/10 px-3 py-1.5 rounded-lg transition-colors border border-[#1a4a5e]/20"
+              >
+                <ClipboardList className="w-3.5 h-3.5" />
+                لوحة المورد
+              </button>
+            </div>
           </div>
 
           <div className="max-w-6xl mx-auto px-4 flex gap-0 border-t border-gray-100">
@@ -732,6 +743,15 @@ export default function MarketplaceHome({ onSelectListing, onOpenSupplierDashboa
               <p className="text-gray-400 text-sm">
                 {tab === 'listings' ? 'سيتم إضافة عروض قريباً' : 'ستظهر هنا طلبات المشترين عند إضافتها'}
               </p>
+              {tab === 'listings' && (
+                <button
+                  onClick={onCreateListing}
+                  className="flex items-center gap-2 bg-[#1a4a5e] hover:bg-[#153d50] text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.98] shadow-md mt-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  نشر أول عرض طبليات
+                </button>
+              )}
             </div>
           )}
 
