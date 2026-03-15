@@ -149,7 +149,7 @@ export default function ListingDetails({ listingId, onBack }: Props) {
     return Object.keys(errors).length === 0;
   }
 
-  async function saveRequest(requestType: 'quick' | 'account', userId?: string) {
+  async function saveRequest(requestType: 'quick' | 'account', _userId?: string) {
     setSubmitting(true);
     setSubmitError(null);
     const { error: err } = await supabase.from('purchase_requests').insert({
@@ -160,7 +160,6 @@ export default function ListingDetails({ listingId, onBack }: Props) {
       message:      message.trim() || null,
       request_type: requestType,
       status:       'pending',
-      ...(userId ? { buyer_id: userId } : {}),
     });
     setSubmitting(false);
     if (err) {
